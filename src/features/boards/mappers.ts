@@ -59,6 +59,7 @@ export function toBoard(dto: CartillaDetalleResponse): Board {
     name: dto.nombre,
     isPrimary: dto.esPrincipal,
     creatorId: dto.creadorId,
+    categories: categories.map((category) => ({ id: category.id, name: category.nombre, order: category.orden })),
     items,
   }
 }

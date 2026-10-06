@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Trash2, Volume2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,10 +23,14 @@ interface ItemEditorPanelProps {
   boardPictograms: Pictogram[]
   libraryStatus: PictogramLibraryStatus
   globalLibrary: Pictogram[]
-  /** False while the backend has no DELETE endpoint. */
+  /** False while another operation is pending or the new-card form is open. */
   canRemove: boolean
+  isRemoving: boolean
+  /** Message of the last failed deletion; shown inside the confirmation. */
+  removeError: string | null
   onChange: (itemId: string, changes: Partial<EditableItemFields>) => void
-  onRemove: (itemId: string) => void
+  /** Called once the user confirmed the deletion. */
+  onConfirmRemove: (item: BoardItem) => void
   onListen: (item: BoardItem) => void
 }
 
@@ -40,10 +45,15 @@ export function ItemEditorPanel({
   libraryStatus,
   globalLibrary,
   canRemove,
+  isRemoving,
+  removeError,
   onChange,
-  onRemove,
+  onConfirmRemove,
   onListen,
 }: ItemEditorPanelProps) {
+  // The page renders this panel with `key={item.id}`, so the confirmation resets when another card is selected.
+  const [confirmingRemove, setConfirmingRemove] = useState(false)
+
   if (!item) {
     return (
       <section className="flex items-center justify-center rounded-xl border bg-background p-8 text-center text-sm text-muted-foreground">
@@ -153,17 +163,51 @@ export function ItemEditorPanel({
       </div>
 
       <footer className="mt-auto border-t p-3">
-        <Button
-          variant="destructive"
-          size="lg"
-          className="w-full"
-          disabled={!canRemove}
-          title={canRemove ? undefined : 'Próximamente'}
-          onClick={() => onRemove(item.id)}
-        >
-          <Trash2 aria-hidden="true" />
-          Eliminar tarjeta
-        </Button>
+        {confirmingRemove ? (
+          <div role="group" aria-label="Confirmar eliminación" className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-medium">{`¿Eliminar la tarjeta «${item.label}»?`}</p>
+              <p className="text-xs text-muted-foreground">Se elimina de la cartilla y no se puede deshacer.</p>
+            </div>
+            {removeError && (
+              <p role="alert" className="text-sm text-destructive">
+                {removeError}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="lg"
+                className="flex-1"
+                disabled={isRemoving}
+                onClick={() => setConfirmingRemove(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                size="lg"
+                className="flex-1"
+                disabled={isRemoving}
+                aria-busy={isRemoving || undefined}
+                onClick={() => onConfirmRemove(item)}
+              >
+                {isRemoving ? 'Eliminando…' : 'Sí, eliminar'}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            variant="destructive"
+            size="lg"
+            className="w-full"
+            disabled={!canRemove}
+            onClick={() => setConfirmingRemove(true)}
+          >
+            <Trash2 aria-hidden="true" />
+            Eliminar tarjeta
+          </Button>
+        )}
       </footer>
     </section>
   )

@@ -1,16 +1,22 @@
 import { AxiosError } from 'axios'
 import type { InternalAxiosRequestConfig } from 'axios'
 import { describe, expect, it } from 'vitest'
-import { getMaterializeErrorMessage, getReadErrorMessage, getWriteErrorMessage } from './errors'
+import {
+  getCreateErrorMessage,
+  getDeleteErrorMessage,
+  getMaterializeErrorMessage,
+  getReadErrorMessage,
+  getWriteErrorMessage,
+} from './errors'
 
-function httpError(status: number): AxiosError {
+function httpError(status: number, message: unknown = 'backend detail'): AxiosError {
   const config = { headers: {} } as InternalAxiosRequestConfig
   return new AxiosError('failed', 'ERR_BAD_REQUEST', config, null, {
     status,
     statusText: '',
     headers: {},
     config,
-    data: { timestamp: 't', status, error: 'e', message: 'backend detail' },
+    data: { timestamp: 't', status, error: 'e', message },
   })
 }
 
@@ -59,5 +65,61 @@ describe('getReadErrorMessage', () => {
     expect(message).toBe('Ocurrió un error inesperado. Intenta nuevamente.')
     expect(message).not.toContain('backend detail')
     expect(getReadErrorMessage(new Error('boom'), 'x')).toBe('Ocurrió un error inesperado. Intenta nuevamente.')
+  })
+})
+
+describe('getCreateErrorMessage', () => {
+  const network = new AxiosError('Network Error', 'ERR_NETWORK')
+
+  it('maps the pictogram and reload stages regardless of the cause', () => {
+    expect(getCreateErrorMessage(network, 'pictogram')).toBe('No se pudo registrar el pictograma elegido.')
+    expect(getCreateErrorMessage(httpError(400), 'pictogram')).toBe('No se pudo registrar el pictograma elegido.')
+    expect(getCreateErrorMessage(network, 'reload')).toBe(
+      'La tarjeta se creó, pero no se pudo recargar la cartilla. Recarga la página.',
+    )
+  })
+
+  it('maps the request stage by failure kind', () => {
+    expect(getCreateErrorMessage(network, 'request')).toBe('No se pudo conectar con el servidor.')
+    expect(getCreateErrorMessage(httpError(404), 'request')).toBe(
+      'No tienes permiso para modificar esta cartilla o la categoría ya no existe.',
+    )
+    expect(getCreateErrorMessage(httpError(409), 'request')).toBe('La operación entra en conflicto con datos existentes.')
+    expect(getCreateErrorMessage(httpError(500), 'request')).toBe('Ocurrió un error inesperado.')
+    expect(getCreateErrorMessage(new Error('boom'), 'request')).toBe('Ocurrió un error inesperado.')
+  })
+
+  it('echoes a short 400 message and falls back when it is missing or too long', () => {
+    expect(getCreateErrorMessage(httpError(400, 'Falta el texto'), 'request')).toBe(
+      'El servidor rechazó los datos: Falta el texto',
+    )
+    expect(getCreateErrorMessage(httpError(400, 'x'.repeat(200)), 'request')).toBe(
+      `El servidor rechazó los datos: ${'x'.repeat(200)}`,
+    )
+    expect(getCreateErrorMessage(httpError(400, 'x'.repeat(201)), 'request')).toBe('El servidor rechazó los datos.')
+    expect(getCreateErrorMessage(httpError(400, 42), 'request')).toBe('El servidor rechazó los datos.')
+    expect(getCreateErrorMessage(httpError(400, '   '), 'request')).toBe('El servidor rechazó los datos.')
+  })
+})
+
+describe('getDeleteErrorMessage', () => {
+  it('maps the reload stage', () => {
+    expect(getDeleteErrorMessage(new Error('boom'), 'reload')).toBe(
+      'La tarjeta se eliminó, pero no se pudo recargar la cartilla. Recarga la página.',
+    )
+  })
+
+  it('maps the request stage by failure kind', () => {
+    expect(getDeleteErrorMessage(new AxiosError('Network Error', 'ERR_NETWORK'), 'request')).toBe(
+      'No se pudo conectar con el servidor.',
+    )
+    expect(getDeleteErrorMessage(httpError(400, 'Dato inválido'), 'request')).toBe(
+      'El servidor rechazó los datos: Dato inválido',
+    )
+    expect(getDeleteErrorMessage(httpError(404), 'request')).toBe(
+      'La tarjeta ya no existe o no tienes permiso para eliminarla.',
+    )
+    expect(getDeleteErrorMessage(httpError(409), 'request')).toBe('La operación entra en conflicto con datos existentes.')
+    expect(getDeleteErrorMessage(httpError(500), 'request')).toBe('Ocurrió un error inesperado.')
   })
 })

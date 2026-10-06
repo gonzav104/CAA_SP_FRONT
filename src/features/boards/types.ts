@@ -34,6 +34,14 @@ export interface BoardItem {
   isCore: boolean
 }
 
+export interface BoardCategory {
+  id: string
+  /** Backend: `nombre`. */
+  name: string
+  /** Backend: `orden`. */
+  order: number
+}
+
 export interface Board {
   id: string
   /** Backend: `nombre`. */
@@ -42,6 +50,8 @@ export interface Board {
   isPrimary: boolean
   /** Backend: `creadorId`. */
   creatorId: string
+  /** Every category sorted by `order`, including the empty ones. */
+  categories: BoardCategory[]
   items: BoardItem[]
 }
 

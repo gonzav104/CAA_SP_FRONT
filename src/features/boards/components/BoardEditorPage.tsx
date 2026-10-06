@@ -1,17 +1,27 @@
 import { useMemo, useReducer, useState } from 'react'
 import { Link } from 'react-router'
 import { ArrowLeft, Play, Plus, Save, Star } from 'lucide-react'
-import { getMaterializeErrorMessage, getWriteErrorMessage } from '@/api/errors'
+import {
+  getCreateErrorMessage,
+  getDeleteErrorMessage,
+  getMaterializeErrorMessage,
+  getWriteErrorMessage,
+} from '@/api/errors'
 import { paths } from '@/app/paths'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { LogoutButton } from '@/features/auth/components/LogoutButton'
 import { useSpeech } from '@/features/communication/speech/useSpeech'
 import { cn } from '@/lib/utils'
 import { UNSAVED_CHANGES_MESSAGE, useUnsavedChangesGuard } from '@/lib/useUnsavedChangesGuard'
-import { boardReducer, sortByVisualOrder } from '../boardReducer'
+import { boardReducer, MAX_BOARD_ITEMS, rebaseDraft, sortByVisualOrder } from '../boardReducer'
+import { ItemOperationError } from '../itemOperations'
+import { createEmptyNewCard, isNewCardDirty, isNewCardValid } from '../newCardForm'
+import type { NewCardForm } from '../newCardForm'
 import { useGlobalPictograms } from '../pictogramHooks'
 import { describeBlocker, planBoardSave } from '../savePlan'
 import { toCommunicationItems } from '../toCommunicationItems'
+import { useCreateBoardItem } from '../useCreateBoardItem'
+import { useDeleteBoardItem } from '../useDeleteBoardItem'
 import { SaveBoardError, useSaveBoard } from '../useSaveBoard'
 import type { ItemSaveFailure } from '../useSaveBoard'
 import type { Patient } from '@/features/patients/types'
@@ -19,13 +29,12 @@ import type { Board, BoardItem, Pictogram } from '../types'
 import { BoardItemList } from './BoardItemList'
 import { BoardPreview } from './BoardPreview'
 import { ItemEditorPanel } from './ItemEditorPanel'
+import { NewItemPanel } from './NewItemPanel'
 
 interface BoardEditorPageProps {
   patient: Patient
   serverBoard: Board
 }
-
-const noop = () => undefined
 
 function describeFailure(failure: ItemSaveFailure): string {
   return failure.stage === 'pictogram' ? getMaterializeErrorMessage(failure.error) : getWriteErrorMessage(failure.error)
@@ -38,16 +47,25 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
   const [board, dispatch] = useReducer(boardReducer, baseline)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<SaveBoardError | null>(null)
+  const [newCard, setNewCard] = useState<NewCardForm | null>(null)
+  // `createdUnreloaded`: the card WAS created but the reload failed, so creating again would duplicate it.
+  const [createError, setCreateError] = useState<{ message: string; createdUnreloaded: boolean } | null>(null)
+  const [removeError, setRemoveError] = useState<string | null>(null)
+  const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const save = useSaveBoard(patient.id, board.id)
+  const create = useCreateBoardItem(patient.id, board.id)
+  const remove = useDeleteBoardItem(patient.id, board.id)
+  const isBusy = save.isPending || create.isPending || remove.isPending
   const plan = useMemo(() => planBoardSave(baseline, board), [baseline, board])
   const isDirty = plan.updates.length > 0 || plan.blockers.length > 0
   const hasBlockers = plan.blockers.length > 0
-  const canSave = isDirty && !hasBlockers && !save.isPending
+  const canSave = isDirty && !hasBlockers && !isBusy
   const items = sortByVisualOrder(board.items)
   const [selectedId, setSelectedId] = useState<string | null>(items[0]?.id ?? null)
   const { say } = useSpeech()
   const library = useGlobalPictograms()
-  useUnsavedChangesGuard(isDirty)
+  const isFormDirty = isNewCardDirty(newCard)
+  useUnsavedChangesGuard(isDirty || isFormDirty)
 
   const selectedItem = items.find((item) => item.id === selectedId)
   const previewItems = toCommunicationItems(board)
@@ -55,9 +73,83 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
     item.pictogram ? [item.pictogram] : [],
   )
 
+  const canAdd = board.categories.length > 0 && items.length < MAX_BOARD_ITEMS && !isBusy && newCard === null
+
   const edit = (action: Parameters<typeof dispatch>[0]) => {
     setSaved(false)
+    setStatusMessage(null)
     dispatch(action)
+  }
+
+  const select = (itemId: string | null) => {
+    setSelectedId(itemId)
+    setRemoveError(null)
+  }
+
+  // After an immediate create/delete: the server snapshot becomes the baseline and the draft keeps its pending edits.
+  const applyFresh = (fresh: Board) => {
+    setBaseline(fresh)
+    dispatch({ type: 'rebase', fresh })
+  }
+
+  const handleOpenNewCard = () => {
+    const selectedCategory = board.categories.find((category) => category.id === selectedItem?.categoryId)
+    setSaved(false)
+    setStatusMessage(null)
+    setCreateError(null)
+    setNewCard(createEmptyNewCard((selectedCategory ?? board.categories[0]).id))
+  }
+
+  const handleCancelNewCard = () => {
+    setCreateError(null)
+    setNewCard(null)
+  }
+
+  const handleCreate = async () => {
+    if (!newCard?.pictogram || !isNewCardValid(newCard, board.categories)) return
+    setCreateError(null)
+    setStatusMessage(null)
+    setSaved(false)
+    try {
+      const { fresh, createdId } = await create.mutateAsync({
+        categoryId: newCard.categoryId,
+        pictogram: newCard.pictogram,
+        label: newCard.label,
+        spokenText: newCard.spokenText,
+        isActive: newCard.isActive,
+      })
+      applyFresh(fresh)
+      select(createdId)
+      setNewCard(null)
+      setStatusMessage('Tarjeta creada.')
+    } catch (error) {
+      if (!(error instanceof ItemOperationError)) throw error
+      // The form keeps exactly what the user typed.
+      if (error.fresh) applyFresh(error.fresh)
+      setCreateError({
+        message: getCreateErrorMessage(error.cause, error.stage),
+        createdUnreloaded: error.stage === 'reload',
+      })
+    }
+  }
+
+  const handleRemove = async (item: BoardItem) => {
+    if (item.categoryId === null) return
+    const position = items.findIndex((candidate) => candidate.id === item.id)
+    setRemoveError(null)
+    setStatusMessage(null)
+    setSaved(false)
+    try {
+      const fresh = await remove.mutateAsync({ categoryId: item.categoryId, itemId: item.id })
+      const remaining = sortByVisualOrder(rebaseDraft(board, fresh).items)
+      applyFresh(fresh)
+      select((remaining[position] ?? remaining.at(-1))?.id ?? null)
+      setStatusMessage('Tarjeta eliminada.')
+    } catch (error) {
+      if (!(error instanceof ItemOperationError)) throw error
+      if (error.fresh) applyFresh(error.fresh)
+      setRemoveError(getDeleteErrorMessage(error.cause, error.stage === 'reload' ? 'reload' : 'request'))
+    }
   }
 
   const handleDiscard = () => {
@@ -67,6 +159,7 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
 
   const handleSave = async () => {
     setSaved(false)
+    setStatusMessage(null)
     setSaveError(null)
     try {
       const fresh = await save.mutateAsync(plan.updates)
@@ -115,7 +208,7 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
             <Play aria-hidden="true" />
             Abrir Modo Uso
           </Link>
-          <LogoutButton confirmMessage={isDirty ? UNSAVED_CHANGES_MESSAGE : undefined} />
+          <LogoutButton confirmMessage={isDirty || isFormDirty ? UNSAVED_CHANGES_MESSAGE : undefined} />
         </div>
       </header>
 
@@ -153,7 +246,7 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
               {' · '}Se guardan al presionar «Guardar cambios». El Modo Uso muestra la versión guardada.
             </p>
           )}
-          <Button type="button" variant="ghost" size="sm" disabled={save.isPending} onClick={handleDiscard}>
+          <Button type="button" variant="ghost" size="sm" disabled={isBusy} onClick={handleDiscard}>
             Descartar cambios
           </Button>
         </div>
@@ -165,6 +258,15 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
           className="border-b border-green-300 bg-green-50 px-6 py-2 text-sm font-medium text-green-900"
         >
           Cambios guardados.
+        </div>
+      )}
+
+      {statusMessage && !isBusy && (
+        <div
+          role="status"
+          className="border-b border-green-300 bg-green-50 px-6 py-2 text-sm font-medium text-green-900"
+        >
+          {statusMessage}
         </div>
       )}
 
@@ -193,39 +295,62 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
       </nav>
 
       <main
-        inert={save.isPending}
+        inert={isBusy}
         className="grid flex-1 grid-cols-1 items-start gap-6 p-6 md:grid-cols-2 lg:grid-cols-[19rem_minmax(0,1fr)_19rem]"
       >
-        <div className="order-first md:col-span-2 lg:sticky lg:top-6 lg:order-none lg:col-span-1 lg:col-start-2 lg:row-start-1">
+        <div
+          inert={newCard !== null}
+          className="order-first md:col-span-2 lg:sticky lg:top-6 lg:order-none lg:col-span-1 lg:col-start-2 lg:row-start-1"
+        >
           <BoardPreview
             patientName={patient.firstName}
             items={previewItems}
             hiddenCount={items.length - previewItems.length}
-            onSelect={setSelectedId}
+            onSelect={select}
           />
         </div>
-        <div className="lg:col-start-1 lg:row-start-1">
+        <div inert={newCard !== null} className="lg:col-start-1 lg:row-start-1">
           <BoardItemList
             items={items}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={select}
             onMove={(itemId, direction) => edit({ type: 'moveItem', itemId, direction })}
-            onAdd={noop}
-            canAdd={false}
+            onAdd={handleOpenNewCard}
+            canAdd={canAdd}
+            hasCategories={board.categories.length > 0}
           />
         </div>
         <div className="lg:col-start-3 lg:row-start-1">
-          <ItemEditorPanel
-            item={selectedItem}
-            totalItems={items.length}
-            boardPictograms={boardPictograms}
-            libraryStatus={library.status}
-            globalLibrary={library.data ?? []}
-            canRemove={false}
-            onChange={(itemId, changes) => edit({ type: 'updateItem', itemId, changes })}
-            onRemove={noop}
-            onListen={handleListen}
-          />
+          {newCard ? (
+            <NewItemPanel
+              form={newCard}
+              categories={board.categories}
+              boardPictograms={boardPictograms}
+              libraryStatus={library.status}
+              globalLibrary={library.data ?? []}
+              isCreating={create.isPending}
+              error={createError?.message ?? null}
+              blockSubmit={createError?.createdUnreloaded === true}
+              onChange={setNewCard}
+              onSubmit={() => void handleCreate()}
+              onCancel={handleCancelNewCard}
+            />
+          ) : (
+            <ItemEditorPanel
+              key={selectedItem?.id ?? 'none'}
+              item={selectedItem}
+              totalItems={items.length}
+              boardPictograms={boardPictograms}
+              libraryStatus={library.status}
+              globalLibrary={library.data ?? []}
+              canRemove={!isBusy && selectedItem?.categoryId != null}
+              isRemoving={remove.isPending}
+              removeError={removeError}
+              onChange={(itemId, changes) => edit({ type: 'updateItem', itemId, changes })}
+              onConfirmRemove={(item) => void handleRemove(item)}
+              onListen={handleListen}
+            />
+          )}
         </div>
       </main>
     </div>

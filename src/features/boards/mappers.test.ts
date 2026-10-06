@@ -82,7 +82,25 @@ describe('toBoard', () => {
   })
 
   it('handles a cartilla without categories', () => {
-    expect(toBoard({ ...boardDetailResponse, categorias: [] }).items).toEqual([])
+    const empty = toBoard({ ...boardDetailResponse, categorias: [] })
+    expect(empty.items).toEqual([])
+    expect(empty.categories).toEqual([])
+  })
+
+  it('lists every category sorted by order, including empty ones', () => {
+    expect(board.categories).toEqual([
+      { id: 'cat-a', name: 'Necesidades', order: 0 },
+      { id: 'cat-b', name: 'Acciones', order: 1 },
+    ])
+    const withEmpty = toBoard({
+      ...boardDetailResponse,
+      categorias: [
+        { id: 'cat-z', nombre: 'Vacía', colorHex: '#000000', orden: 5, items: [] },
+        ...boardDetailResponse.categorias,
+      ],
+    })
+    expect(withEmpty.categories.map((c) => c.id)).toEqual(['cat-a', 'cat-b', 'cat-z'])
+    expect(withEmpty.items).toHaveLength(5)
   })
 
   it('does not mutate the input', () => {

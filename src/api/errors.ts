@@ -45,6 +45,40 @@ export function getMaterializeErrorMessage(error: unknown): string {
   return 'No se pudo registrar el pictograma elegido.'
 }
 
+const MAX_ECHOED_MESSAGE_LENGTH = 200
+
+// Shared by the create/delete copy: network, 400 (echoing a short backend message), 409 and the fallback.
+// Returns undefined for 404, whose copy depends on the operation.
+function getItemRequestErrorMessage(error: unknown): string | undefined {
+  if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
+  const status = getErrorStatus(error)
+  if (status === 400) {
+    const message = getApiErrorBody(error)?.message.trim()
+    return message && message.length <= MAX_ECHOED_MESSAGE_LENGTH
+      ? `El servidor rechazó los datos: ${message}`
+      : 'El servidor rechazó los datos.'
+  }
+  if (status === 409) return 'La operación entra en conflicto con datos existentes.'
+  if (status === 404) return undefined
+  return 'Ocurrió un error inesperado.'
+}
+
+// User-facing copy for a failed item creation (pictogram registration, POST item, or reload).
+export function getCreateErrorMessage(error: unknown, stage: 'pictogram' | 'request' | 'reload'): string {
+  if (stage === 'pictogram') return 'No se pudo registrar el pictograma elegido.'
+  if (stage === 'reload') return 'La tarjeta se creó, pero no se pudo recargar la cartilla. Recarga la página.'
+  return (
+    getItemRequestErrorMessage(error) ??
+    'No tienes permiso para modificar esta cartilla o la categoría ya no existe.'
+  )
+}
+
+// User-facing copy for a failed item deletion (DELETE, or reload).
+export function getDeleteErrorMessage(error: unknown, stage: 'request' | 'reload'): string {
+  if (stage === 'reload') return 'La tarjeta se eliminó, pero no se pudo recargar la cartilla. Recarga la página.'
+  return getItemRequestErrorMessage(error) ?? 'La tarjeta ya no existe o no tienes permiso para eliminarla.'
+}
+
 // User-facing copy for failed GET requests. Backend `message` strings are never echoed.
 export function getReadErrorMessage(error: unknown, notFoundMessage: string): string {
   const status = getErrorStatus(error)

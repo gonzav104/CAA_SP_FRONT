@@ -46,6 +46,10 @@ export interface ItemCartillaActualizacionRequest {
   visibleEnModoUso?: boolean | null
 }
 
+// Mirrors ItemCartillaRegistroDTO (create). Same shape as the update request; when `ordenVisual` is
+// omitted the backend appends the item at the end of its category.
+export type ItemCartillaRegistroRequest = ItemCartillaActualizacionRequest
+
 // Mirrors ItemCartillaResponseDTO.
 export interface ItemCartillaResponse {
   id: string

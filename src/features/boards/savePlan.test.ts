@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { boardReducer } from './boardReducer'
+import { boardReducer, rebaseDraft } from './boardReducer'
 import { toBoard } from './mappers'
 import { describeBlocker, planBoardSave, TEXTO_HABLADO_MAX, TEXTO_VISIBLE_MAX } from './savePlan'
 import type { SaveBlocker } from './savePlan'
@@ -14,6 +14,11 @@ const localPictogram: Pictogram = { id: 'arasaac-7272', label: 'hambre', imageUr
 
 function update(board: Board, itemId: string, changes: Partial<BoardItem>): Board {
   return { ...board, items: board.items.map((item) => (item.id === itemId ? { ...item, ...changes } : item)) }
+}
+
+function without(board: Board, itemId: string): Board {
+  const items = board.items.filter((candidate) => candidate.id !== itemId)
+  return { ...board, items: items.map((candidate, index) => ({ ...candidate, visualOrder: index + 1 })) }
 }
 
 function item(id: string, categoryId: string, serverOrder: number, visualOrder: number): BoardItem {
@@ -35,6 +40,7 @@ const gapped: Board = {
   name: 'Gapped',
   isPrimary: false,
   creatorId: 'u',
+  categories: [{ id: 'c1', name: 'Uno', order: 0 }],
   items: [item('w', 'c1', 0, 1), item('x', 'c1', 2, 2), item('y', 'c1', 5, 3), item('z', 'c1', 7, 4)],
 }
 
@@ -202,7 +208,7 @@ describe('planBoardSave', () => {
     it('reports added and removed items', () => {
       const added = { ...base, items: [...base.items, { ...base.items[0], id: 'new', serverOrder: null, visualOrder: 6 }] }
       expect(planBoardSave(base, added).blockers).toEqual([{ itemId: 'new', itemLabel: 'Hambre', reason: 'added-item' }])
-      const removed = boardReducer(base, { type: 'removeItem', itemId: 'item-a1' })
+      const removed = without(base, 'item-a1')
       const plan = planBoardSave(base, removed)
       expect(plan.blockers).toEqual([{ itemId: 'item-a1', itemLabel: 'Baño', reason: 'removed-item' }])
       expect(plan.updates).toEqual([])
@@ -222,11 +228,27 @@ describe('planBoardSave', () => {
     })
 
     it('does not reorder when a structural blocker exists in the same category', () => {
-      const removed = boardReducer(gapped, { type: 'removeItem', itemId: 'z' })
+      const removed = without(gapped, 'z')
       const plan = planBoardSave(gapped, removed)
       expect(plan.updates).toEqual([])
       expect(reasons(plan.blockers)).toEqual(['removed-item'])
     })
+  })
+
+  it('plans nothing for a draft rebased onto a snapshot with a deleted item (server gaps stay)', () => {
+    const fresh = { ...base, items: base.items.filter((candidate) => candidate.id !== 'item-a1') }
+    const draft = rebaseDraft(base, fresh)
+    expect(planBoardSave(fresh, draft)).toEqual({ updates: [], blockers: [] })
+  })
+
+  it('plans only the pending edit for a draft rebased onto a snapshot with a new item', () => {
+    const created = { ...base.items[0], id: 'new', serverOrder: 4, label: 'Nuevo', visualOrder: 6 }
+    const fresh = { ...base, items: [...base.items, created] }
+    const edited = update(base, 'item-b2', { label: 'Juego' })
+    const draft = rebaseDraft(edited, fresh)
+    const plan = planBoardSave(fresh, draft)
+    expect(plan.blockers).toEqual([])
+    expect(plan.updates.map((u) => [u.itemId, u.request.ordenVisual])).toEqual([['item-b2', 5]])
   })
 
   it('does not mutate its inputs', () => {

@@ -352,17 +352,19 @@ describe('BoardEditorPage saving', () => {
     expect(screen.getByLabelText('Texto hablado')).toHaveAttribute('maxlength', '255')
   })
 
-  it('disables adding and removing cards until the backend supports them', async () => {
+  it('enables adding and removing cards without sending anything until they are confirmed', async () => {
     const fake = setupApi()
     await openEditor()
 
     for (const name of ['Agregar tarjeta', 'Eliminar tarjeta']) {
       const button = screen.getByRole('button', { name })
-      expect(button).toBeDisabled()
-      expect(button).toHaveAttribute('title', 'Próximamente')
+      expect(button).toBeEnabled()
+      expect(button).not.toHaveAttribute('title')
     }
     expect(screen.queryByText(/Se alcanzó el máximo/)).not.toBeInTheDocument()
     expect(fake.put).not.toHaveBeenCalled()
+    expect(fake.post).not.toHaveBeenCalled()
+    expect(fake.del).not.toHaveBeenCalled()
   })
 
   it('disables the arrows across a category boundary', async () => {

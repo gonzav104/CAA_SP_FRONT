@@ -80,9 +80,9 @@ describe('BoardEditorRoute', () => {
     expect(screen.queryByText('Cambios sin guardar')).not.toBeInTheDocument()
     expect(screen.getAllByTestId('board-item')[0]).toHaveTextContent('Hambre')
 
-    expect(screen.getByRole('button', { name: 'Agregar tarjeta' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Eliminar tarjeta' })).toBeDisabled()
-    // No PUT until Save is clicked; create, delete and patch are never issued.
+    expect(screen.getByRole('button', { name: 'Agregar tarjeta' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Eliminar tarjeta' })).toBeEnabled()
+    // No write until Save is clicked or a create/delete is confirmed; patch is never issued.
     Object.values(mutations).forEach((spy) => expect(spy).not.toHaveBeenCalled())
   })
 

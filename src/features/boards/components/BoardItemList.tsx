@@ -10,15 +10,17 @@ interface BoardItemListProps {
   onSelect: (itemId: string) => void
   onMove: (itemId: string, direction: -1 | 1) => void
   onAdd: () => void
-  /** False while the backend has no POST endpoint for items. */
+  /** False while an operation is pending, the new-card form is open, there are no categories or the limit is reached. */
   canAdd: boolean
+  /** The board has at least one category, the only place a card can be created in. */
+  hasCategories: boolean
 }
 
 const CATEGORY_BOUNDARY_TITLE = 'No se puede mover entre categorías'
 
 /** Board structure: every card (including hidden ones) in its configured order. */
-export function BoardItemList({ items, selectedId, onSelect, onMove, onAdd, canAdd }: BoardItemListProps) {
-  const isFull = canAdd && items.length >= MAX_BOARD_ITEMS
+export function BoardItemList({ items, selectedId, onSelect, onMove, onAdd, canAdd, hasCategories }: BoardItemListProps) {
+  const isFull = hasCategories && items.length >= MAX_BOARD_ITEMS
   // Server boards may already exceed the limit that applies to adding cards.
   const counterText = items.length <= MAX_BOARD_ITEMS ? `${items.length} de ${MAX_BOARD_ITEMS}` : `${items.length} tarjetas`
 
@@ -103,12 +105,16 @@ export function BoardItemList({ items, selectedId, onSelect, onMove, onAdd, canA
           size="lg"
           className="w-full"
           disabled={!canAdd || isFull}
-          title={canAdd ? undefined : 'Próximamente'}
           onClick={onAdd}
         >
           <Plus aria-hidden="true" />
           Agregar tarjeta
         </Button>
+        {!hasCategories && (
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Esta cartilla no tiene categorías. Crear categorías todavía no está disponible.
+          </p>
+        )}
         {isFull && (
           <p className="mt-2 text-center text-xs text-muted-foreground">
             Se alcanzó el máximo de {MAX_BOARD_ITEMS} tarjetas.
