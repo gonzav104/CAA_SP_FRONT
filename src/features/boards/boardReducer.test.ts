@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { boardReducer, isBoardDirty, MAX_BOARD_ITEMS } from './boardReducer'
+import { boardReducer, MAX_BOARD_ITEMS } from './boardReducer'
 import { toBoard } from './mappers'
 import { boardDetailResponse } from './testing/fixtures'
 import type { Board, BoardItem } from './types'
 
 const base = toBoard(boardDetailResponse)
 
-const newItem: Omit<BoardItem, 'visualOrder'> = {
+const newItem: Omit<BoardItem, 'visualOrder' | 'serverOrder'> = {
   id: 'new',
   categoryId: null,
   pictogram: null,
@@ -35,10 +35,33 @@ describe('boardReducer', () => {
     expect(boardReducer(base, { type: 'moveItem', itemId: 'item-b2', direction: 1 })).toBe(base)
   })
 
+  it('does not move an item across a category boundary', () => {
+    // item-a3 is the last of cat-a; its neighbor item-b1 belongs to cat-b.
+    expect(boardReducer(base, { type: 'moveItem', itemId: 'item-a3', direction: 1 })).toBe(base)
+    expect(boardReducer(base, { type: 'moveItem', itemId: 'item-b1', direction: -1 })).toBe(base)
+  })
+
+  it('treats a null category as its own category when moving', () => {
+    const withLocal = boardReducer(base, { type: 'addItem', item: newItem })
+    expect(boardReducer(withLocal, { type: 'moveItem', itemId: 'new', direction: -1 })).toBe(withLocal)
+  })
+
+  it('moves within a category in both directions', () => {
+    const down = boardReducer(base, { type: 'moveItem', itemId: 'item-a1', direction: 1 })
+    expect(ids(down).slice(0, 3)).toEqual(['item-a2', 'item-a3', 'item-a1'])
+    const up = boardReducer(base, { type: 'moveItem', itemId: 'item-b2', direction: -1 })
+    expect(ids(up).slice(3)).toEqual(['item-b2', 'item-b1'])
+  })
+
   it('adds an item at the end', () => {
     const result = boardReducer(base, { type: 'addItem', item: newItem })
     expect(ids(result).at(-1)).toBe('new')
     expect(result.items.at(-1)?.visualOrder).toBe(6)
+  })
+
+  it('adds items without a server order', () => {
+    const result = boardReducer(base, { type: 'addItem', item: newItem })
+    expect(result.items.at(-1)?.serverOrder).toBeNull()
   })
 
   it('does not add beyond the limit but renders larger boards', () => {
@@ -59,29 +82,5 @@ describe('boardReducer', () => {
   it('resets to the given board', () => {
     const edited = boardReducer(base, { type: 'removeItem', itemId: 'item-a2' })
     expect(boardReducer(edited, { type: 'reset', board: base })).toBe(base)
-  })
-})
-
-describe('isBoardDirty', () => {
-  it('is false for an identical board', () => {
-    expect(isBoardDirty(base, structuredClone(base))).toBe(false)
-  })
-
-  it('is true after editing text, visibility, removing or adding', () => {
-    expect(isBoardDirty(boardReducer(base, { type: 'updateItem', itemId: 'item-a1', changes: { label: 'X' } }), base)).toBe(true)
-    expect(isBoardDirty(boardReducer(base, { type: 'updateItem', itemId: 'item-a1', changes: { isActive: false } }), base)).toBe(true)
-    expect(isBoardDirty(boardReducer(base, { type: 'removeItem', itemId: 'item-a1' }), base)).toBe(true)
-    expect(isBoardDirty(boardReducer(base, { type: 'addItem', item: newItem }), base)).toBe(true)
-  })
-
-  it('is true when the name differs', () => {
-    expect(isBoardDirty({ ...base, name: 'Otra' }, base)).toBe(true)
-  })
-
-  it('is true after a move and false after moving it back', () => {
-    const moved = boardReducer(base, { type: 'moveItem', itemId: 'item-a1', direction: 1 })
-    expect(isBoardDirty(moved, base)).toBe(true)
-    const back = boardReducer(moved, { type: 'moveItem', itemId: 'item-a1', direction: -1 })
-    expect(isBoardDirty(back, base)).toBe(false)
   })
 })

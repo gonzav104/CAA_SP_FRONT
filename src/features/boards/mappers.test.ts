@@ -55,10 +55,21 @@ describe('toBoard', () => {
       label: 'Jugar',
       spokenText: 'Quiero jugar un rato',
       visualOrder: 5,
+      serverOrder: 5,
       isActive: true,
       isCore: false,
     })
     expect(board.items.find((i) => i.id === 'item-a1')?.isCore).toBe(true)
+  })
+
+  it('keeps the backend order of each item per category', () => {
+    expect(board.items.map((i) => [i.id, i.serverOrder])).toEqual([
+      ['item-a2', 0],
+      ['item-a1', 0],
+      ['item-a3', 3],
+      ['item-b1', 2],
+      ['item-b2', 5],
+    ])
   })
 
   it('maps a null pictogram to null', () => {

@@ -21,7 +21,10 @@ function BoardEditorRouteContent({ patientId, boardId }: { patientId: string; bo
   const board = useBoardDetail(patientId, boardId)
   const { data: user } = useCurrentUser()
 
-  const error = board.isError ? board.error : patient.isError ? patient.error : null
+  // A failed background reload keeps the data it had: never replace a live editor (and its draft) with an error screen.
+  const boardError = board.isError && !board.data ? board.error : null
+  const patientError = patient.isError && !patient.data ? patient.error : null
+  const error = boardError ?? patientError
   if (error) {
     return (
       <FullScreenStatus
@@ -32,8 +35,8 @@ function BoardEditorRouteContent({ patientId, boardId }: { patientId: string; bo
               size="lg"
               variant="outline"
               onClick={() => {
-                if (board.isError) void board.refetch()
-                if (patient.isError) void patient.refetch()
+                if (boardError) void board.refetch()
+                if (patientError) void patient.refetch()
               }}
             >
               Reintentar

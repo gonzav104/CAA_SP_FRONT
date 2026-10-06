@@ -6,17 +6,21 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import type { EditableItemFields } from '../boardReducer'
-import type { BoardItem } from '../types'
+import { TEXTO_HABLADO_MAX, TEXTO_VISIBLE_MAX } from '../savePlan'
+import type { BoardItem, Pictogram } from '../types'
 import { PictogramPicker } from './PictogramPicker'
 
 /** Validated guideline: spoken text of 3–4 words at most when possible. */
 const RECOMMENDED_MAX_WORDS = 4
-const LABEL_MAX_LENGTH = 20
-const SPOKEN_TEXT_MAX_LENGTH = 80
+const LABEL_MAX_LENGTH = TEXTO_VISIBLE_MAX
+const SPOKEN_TEXT_MAX_LENGTH = TEXTO_HABLADO_MAX
 
 interface ItemEditorPanelProps {
   item: BoardItem | undefined
   totalItems: number
+  boardPictograms: Pictogram[]
+  /** False while the backend has no DELETE endpoint. */
+  canRemove: boolean
   onChange: (itemId: string, changes: Partial<EditableItemFields>) => void
   onRemove: (itemId: string) => void
   onListen: (item: BoardItem) => void
@@ -26,7 +30,15 @@ function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length
 }
 
-export function ItemEditorPanel({ item, totalItems, onChange, onRemove, onListen }: ItemEditorPanelProps) {
+export function ItemEditorPanel({
+  item,
+  totalItems,
+  boardPictograms,
+  canRemove,
+  onChange,
+  onRemove,
+  onListen,
+}: ItemEditorPanelProps) {
   if (!item) {
     return (
       <section className="flex items-center justify-center rounded-xl border bg-background p-8 text-center text-sm text-muted-foreground">
@@ -35,6 +47,7 @@ export function ItemEditorPanel({ item, totalItems, onChange, onRemove, onListen
     )
   }
 
+  const isLabelMissing = item.label.trim() === ''
   const words = countWords(item.spokenText)
   const isSpokenTextMissing = words === 0
   const isSpokenTextLong = words > RECOMMENDED_MAX_WORDS
@@ -54,6 +67,7 @@ export function ItemEditorPanel({ item, totalItems, onChange, onRemove, onListen
           <span id="pictogram-picker-label" className="text-sm font-medium">Pictograma</span>
           <PictogramPicker
             selected={item.pictogram}
+            boardPictograms={boardPictograms}
             onChange={(pictogram) => update({ pictogram })}
             labelledBy="pictogram-picker-label"
           />
@@ -66,11 +80,17 @@ export function ItemEditorPanel({ item, totalItems, onChange, onRemove, onListen
             value={item.label}
             maxLength={LABEL_MAX_LENGTH}
             onChange={(event) => update({ label: event.target.value })}
+            aria-invalid={isLabelMissing || undefined}
             aria-describedby="item-label-hint"
             className="h-10 text-base"
           />
-          <p id="item-label-hint" className="text-xs text-muted-foreground">
-            Se muestra en mayúsculas en la tarjeta. Breve: una o dos palabras.
+          <p
+            id="item-label-hint"
+            className={cn('text-xs', isLabelMissing ? 'text-destructive' : 'text-muted-foreground')}
+          >
+            {isLabelMissing
+              ? 'El texto visible es obligatorio.'
+              : 'Se muestra en mayúsculas en la tarjeta. Breve: una o dos palabras.'}
           </p>
         </div>
 
@@ -126,7 +146,14 @@ export function ItemEditorPanel({ item, totalItems, onChange, onRemove, onListen
       </div>
 
       <footer className="mt-auto border-t p-3">
-        <Button variant="destructive" size="lg" className="w-full" onClick={() => onRemove(item.id)}>
+        <Button
+          variant="destructive"
+          size="lg"
+          className="w-full"
+          disabled={!canRemove}
+          title={canRemove ? undefined : 'Próximamente'}
+          onClick={() => onRemove(item.id)}
+        >
           <Trash2 aria-hidden="true" />
           Eliminar tarjeta
         </Button>

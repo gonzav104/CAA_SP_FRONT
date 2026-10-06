@@ -1,4 +1,4 @@
-import type { Board, BoardItem, Pictogram } from './types'
+import type { Board, BoardItem } from './types'
 
 /** Matches the Use Mode progression ceiling (6 → 9 → 12 options); limits ADDING only, larger server boards render fine. */
 export const MAX_BOARD_ITEMS = 12
@@ -8,7 +8,7 @@ export type EditableItemFields = Pick<BoardItem, 'label' | 'spokenText' | 'picto
 export type BoardAction =
   | { type: 'updateItem'; itemId: string; changes: Partial<EditableItemFields> }
   | { type: 'moveItem'; itemId: string; direction: -1 | 1 }
-  | { type: 'addItem'; item: Omit<BoardItem, 'visualOrder'> }
+  | { type: 'addItem'; item: Omit<BoardItem, 'visualOrder' | 'serverOrder'> }
   | { type: 'removeItem'; itemId: string }
   | { type: 'reset'; board: Board }
 
@@ -36,6 +36,8 @@ export function boardReducer(board: Board, action: BoardAction): Board {
       const from = items.findIndex((item) => item.id === action.itemId)
       const to = from + action.direction
       if (from === -1 || to < 0 || to >= items.length) return board
+      // The backend cannot move an item to another category: only swap within the same one.
+      if (items[to].categoryId !== items[from].categoryId) return board
       const [moved] = items.splice(from, 1)
       items.splice(to, 0, moved)
       return { ...board, items: renumber(items) }
@@ -44,7 +46,7 @@ export function boardReducer(board: Board, action: BoardAction): Board {
     case 'addItem': {
       if (board.items.length >= MAX_BOARD_ITEMS) return board
       const items = sortByVisualOrder(board.items)
-      return { ...board, items: renumber([...items, { ...action.item, visualOrder: 0 }]) }
+      return { ...board, items: renumber([...items, { ...action.item, serverOrder: null, visualOrder: 0 }]) }
     }
 
     case 'reset':
@@ -56,30 +58,4 @@ export function boardReducer(board: Board, action: BoardAction): Board {
         items: renumber(sortByVisualOrder(board.items).filter((item) => item.id !== action.itemId)),
       }
   }
-}
-
-function isSamePictogram(a: Pictogram | null, b: Pictogram | null): boolean {
-  if (a === null || b === null) return a === b
-  return a.id === b.id && a.label === b.label && a.imageUrl === b.imageUrl && a.kind === b.kind
-}
-
-function isSameItem(a: BoardItem, b: BoardItem): boolean {
-  return (
-    a.id === b.id &&
-    a.categoryId === b.categoryId &&
-    a.label === b.label &&
-    a.spokenText === b.spokenText &&
-    a.isActive === b.isActive &&
-    a.isCore === b.isCore &&
-    isSamePictogram(a.pictogram, b.pictogram)
-  )
-}
-
-/** True when the name or the ordered items differ. Moving an item and moving it back is not dirty. */
-export function isBoardDirty(current: Board, baseline: Board): boolean {
-  if (current.name !== baseline.name) return true
-  if (current.items.length !== baseline.items.length) return true
-  const a = sortByVisualOrder(current.items)
-  const b = sortByVisualOrder(baseline.items)
-  return a.some((item, index) => !isSameItem(item, b[index]))
 }

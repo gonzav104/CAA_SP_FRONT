@@ -24,6 +24,8 @@ export interface BoardItem {
   spokenText: string
   /** Backend: `ordenVisual`, normalized to a contiguous 1..n sequence across the flattened board. */
   visualOrder: number
+  /** Backend `ordenVisual` as received, per category; null for locally added items. */
+  serverOrder: number | null
   /** Backend: `visibleEnModoUso`. */
   isActive: boolean
   /** Backend: `esCore`. */

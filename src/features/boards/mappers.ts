@@ -48,6 +48,7 @@ export function toBoard(dto: CartillaDetalleResponse): Board {
       label: item.textoVisible,
       spokenText: item.textoHablado,
       visualOrder: index + 1,
+      serverOrder: item.ordenVisual,
       isActive: item.visibleEnModoUso,
       isCore: item.esCore,
     }))

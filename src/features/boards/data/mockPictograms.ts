@@ -1,7 +1,9 @@
 import type { Pictogram } from '../types'
 
-// TEMPORARY picker library: there is no pictogram-list endpoint yet, so the editor offers
-// these local ARASAAC copies (see public/pictograms/arasaac). Replace when the backend exposes one.
+// TEMPORARY picker library of local ARASAAC copies (see public/pictograms/arasaac). The backend
+// exposes `GET /api/pictogramas-globales` (list with UUIDs): wiring the real library into the
+// picker is a follow-up. Until then, entries chosen from here are registered through
+// `POST /materializar` when saving.
 const arasaac = (arasaacId: number, label: string): Pictogram => ({
   id: `arasaac-${arasaacId}`,
   label,

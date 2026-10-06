@@ -10,11 +10,15 @@ interface BoardItemListProps {
   onSelect: (itemId: string) => void
   onMove: (itemId: string, direction: -1 | 1) => void
   onAdd: () => void
+  /** False while the backend has no POST endpoint for items. */
+  canAdd: boolean
 }
 
+const CATEGORY_BOUNDARY_TITLE = 'No se puede mover entre categorías'
+
 /** Board structure: every card (including hidden ones) in its configured order. */
-export function BoardItemList({ items, selectedId, onSelect, onMove, onAdd }: BoardItemListProps) {
-  const isFull = items.length >= MAX_BOARD_ITEMS
+export function BoardItemList({ items, selectedId, onSelect, onMove, onAdd, canAdd }: BoardItemListProps) {
+  const isFull = canAdd && items.length >= MAX_BOARD_ITEMS
   // Server boards may already exceed the limit that applies to adding cards.
   const counterText = items.length <= MAX_BOARD_ITEMS ? `${items.length} de ${MAX_BOARD_ITEMS}` : `${items.length} tarjetas`
 
@@ -30,6 +34,9 @@ export function BoardItemList({ items, selectedId, onSelect, onMove, onAdd }: Bo
       <ol className="flex flex-col gap-1 p-2">
         {items.map((item, index) => {
           const isSelected = item.id === selectedId
+          // The backend cannot move an item to another category.
+          const blocksBefore = index > 0 && items[index - 1].categoryId !== item.categoryId
+          const blocksAfter = index < items.length - 1 && items[index + 1].categoryId !== item.categoryId
           return (
             <li
               key={item.id}
@@ -68,7 +75,8 @@ export function BoardItemList({ items, selectedId, onSelect, onMove, onAdd }: Bo
               <Button
                 variant="ghost"
                 size="icon-lg"
-                disabled={index === 0}
+                disabled={index === 0 || blocksBefore}
+                title={blocksBefore ? CATEGORY_BOUNDARY_TITLE : undefined}
                 onClick={() => onMove(item.id, -1)}
                 aria-label={`Mover ${item.label} antes`}
               >
@@ -77,7 +85,8 @@ export function BoardItemList({ items, selectedId, onSelect, onMove, onAdd }: Bo
               <Button
                 variant="ghost"
                 size="icon-lg"
-                disabled={index === items.length - 1}
+                disabled={index === items.length - 1 || blocksAfter}
+                title={blocksAfter ? CATEGORY_BOUNDARY_TITLE : undefined}
                 onClick={() => onMove(item.id, 1)}
                 aria-label={`Mover ${item.label} después`}
               >
@@ -89,7 +98,14 @@ export function BoardItemList({ items, selectedId, onSelect, onMove, onAdd }: Bo
       </ol>
 
       <footer className="mt-auto border-t p-3">
-        <Button variant="outline" size="lg" className="w-full" disabled={isFull} onClick={onAdd}>
+        <Button
+          variant="outline"
+          size="lg"
+          className="w-full"
+          disabled={!canAdd || isFull}
+          title={canAdd ? undefined : 'Próximamente'}
+          onClick={onAdd}
+        >
           <Plus aria-hidden="true" />
           Agregar tarjeta
         </Button>

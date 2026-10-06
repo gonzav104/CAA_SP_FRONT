@@ -28,8 +28,8 @@ export function useBoardDetail(patientId: string, boardId: string) {
     queryFn: () => fetchBoardDetail(patientId, boardId),
     select: toBoard,
     staleTime: STALE_TIME,
-    // The editor works on a local snapshot until persistence exists: a background refetch
-    // must not replace what the server data looked like when editing started.
+    // Snapshot semantics: the editor keeps a local draft over a server baseline, so a background
+    // refetch must not replace it mid-edit. The editor refreshes this query explicitly after saving.
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   })

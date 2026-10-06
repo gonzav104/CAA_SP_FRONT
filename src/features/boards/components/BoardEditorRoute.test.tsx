@@ -10,7 +10,7 @@ import { boardDetailResponse, BOARD_ID, PATIENT_ID } from '../testing/fixtures'
 
 const url = `/pacientes/${PATIENT_ID}/cartillas/${BOARD_ID}/editor`
 
-// Only `get` is implemented; any mutating verb is a spy that must never be called.
+// Only `get` is implemented; the editor tests here never click Save, so every mutating verb must stay uncalled.
 function mockApi(user: CurrentUser, detail: () => Promise<unknown> = () => Promise.resolve(boardDetailResponse)) {
   const mutations = {
     post: vi.spyOn(api, 'post'),
@@ -63,7 +63,7 @@ describe('BoardEditorRoute', () => {
     )
   })
 
-  it('shows the dirty notice on edit and restores on discard, never mutating the server', async () => {
+  it('shows the dirty notice on edit and restores on discard, sending nothing until Save', async () => {
     const mutations = mockApi(therapist)
     renderApp(url)
     await screen.findByRole('heading', { name: 'Tomás Pérez' })
@@ -72,15 +72,16 @@ describe('BoardEditorRoute', () => {
     const label = screen.getByLabelText('Texto visible')
     fireEvent.change(label, { target: { value: 'Comida' } })
     expect(screen.getByText('Cambios sin guardar')).toBeInTheDocument()
-    expect(screen.getByText(/Todavía no se guardan en el servidor/)).toBeInTheDocument()
+    expect(screen.getByText(/Se guardan al presionar «Guardar cambios»/)).toBeInTheDocument()
     expect(screen.getAllByTestId('board-item')[0]).toHaveTextContent('Comida')
 
     await userEvent.click(screen.getByRole('button', { name: 'Descartar cambios' }))
     expect(screen.queryByText('Cambios sin guardar')).not.toBeInTheDocument()
     expect(screen.getAllByTestId('board-item')[0]).toHaveTextContent('Hambre')
 
-    await userEvent.click(screen.getByRole('button', { name: 'Agregar tarjeta' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Eliminar tarjeta' }))
+    expect(screen.getByRole('button', { name: 'Agregar tarjeta' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Eliminar tarjeta' })).toBeDisabled()
+    // No PUT until Save is clicked; create, delete and patch are never issued.
     Object.values(mutations).forEach((spy) => expect(spy).not.toHaveBeenCalled())
   })
 

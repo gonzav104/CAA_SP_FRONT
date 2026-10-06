@@ -1,16 +1,19 @@
-import { useReducer, useState } from 'react'
+import { useMemo, useReducer, useState } from 'react'
 import { Link } from 'react-router'
-import { ArrowLeft, Play, Plus, Star } from 'lucide-react'
+import { ArrowLeft, Play, Plus, Save, Star } from 'lucide-react'
+import { getMaterializeErrorMessage, getWriteErrorMessage } from '@/api/errors'
 import { paths } from '@/app/paths'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { LogoutButton } from '@/features/auth/components/LogoutButton'
 import { useSpeech } from '@/features/communication/speech/useSpeech'
 import { cn } from '@/lib/utils'
-import { boardReducer, isBoardDirty, sortByVisualOrder } from '../boardReducer'
-import { mockPictograms } from '../data/mockPictograms'
+import { boardReducer, sortByVisualOrder } from '../boardReducer'
+import { describeBlocker, planBoardSave } from '../savePlan'
 import { toCommunicationItems } from '../toCommunicationItems'
+import { SaveBoardError, useSaveBoard } from '../useSaveBoard'
+import type { ItemSaveFailure } from '../useSaveBoard'
 import type { Patient } from '@/features/patients/types'
-import type { Board, BoardItem } from '../types'
+import type { Board, BoardItem, Pictogram } from '../types'
 import { BoardItemList } from './BoardItemList'
 import { BoardPreview } from './BoardPreview'
 import { ItemEditorPanel } from './ItemEditorPanel'
@@ -20,48 +23,58 @@ interface BoardEditorPageProps {
   serverBoard: Board
 }
 
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1)
+const noop = () => undefined
+
+function describeFailure(failure: ItemSaveFailure): string {
+  return failure.stage === 'pictogram' ? getMaterializeErrorMessage(failure.error) : getWriteErrorMessage(failure.error)
 }
 
 export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) {
-  // Local snapshot: edits only change React state; nothing is sent to the server.
-  const [baseline] = useState(serverBoard)
+  // `baseline` is the last server snapshot; `board` is the local draft. Only an explicit save
+  // sends anything (PUT per changed item); background refetches of the route data never touch them.
+  const [baseline, setBaseline] = useState(serverBoard)
   const [board, dispatch] = useReducer(boardReducer, baseline)
-  const isDirty = isBoardDirty(board, baseline)
+  const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState<SaveBoardError | null>(null)
+  const save = useSaveBoard(patient.id, board.id)
+  const plan = useMemo(() => planBoardSave(baseline, board), [baseline, board])
+  const isDirty = plan.updates.length > 0 || plan.blockers.length > 0
+  const hasBlockers = plan.blockers.length > 0
+  const canSave = isDirty && !hasBlockers && !save.isPending
   const items = sortByVisualOrder(board.items)
   const [selectedId, setSelectedId] = useState<string | null>(items[0]?.id ?? null)
   const { say } = useSpeech()
 
   const selectedItem = items.find((item) => item.id === selectedId)
   const previewItems = toCommunicationItems(board)
+  const boardPictograms = [...baseline.items, ...board.items].flatMap((item): Pictogram[] =>
+    item.pictogram ? [item.pictogram] : [],
+  )
 
-  const handleAdd = () => {
-    // Suggest a pictogram that is not on the board yet.
-    const usedIds = new Set(items.flatMap((item) => (item.pictogram ? [item.pictogram.id] : [])))
-    const pictogram = mockPictograms.find((p) => !usedIds.has(p.id)) ?? mockPictograms[0]
-    const text = capitalize(pictogram.label)
-    const id = crypto.randomUUID()
-    dispatch({
-      type: 'addItem',
-      item: {
-        id,
-        categoryId: items[items.length - 1]?.categoryId ?? null,
-        pictogram,
-        label: text,
-        spokenText: text,
-        isActive: true,
-        isCore: false,
-      },
-    })
-    setSelectedId(id)
+  const edit = (action: Parameters<typeof dispatch>[0]) => {
+    setSaved(false)
+    dispatch(action)
   }
 
-  const handleRemove = (itemId: string) => {
-    const index = items.findIndex((item) => item.id === itemId)
-    const remaining = items.filter((item) => item.id !== itemId)
-    dispatch({ type: 'removeItem', itemId })
-    setSelectedId(remaining[Math.min(index, remaining.length - 1)]?.id ?? null)
+  const handleDiscard = () => {
+    setSaveError(null)
+    dispatch({ type: 'reset', board: baseline })
+  }
+
+  const handleSave = async () => {
+    setSaved(false)
+    setSaveError(null)
+    try {
+      const fresh = await save.mutateAsync(plan.updates)
+      setBaseline(fresh)
+      dispatch({ type: 'reset', board: fresh })
+      setSaved(true)
+    } catch (error) {
+      if (!(error instanceof SaveBoardError)) throw error
+      // Keep the draft; the refreshed baseline leaves only the still-unsaved items pending.
+      if (error.fresh) setBaseline(error.fresh)
+      setSaveError(error)
+    }
   }
 
   const handleListen = (item: BoardItem) => say(item.id, item.spokenText)
@@ -83,6 +96,17 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            disabled={!canSave}
+            aria-busy={save.isPending || undefined}
+            onClick={() => void handleSave()}
+          >
+            <Save aria-hidden="true" />
+            {save.isPending ? 'Guardando…' : 'Guardar cambios'}
+          </Button>
           <Link to={paths.boardUse(patient.id, board.id)} className={buttonVariants({ size: 'lg' })}>
             <Play aria-hidden="true" />
             Abrir Modo Uso
@@ -91,18 +115,52 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
         </div>
       </header>
 
+      {save.isPending && (
+        <div role="status" className="border-b bg-background px-6 py-2 text-sm text-muted-foreground">
+          Guardando…
+        </div>
+      )}
+
+      {saveError && (
+        <div role="alert" className="border-b border-red-300 bg-red-50 px-6 py-2 text-sm text-red-900">
+          {saveError.failed.length > 0
+            ? `No se pudieron guardar ${saveError.failed.length} de ${saveError.total} tarjetas. ${describeFailure(saveError.failed[0])} Tus cambios siguen en pantalla.`
+            : 'Los cambios se guardaron, pero no se pudo recargar la cartilla. Recarga la página.'}
+        </div>
+      )}
+
       {isDirty && (
         <div
           role="status"
           className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-300 bg-amber-50 px-6 py-2 text-sm text-amber-900"
         >
-          <p>
-            <span className="font-medium">Cambios sin guardar</span>
-            {' · '}Todavía no se guardan en el servidor. El Modo Uso muestra la versión guardada.
-          </p>
-          <Button type="button" variant="ghost" size="sm" onClick={() => dispatch({ type: 'reset', board: baseline })}>
+          {hasBlockers ? (
+            <div>
+              <p className="font-medium">No se puede guardar todavía:</p>
+              <ul className="list-disc pl-5">
+                {plan.blockers.map((blocker) => (
+                  <li key={`${blocker.itemId}-${blocker.reason}`}>{describeBlocker(blocker)}</li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p>
+              <span className="font-medium">Cambios sin guardar</span>
+              {' · '}Se guardan al presionar «Guardar cambios». El Modo Uso muestra la versión guardada.
+            </p>
+          )}
+          <Button type="button" variant="ghost" size="sm" disabled={save.isPending} onClick={handleDiscard}>
             Descartar cambios
           </Button>
+        </div>
+      )}
+
+      {saved && !isDirty && !save.isPending && !saveError && (
+        <div
+          role="status"
+          className="border-b border-green-300 bg-green-50 px-6 py-2 text-sm font-medium text-green-900"
+        >
+          Cambios guardados.
         </div>
       )}
 
@@ -130,7 +188,10 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
         </button>
       </nav>
 
-      <main className="grid flex-1 grid-cols-1 items-start gap-6 p-6 md:grid-cols-2 lg:grid-cols-[19rem_minmax(0,1fr)_19rem]">
+      <main
+        inert={save.isPending}
+        className="grid flex-1 grid-cols-1 items-start gap-6 p-6 md:grid-cols-2 lg:grid-cols-[19rem_minmax(0,1fr)_19rem]"
+      >
         <div className="order-first md:col-span-2 lg:sticky lg:top-6 lg:order-none lg:col-span-1 lg:col-start-2 lg:row-start-1">
           <BoardPreview
             patientName={patient.firstName}
@@ -144,16 +205,19 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
             items={items}
             selectedId={selectedId}
             onSelect={setSelectedId}
-            onMove={(itemId, direction) => dispatch({ type: 'moveItem', itemId, direction })}
-            onAdd={handleAdd}
+            onMove={(itemId, direction) => edit({ type: 'moveItem', itemId, direction })}
+            onAdd={noop}
+            canAdd={false}
           />
         </div>
         <div className="lg:col-start-3 lg:row-start-1">
           <ItemEditorPanel
             item={selectedItem}
             totalItems={items.length}
-            onChange={(itemId, changes) => dispatch({ type: 'updateItem', itemId, changes })}
-            onRemove={handleRemove}
+            boardPictograms={boardPictograms}
+            canRemove={false}
+            onChange={(itemId, changes) => edit({ type: 'updateItem', itemId, changes })}
+            onRemove={noop}
             onListen={handleListen}
           />
         </div>
