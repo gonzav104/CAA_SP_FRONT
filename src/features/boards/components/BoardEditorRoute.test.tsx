@@ -21,6 +21,7 @@ function mockApi(user: CurrentUser, detail: () => Promise<unknown> = () => Promi
   vi.spyOn(api, 'get').mockImplementation(async (requestUrl: string) => {
     if (requestUrl === '/api/usuarios/me') return { data: user }
     if (requestUrl === `/api/pacientes/${PATIENT_ID}`) return { data: therapistPatientsResponse[0] }
+    if (requestUrl === '/api/pictogramas-globales') return { data: [] }
     if (requestUrl === `/api/pacientes/${PATIENT_ID}/cartillas/${BOARD_ID}`) return { data: await detail() }
     throw new Error(`Unexpected GET ${requestUrl}`)
   })
@@ -89,7 +90,7 @@ describe('BoardEditorRoute', () => {
     mockApi(therapist)
     renderApp(url)
     await screen.findByRole('heading', { name: 'Tomás Pérez' })
-    expect(screen.getByRole('radio', { name: 'hambre', checked: true })).toBeInTheDocument()
+    expect(await screen.findByRole('radio', { name: 'hambre', checked: true })).toBeInTheDocument()
   })
 
   it('shows the no-permission page for a non-creator', async () => {

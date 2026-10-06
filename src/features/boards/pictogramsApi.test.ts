@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/api/client'
 import type { PictogramaGlobalResponse } from './apiTypes'
-import { materializePictogram } from './pictogramsApi'
+import { fetchGlobalPictograms, materializePictogram } from './pictogramsApi'
 
 const response: PictogramaGlobalResponse = {
   id: 'uuid-1',
@@ -38,5 +38,32 @@ describe('materializePictogram', () => {
   it('propagates request errors', async () => {
     vi.spyOn(api, 'post').mockRejectedValue(new Error('boom'))
     await expect(materializePictogram({ arasaacId: 1, etiqueta: 'x' })).rejects.toThrow('boom')
+  })
+})
+
+describe('fetchGlobalPictograms', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('issues a single GET to the library endpoint and returns the response data', async () => {
+    const get = vi.spyOn(api, 'get').mockResolvedValue({ data: [response] })
+    const post = vi.spyOn(api, 'post')
+    const put = vi.spyOn(api, 'put')
+    const patch = vi.spyOn(api, 'patch')
+    const del = vi.spyOn(api, 'delete')
+
+    await expect(fetchGlobalPictograms()).resolves.toEqual([response])
+
+    expect(get).toHaveBeenCalledExactlyOnceWith('/api/pictogramas-globales')
+    expect(post).not.toHaveBeenCalled()
+    expect(put).not.toHaveBeenCalled()
+    expect(patch).not.toHaveBeenCalled()
+    expect(del).not.toHaveBeenCalled()
+  })
+
+  it('propagates request errors', async () => {
+    vi.spyOn(api, 'get').mockRejectedValue(new Error('boom'))
+    await expect(fetchGlobalPictograms()).rejects.toThrow('boom')
   })
 })

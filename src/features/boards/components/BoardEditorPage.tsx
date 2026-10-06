@@ -7,7 +7,9 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { LogoutButton } from '@/features/auth/components/LogoutButton'
 import { useSpeech } from '@/features/communication/speech/useSpeech'
 import { cn } from '@/lib/utils'
+import { UNSAVED_CHANGES_MESSAGE, useUnsavedChangesGuard } from '@/lib/useUnsavedChangesGuard'
 import { boardReducer, sortByVisualOrder } from '../boardReducer'
+import { useGlobalPictograms } from '../pictogramHooks'
 import { describeBlocker, planBoardSave } from '../savePlan'
 import { toCommunicationItems } from '../toCommunicationItems'
 import { SaveBoardError, useSaveBoard } from '../useSaveBoard'
@@ -44,6 +46,8 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
   const items = sortByVisualOrder(board.items)
   const [selectedId, setSelectedId] = useState<string | null>(items[0]?.id ?? null)
   const { say } = useSpeech()
+  const library = useGlobalPictograms()
+  useUnsavedChangesGuard(isDirty)
 
   const selectedItem = items.find((item) => item.id === selectedId)
   const previewItems = toCommunicationItems(board)
@@ -111,7 +115,7 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
             <Play aria-hidden="true" />
             Abrir Modo Uso
           </Link>
-          <LogoutButton />
+          <LogoutButton confirmMessage={isDirty ? UNSAVED_CHANGES_MESSAGE : undefined} />
         </div>
       </header>
 
@@ -215,6 +219,8 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
             item={selectedItem}
             totalItems={items.length}
             boardPictograms={boardPictograms}
+            libraryStatus={library.status}
+            globalLibrary={library.data ?? []}
             canRemove={false}
             onChange={(itemId, changes) => edit({ type: 'updateItem', itemId, changes })}
             onRemove={noop}

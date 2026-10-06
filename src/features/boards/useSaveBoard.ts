@@ -3,6 +3,7 @@ import { updateBoardItem } from './boardItemsApi'
 import { fetchBoardDetail } from './boardsApi'
 import { boardKeys } from './hooks'
 import { toBoard } from './mappers'
+import { pictogramKeys } from './pictogramHooks'
 import { materializePictogram } from './pictogramsApi'
 import type { ItemUpdate } from './savePlan'
 import type { Board } from './types'
@@ -63,6 +64,10 @@ export function useSaveBoard(patientId: string, boardId: string) {
         if (result.status === 'fulfilled') resolved.set(arasaacId, result.value.id)
         else rejected.set(arasaacId, result.reason as unknown)
       })
+
+      // New global rows exist now: refresh the library so they are used directly (no POST) next time.
+      // Fire and forget: it must never turn a successful save into a failure.
+      if (resolved.size > 0) void queryClient.invalidateQueries({ queryKey: pictogramKeys.global() })
 
       const toSend: ItemUpdate[] = []
       for (const update of updates) {

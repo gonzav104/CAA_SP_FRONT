@@ -9,6 +9,7 @@ import type { EditableItemFields } from '../boardReducer'
 import { TEXTO_HABLADO_MAX, TEXTO_VISIBLE_MAX } from '../savePlan'
 import type { BoardItem, Pictogram } from '../types'
 import { PictogramPicker } from './PictogramPicker'
+import type { PictogramLibraryStatus } from './PictogramPicker'
 
 /** Validated guideline: spoken text of 3–4 words at most when possible. */
 const RECOMMENDED_MAX_WORDS = 4
@@ -19,6 +20,8 @@ interface ItemEditorPanelProps {
   item: BoardItem | undefined
   totalItems: number
   boardPictograms: Pictogram[]
+  libraryStatus: PictogramLibraryStatus
+  globalLibrary: Pictogram[]
   /** False while the backend has no DELETE endpoint. */
   canRemove: boolean
   onChange: (itemId: string, changes: Partial<EditableItemFields>) => void
@@ -34,6 +37,8 @@ export function ItemEditorPanel({
   item,
   totalItems,
   boardPictograms,
+  libraryStatus,
+  globalLibrary,
   canRemove,
   onChange,
   onRemove,
@@ -68,6 +73,8 @@ export function ItemEditorPanel({
           <PictogramPicker
             selected={item.pictogram}
             boardPictograms={boardPictograms}
+            libraryStatus={libraryStatus}
+            globalLibrary={globalLibrary}
             onChange={(pictogram) => update({ pictogram })}
             labelledBy="pictogram-picker-label"
           />

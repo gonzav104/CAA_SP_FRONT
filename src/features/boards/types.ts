@@ -11,6 +11,8 @@ export interface Pictogram {
   imageUrl: string
   /** `LOCAL_MOCK` marks the temporary local picker library (not a backend pictogram). */
   kind: 'GLOBAL' | 'CUSTOM' | 'LOCAL_MOCK'
+  /** Set for library-sourced pictograms; board pictograms derive it from the CDN image URL. */
+  arasaacId?: number | null
 }
 
 export interface BoardItem {

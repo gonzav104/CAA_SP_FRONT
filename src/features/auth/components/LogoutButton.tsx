@@ -1,12 +1,22 @@
 import { Button } from '@/components/ui/button'
 import { useLogout } from '../hooks'
 
-export function LogoutButton() {
+interface LogoutButtonProps {
+  /** When set, the user must confirm (native dialog) before the logout request is sent. */
+  confirmMessage?: string
+}
+
+export function LogoutButton({ confirmMessage }: LogoutButtonProps) {
   const logout = useLogout()
+
+  const handleClick = () => {
+    if (confirmMessage && !window.confirm(confirmMessage)) return
+    logout.mutate()
+  }
 
   return (
     <div className="flex items-center gap-2">
-      <Button type="button" variant="outline" size="lg" disabled={logout.isPending} onClick={() => logout.mutate()}>
+      <Button type="button" variant="outline" size="lg" disabled={logout.isPending} onClick={handleClick}>
         {logout.isPending ? 'Cerrando…' : 'Cerrar sesión'}
       </Button>
       {logout.isError && (

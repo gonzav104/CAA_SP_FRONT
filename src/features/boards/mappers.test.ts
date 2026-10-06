@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { toBoard, toBoardSummaries } from './mappers'
+import type { PictogramaGlobalResponse } from './apiTypes'
+import { toBoard, toBoardSummaries, toGlobalPictogram, toGlobalPictograms } from './mappers'
 import { boardDetailResponse, boardsListResponse, CREATOR_ID } from './testing/fixtures'
 
 describe('toBoardSummaries', () => {
@@ -88,5 +89,34 @@ describe('toBoard', () => {
     const snapshot = structuredClone(boardDetailResponse)
     toBoard(boardDetailResponse)
     expect(boardDetailResponse).toEqual(snapshot)
+  })
+})
+
+describe('toGlobalPictogram(s)', () => {
+  const dto = (id: string, etiqueta: string, arasaacId: number | null): PictogramaGlobalResponse => ({
+    id,
+    etiqueta,
+    imagenUrl: `https://static.arasaac.org/pictograms/${arasaacId ?? 0}/${arasaacId ?? 0}_300.png`,
+    arasaacId,
+    creadoEn: '2026-02-01T09:00:00',
+  })
+
+  it('maps a library row to a GLOBAL pictogram with its ARASAAC id', () => {
+    expect(toGlobalPictogram(dto('u1', 'hambre', 7272))).toEqual({
+      id: 'u1',
+      label: 'hambre',
+      imageUrl: 'https://static.arasaac.org/pictograms/7272/7272_300.png',
+      kind: 'GLOBAL',
+      arasaacId: 7272,
+    })
+    expect(toGlobalPictogram(dto('u2', 'propio', null)).arasaacId).toBeNull()
+  })
+
+  it('sorts by label with Spanish collation without mutating the input', () => {
+    const input = [dto('u1', 'sí', 5584), dto('u2', 'agua', 32464), dto('u3', 'árbol', 1), dto('u4', 'baño', 27559)]
+    const snapshot = structuredClone(input)
+
+    expect(toGlobalPictograms(input).map((p) => p.label)).toEqual(['agua', 'árbol', 'baño', 'sí'])
+    expect(input).toEqual(snapshot)
   })
 })

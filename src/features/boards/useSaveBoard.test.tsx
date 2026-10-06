@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/api/client'
 import { boardKeys } from './hooks'
+import { pictogramKeys } from './pictogramHooks'
 import type { ItemUpdate } from './savePlan'
 import { boardDetailResponse, BOARD_ID, PATIENT_ID } from './testing/fixtures'
 import { SaveBoardError, useSaveBoard } from './useSaveBoard'
@@ -233,6 +234,43 @@ describe('useSaveBoard', () => {
       const error = (await result.current.mutateAsync([pending('item-a1', 'cat-a', 7272)]).catch((e: unknown) => e)) as SaveBoardError
 
       expect(error.failed).toEqual([{ itemId: 'item-a1', error: failure, stage: 'update' }])
+    })
+
+    it('invalidates the global library after materializing, so the new rows are used next time', async () => {
+      vi.spyOn(api, 'post').mockResolvedValue(materialized(7272))
+      vi.spyOn(api, 'put').mockResolvedValue({ data: {} })
+      mockGet()
+      const { result, queryClient } = setup()
+      queryClient.setQueryData(pictogramKeys.global(), [])
+      const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+
+      await result.current.mutateAsync([pending('item-a1', 'cat-a', 7272)])
+
+      expect(invalidate).toHaveBeenCalledExactlyOnceWith({ queryKey: pictogramKeys.global() })
+      expect(queryClient.getQueryState(pictogramKeys.global())?.isInvalidated).toBe(true)
+    })
+
+    it('does not touch the global library when nothing was materialized', async () => {
+      vi.spyOn(api, 'put').mockResolvedValue({ data: {} })
+      mockGet()
+      const { result, queryClient } = setup()
+      const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+
+      await result.current.mutateAsync(updates)
+
+      expect(invalidate).not.toHaveBeenCalled()
+    })
+
+    it('does not touch the global library when every materialization failed', async () => {
+      vi.spyOn(api, 'post').mockRejectedValue(new Error('boom'))
+      vi.spyOn(api, 'put').mockResolvedValue({ data: {} })
+      mockGet()
+      const { result, queryClient } = setup()
+      const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+
+      await result.current.mutateAsync([pending('item-a1', 'cat-a', 7272)]).catch(() => undefined)
+
+      expect(invalidate).not.toHaveBeenCalled()
     })
 
     it('returns the reloaded board with the real GLOBAL pictogram after a successful save', async () => {

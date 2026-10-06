@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { AxiosError } from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/api/client'
+import { UNSAVED_CHANGES_MESSAGE } from '@/lib/useUnsavedChangesGuard'
 import { therapist, therapistPatientsResponse } from '@/features/patients/testing/fixtures'
 import { renderApp } from '@/test/renderApp'
 import type {
@@ -21,12 +22,30 @@ type PutImpl = (requestUrl: string, body: ItemCartillaActualizacionRequest) => P
 type PostImpl = (requestUrl: string, body: MaterializarPictogramaRequest) => Promise<unknown>
 
 const MATERIALIZE_PATH = '/api/pictogramas-globales/materializar'
+const LIBRARY_PATH = '/api/pictogramas-globales'
 const arasaacImageUrl = (arasaacId: number) => `https://static.arasaac.org/pictograms/${arasaacId}/${arasaacId}_300.png`
 
-/** Fake server: `put` applies the update to `server`, so the refetch returns what was saved. */
-function setupApi(putImpl?: PutImpl, postImpl?: PostImpl) {
+const libraryRow = (id: string, etiqueta: string, arasaacId: number): PictogramaGlobalResponse => ({
+  id,
+  etiqueta,
+  imagenUrl: arasaacImageUrl(arasaacId),
+  arasaacId,
+  creadoEn: '2026-01-01T09:00:00',
+})
+
+type LibraryImpl = () => Promise<PictogramaGlobalResponse[]>
+
+/**
+ * Fake server: `put` applies the update to `server`, so the refetch returns what was saved, and
+ * `post` adds the materialized row to `library`, like the real backend.
+ */
+function setupApi(putImpl?: PutImpl, postImpl?: PostImpl, libraryImpl?: LibraryImpl) {
   const server: CartillaDetalleResponse = structuredClone(boardDetailResponse)
-  const materialized = new Map<string, PictogramaGlobalResponse>()
+  // 'agua' (32464) is also in the local list; 'manzana' is not.
+  const library: PictogramaGlobalResponse[] = [
+    libraryRow('lib-agua', 'agua', 32464),
+    libraryRow('lib-manzana', 'manzana', 2462),
+  ]
   const defaultPost: PostImpl = async (requestUrl, body) => {
     if (requestUrl !== MATERIALIZE_PATH) throw new Error(`Unexpected POST ${requestUrl}`)
     const data: PictogramaGlobalResponse = {
@@ -36,7 +55,7 @@ function setupApi(putImpl?: PutImpl, postImpl?: PostImpl) {
       arasaacId: body.arasaacId,
       creadoEn: '2026-02-01T09:00:00',
     }
-    materialized.set(data.id, data)
+    library.push(data)
     return { data }
   }
   const defaultPut: PutImpl = async (requestUrl, body) => {
@@ -46,7 +65,7 @@ function setupApi(putImpl?: PutImpl, postImpl?: PostImpl) {
     item.textoHablado = body.textoHablado
     item.ordenVisual = body.ordenVisual ?? item.ordenVisual
     item.visibleEnModoUso = body.visibleEnModoUso ?? item.visibleEnModoUso
-    const real = body.recursoGlobalId ? materialized.get(body.recursoGlobalId) : undefined
+    const real = body.recursoGlobalId ? library.find((row) => row.id === body.recursoGlobalId) : undefined
     if (real) item.pictograma = { id: real.id, etiqueta: real.etiqueta, imagenUrl: real.imagenUrl, tipo: 'GLOBAL' }
     return { data: { id: item.id } }
   }
@@ -63,16 +82,19 @@ function setupApi(putImpl?: PutImpl, postImpl?: PostImpl) {
   const get = vi.spyOn(api, 'get').mockImplementation(async (requestUrl: string) => {
     if (requestUrl === '/api/usuarios/me') return { data: therapist }
     if (requestUrl === `/api/pacientes/${PATIENT_ID}`) return { data: therapistPatientsResponse[0] }
+    if (requestUrl === LIBRARY_PATH) return { data: await (libraryImpl ?? (async () => structuredClone(library)))() }
     if (requestUrl === boardPath) return { data: structuredClone(server) }
     throw new Error(`Unexpected GET ${requestUrl}`)
   })
   const boardGets = () => get.mock.calls.filter(([requestUrl]) => requestUrl === boardPath).length
-  return { server, put, post, patch, del, boardGets, defaultPut }
+  const libraryGets = () => get.mock.calls.filter(([requestUrl]) => requestUrl === LIBRARY_PATH).length
+  return { server, put, post, patch, del, get, boardGets, libraryGets, defaultPut }
 }
 
 async function openEditor() {
   renderApp(url)
   await screen.findByRole('heading', { name: 'Tomás Pérez' })
+  await waitFor(() => expect(screen.queryByText('Cargando pictogramas…')).not.toBeInTheDocument())
 }
 
 const saveButton = () => screen.getByRole('button', { name: /Guardar cambios|Guardando…/ })
@@ -355,5 +377,211 @@ describe('BoardEditorPage saving', () => {
     expect(up).toHaveAttribute('title', 'No se puede mover entre categorías')
     expect(screen.getByRole('button', { name: 'Mover Baño después' })).toBeEnabled()
     await waitFor(() => expect(screen.getByRole('button', { name: 'Mover Hambre antes' })).toBeDisabled())
+  })
+})
+
+describe('BoardEditorPage pictogram library', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('requests the library once when the editor mounts and only reads it', async () => {
+    const fake = setupApi()
+    await openEditor()
+
+    expect(fake.libraryGets()).toBe(1)
+    expect(fake.post).not.toHaveBeenCalled()
+    expect(fake.put).not.toHaveBeenCalled()
+  })
+
+  it('shows a loading message instead of tiles while the library loads', async () => {
+    setupApi(undefined, undefined, () => new Promise(() => {}))
+    renderApp(url)
+    await screen.findByRole('heading', { name: 'Tomás Pérez' })
+
+    expect(await screen.findByText('Cargando pictogramas…')).toBeInTheDocument()
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
+  })
+
+  it('falls back to board and local pictograms with a note when the library fails', async () => {
+    setupApi(undefined, undefined, () => Promise.reject(networkError()))
+    renderApp(url)
+    await screen.findByRole('heading', { name: 'Tomás Pérez' })
+
+    expect(
+      await screen.findByText(
+        'No se pudo cargar la biblioteca de pictogramas. Se muestran solo los disponibles en este equipo.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'no quiero' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'hambre', checked: true })).toBeInTheDocument()
+    expect(screen.queryByRole('radio', { name: 'manzana' })).not.toBeInTheDocument()
+  })
+
+  it('offers the library pictograms without visual duplicates of the local complement', async () => {
+    setupApi()
+    await openEditor()
+
+    expect(screen.getByRole('radio', { name: 'manzana' })).toHaveAttribute('title', 'manzana')
+    expect(screen.getAllByRole('radio', { name: 'agua' })).toHaveLength(1)
+    expect(screen.getByRole('radio', { name: 'agua' })).toHaveAttribute('title', 'agua')
+  })
+
+  it('saves a library pictogram with the item PUT only, using its UUID and no materialize POST', async () => {
+    const fake = setupApi()
+    await openEditor()
+
+    await userEvent.click(screen.getByRole('radio', { name: 'manzana' }))
+    expect(fake.post).not.toHaveBeenCalled()
+    await userEvent.click(saveButton())
+
+    expect(await screen.findByText('Cambios guardados.')).toBeInTheDocument()
+    expect(fake.post).not.toHaveBeenCalled()
+    expect(fake.put).toHaveBeenCalledExactlyOnceWith(itemPath('cat-a', 'item-a2'), {
+      textoVisible: 'Hambre',
+      textoHablado: 'Tengo hambre',
+      ordenVisual: 0,
+      recursoGlobalId: 'lib-manzana',
+      recursoCustomId: null,
+      esCore: true,
+      visibleEnModoUso: true,
+    })
+    expect(fake.libraryGets()).toBe(1)
+    expect(screen.getByRole('radio', { name: 'manzana' })).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('materializes a local-complement tile (POST then PUT) and refreshes the library afterwards', async () => {
+    const fake = setupApi()
+    await openEditor()
+    expect(fake.libraryGets()).toBe(1)
+
+    await userEvent.click(screen.getByRole('radio', { name: 'no quiero' }))
+    expect(fake.post).not.toHaveBeenCalled()
+    await userEvent.click(saveButton())
+
+    expect(await screen.findByText('Cambios guardados.')).toBeInTheDocument()
+    expect(fake.post).toHaveBeenCalledExactlyOnceWith(MATERIALIZE_PATH, { arasaacId: 6156, etiqueta: 'no quiero' })
+    expect(fake.put).toHaveBeenCalledExactlyOnceWith(
+      itemPath('cat-a', 'item-a2'),
+      expect.objectContaining({ recursoGlobalId: 'uuid-6156' }),
+    )
+    await waitFor(() => expect(fake.libraryGets()).toBe(2))
+    // The new real row replaces the local tile: still a single 'no quiero' tile, now a real one.
+    await waitFor(() =>
+      expect(screen.getByRole('radio', { name: 'no quiero' })).toHaveAttribute('title', 'no quiero'),
+    )
+    expect(screen.getAllByRole('radio', { name: 'no quiero' })).toHaveLength(1)
+
+    // Choosing it again later goes straight to a PUT: no second POST.
+    await userEvent.click(screen.getByRole('radio', { name: 'manzana' }))
+    await userEvent.click(screen.getByRole('radio', { name: 'no quiero' }))
+    expect(saveButton()).toBeDisabled()
+    expect(fake.post).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('BoardEditorPage unsaved changes', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  const backLink = () => screen.getByRole('link', { name: 'Volver a las cartillas de Tomás' })
+  const useLink = () => screen.getByRole('link', { name: /Abrir Modo Uso/ })
+  const location = () => screen.getByTestId('location')
+  const beforeUnload = () => {
+    const event = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(event)
+    return event.defaultPrevented
+  }
+
+  it('does not warn on a clean editor', async () => {
+    setupApi()
+    const confirm = vi.spyOn(window, 'confirm')
+    await openEditor()
+
+    expect(beforeUnload()).toBe(false)
+    await userEvent.click(backLink())
+
+    await waitFor(() => expect(location()).toHaveTextContent(`/pacientes/${PATIENT_ID}/cartillas`))
+    expect(confirm).not.toHaveBeenCalled()
+  })
+
+  it('asks before leaving through the back link and keeps the draft when declined', async () => {
+    setupApi()
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    await openEditor()
+    fireEvent.change(labelInput(), { target: { value: 'Comida' } })
+
+    await userEvent.click(backLink())
+
+    expect(confirm).toHaveBeenCalledExactlyOnceWith(UNSAVED_CHANGES_MESSAGE)
+    expect(location()).toHaveTextContent(url)
+    expect(labelInput()).toHaveValue('Comida')
+    expect(screen.getByText('Cambios sin guardar')).toBeInTheDocument()
+  })
+
+  it('asks before opening Use Mode and leaves when accepted', async () => {
+    setupApi()
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
+    await openEditor()
+    fireEvent.change(labelInput(), { target: { value: 'Comida' } })
+
+    await userEvent.click(useLink())
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(location()).toHaveTextContent(url)
+
+    await userEvent.click(useLink())
+    expect(confirm).toHaveBeenCalledTimes(2)
+    await waitFor(() => expect(location()).toHaveTextContent(`/pacientes/${PATIENT_ID}/cartillas/${BOARD_ID}/uso`))
+  })
+
+  it('does not ask after a successful save', async () => {
+    setupApi()
+    const confirm = vi.spyOn(window, 'confirm')
+    await openEditor()
+    fireEvent.change(labelInput(), { target: { value: 'Comida' } })
+    await userEvent.click(saveButton())
+    expect(await screen.findByText('Cambios guardados.')).toBeInTheDocument()
+
+    expect(beforeUnload()).toBe(false)
+    await userEvent.click(useLink())
+
+    await waitFor(() => expect(location()).toHaveTextContent(`/pacientes/${PATIENT_ID}/cartillas/${BOARD_ID}/uso`))
+    expect(confirm).not.toHaveBeenCalled()
+  })
+
+  it('prevents beforeunload only while there are unsaved changes', async () => {
+    setupApi()
+    await openEditor()
+    expect(beforeUnload()).toBe(false)
+
+    fireEvent.change(labelInput(), { target: { value: 'Comida' } })
+    expect(beforeUnload()).toBe(true)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Descartar cambios' }))
+    expect(beforeUnload()).toBe(false)
+  })
+
+  it('confirms before logging out with unsaved changes, and not when clean', async () => {
+    const fake = setupApi()
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    await openEditor()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }))
+    expect(confirm).not.toHaveBeenCalled()
+    await waitFor(() => expect(fake.post).toHaveBeenCalled())
+    fake.post.mockClear()
+
+    fireEvent.change(labelInput(), { target: { value: 'Comida' } })
+    await userEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }))
+
+    expect(confirm).toHaveBeenCalledExactlyOnceWith(UNSAVED_CHANGES_MESSAGE)
+    expect(fake.post).not.toHaveBeenCalled()
   })
 })

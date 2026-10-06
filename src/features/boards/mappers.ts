@@ -2,6 +2,7 @@ import type {
   CartillaDetalleResponse,
   CartillaResponse,
   ItemDetalleResponse,
+  PictogramaGlobalResponse,
 } from './apiTypes'
 import type { Board, BoardItem, BoardSummary, Pictogram } from './types'
 
@@ -60,4 +61,13 @@ export function toBoard(dto: CartillaDetalleResponse): Board {
     creatorId: dto.creadorId,
     items,
   }
+}
+
+export function toGlobalPictogram(dto: PictogramaGlobalResponse): Pictogram {
+  return { id: dto.id, label: dto.etiqueta, imageUrl: dto.imagenUrl, kind: 'GLOBAL', arasaacId: dto.arasaacId }
+}
+
+/** The global library sorted by label (Spanish collation). Does not mutate the input. */
+export function toGlobalPictograms(dtos: PictogramaGlobalResponse[]): Pictogram[] {
+  return dtos.map(toGlobalPictogram).sort((a, b) => a.label.localeCompare(b.label, 'es'))
 }
