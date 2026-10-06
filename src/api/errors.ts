@@ -79,6 +79,19 @@ export function getDeleteErrorMessage(error: unknown, stage: 'request' | 'reload
   return getItemRequestErrorMessage(error) ?? 'La tarjeta ya no existe o no tienes permiso para eliminarla.'
 }
 
+// User-facing copy for a failed category operation (POST/PUT/DELETE, or reload).
+export function getCategoryErrorMessage(
+  error: unknown,
+  stage: 'request' | 'reload',
+  operation: 'create' | 'rename' | 'move' | 'delete',
+): string {
+  if (stage === 'reload') return 'El cambio se guardó, pero no se pudo recargar la cartilla. Recarga la página.'
+  const message =
+    getItemRequestErrorMessage(error) ??
+    'No tienes permiso para modificar esta cartilla o la categoría ya no existe.'
+  return operation === 'move' ? `No se pudo mover la categoría. ${message}` : message
+}
+
 // User-facing copy for failed GET requests. Backend `message` strings are never echoed.
 export function getReadErrorMessage(error: unknown, notFoundMessage: string): string {
   const status = getErrorStatus(error)

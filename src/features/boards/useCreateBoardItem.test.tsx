@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/api/client'
 import type { CartillaDetalleResponse, ItemCartillaRegistroRequest } from './apiTypes'
 import { boardKeys } from './hooks'
-import { ItemOperationError } from './itemOperations'
+import { BoardOperationError } from './boardOperations'
 import { pictogramKeys } from './pictogramHooks'
 import { boardDetailResponse, BOARD_ID, PATIENT_ID } from './testing/fixtures'
 import type { Pictogram } from './types'
@@ -192,9 +192,9 @@ describe('useCreateBoardItem', () => {
 
     const error = (await result.current
       .mutateAsync(input({ ...localPictogram, id: 'arasaac-abc' }))
-      .catch((e: unknown) => e)) as ItemOperationError
+      .catch((e: unknown) => e)) as BoardOperationError
 
-    expect(error).toBeInstanceOf(ItemOperationError)
+    expect(error).toBeInstanceOf(BoardOperationError)
     expect(error.stage).toBe('pictogram')
     expect(fake.post).not.toHaveBeenCalled()
     expect(fake.get).not.toHaveBeenCalled()
@@ -206,9 +206,9 @@ describe('useCreateBoardItem', () => {
     const { result, queryClient } = setup()
     const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
 
-    const error = (await result.current.mutateAsync(input(localPictogram)).catch((e: unknown) => e)) as ItemOperationError
+    const error = (await result.current.mutateAsync(input(localPictogram)).catch((e: unknown) => e)) as BoardOperationError
 
-    expect(error).toBeInstanceOf(ItemOperationError)
+    expect(error).toBeInstanceOf(BoardOperationError)
     expect(error.stage).toBe('pictogram')
     expect(error.cause).toBe(failure)
     expect(error.fresh).toBeNull()
@@ -222,9 +222,9 @@ describe('useCreateBoardItem', () => {
     const fake = mockApi({ itemPost: () => Promise.reject(failure) })
     const { result } = setup()
 
-    const error = (await result.current.mutateAsync(input(globalPictogram)).catch((e: unknown) => e)) as ItemOperationError
+    const error = (await result.current.mutateAsync(input(globalPictogram)).catch((e: unknown) => e)) as BoardOperationError
 
-    expect(error).toBeInstanceOf(ItemOperationError)
+    expect(error).toBeInstanceOf(BoardOperationError)
     expect(error.stage).toBe('request')
     expect(error.cause).toBe(failure)
     expect(error.createdId).toBeNull()
@@ -237,9 +237,9 @@ describe('useCreateBoardItem', () => {
     const fake = mockApi({ get: () => Promise.reject(failure) })
     const { result } = setup()
 
-    const error = (await result.current.mutateAsync(input(globalPictogram)).catch((e: unknown) => e)) as ItemOperationError
+    const error = (await result.current.mutateAsync(input(globalPictogram)).catch((e: unknown) => e)) as BoardOperationError
 
-    expect(error).toBeInstanceOf(ItemOperationError)
+    expect(error).toBeInstanceOf(BoardOperationError)
     expect(error.stage).toBe('reload')
     expect(error.cause).toBe(failure)
     expect(error.createdId).toBe('item-new')

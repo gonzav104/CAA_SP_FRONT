@@ -40,7 +40,7 @@ const gapped: Board = {
   name: 'Gapped',
   isPrimary: false,
   creatorId: 'u',
-  categories: [{ id: 'c1', name: 'Uno', order: 0 }],
+  categories: [{ id: 'c1', name: 'Uno', order: 0, colorHex: '#E0E0E0' }],
   items: [item('w', 'c1', 0, 1), item('x', 'c1', 2, 2), item('y', 'c1', 5, 3), item('z', 'c1', 7, 4)],
 }
 

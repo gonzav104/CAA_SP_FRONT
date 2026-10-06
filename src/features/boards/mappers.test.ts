@@ -89,8 +89,8 @@ describe('toBoard', () => {
 
   it('lists every category sorted by order, including empty ones', () => {
     expect(board.categories).toEqual([
-      { id: 'cat-a', name: 'Necesidades', order: 0 },
-      { id: 'cat-b', name: 'Acciones', order: 1 },
+      { id: 'cat-a', name: 'Necesidades', order: 0, colorHex: '#3366FF' },
+      { id: 'cat-b', name: 'Acciones', order: 1, colorHex: '#22AA55' },
     ])
     const withEmpty = toBoard({
       ...boardDetailResponse,

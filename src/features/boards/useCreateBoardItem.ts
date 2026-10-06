@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createBoardItem } from './boardItemsApi'
-import { ItemOperationError, reloadBoard } from './itemOperations'
+import { BoardOperationError, reloadBoard } from './boardOperations'
 import { pictogramKeys } from './pictogramHooks'
 import { materializePictogram } from './pictogramsApi'
 import { arasaacIdOf } from './pictograms'
@@ -26,19 +26,19 @@ export interface CreateItemResult {
  * Creates one item at the end of a category. A local ARASAAC pictogram is registered first (once,
  * the only moment it happens besides saving), then the item is POSTed WITHOUT `ordenVisual` (the
  * backend appends it), and the board detail is always reloaded so the cache matches the server.
- * No automatic retries: every failure is an `ItemOperationError` with its stage.
+ * No automatic retries: every failure is a `BoardOperationError` with its stage.
  */
 export function useCreateBoardItem(patientId: string, boardId: string) {
   const queryClient = useQueryClient()
 
-  return useMutation<CreateItemResult, ItemOperationError, CreateItemInput>({
+  return useMutation<CreateItemResult, BoardOperationError, CreateItemInput>({
     mutationFn: async ({ categoryId, pictogram, label, spokenText, isActive }) => {
       let recursoGlobalId: string | null = null
       let recursoCustomId: string | null = null
 
       if (pictogram.kind === 'LOCAL_MOCK') {
         const arasaacId = arasaacIdOf(pictogram)
-        if (arasaacId === null) throw new ItemOperationError('pictogram', new Error('Pictogram without ARASAAC id'))
+        if (arasaacId === null) throw new BoardOperationError('pictogram', new Error('Pictogram without ARASAAC id'))
         try {
           const materialized = await materializePictogram({
             arasaacId,
@@ -46,7 +46,7 @@ export function useCreateBoardItem(patientId: string, boardId: string) {
           })
           recursoGlobalId = materialized.id
         } catch (error) {
-          throw new ItemOperationError('pictogram', error)
+          throw new BoardOperationError('pictogram', error)
         }
         // The new global row exists now: refresh the library. It must never fail the operation.
         void queryClient.invalidateQueries({ queryKey: pictogramKeys.global() })
@@ -71,13 +71,13 @@ export function useCreateBoardItem(patientId: string, boardId: string) {
         )
         createdId = created.id
       } catch (error) {
-        throw new ItemOperationError('request', error)
+        throw new BoardOperationError('request', error)
       }
 
       try {
         return { fresh: await reloadBoard(queryClient, patientId, boardId), createdId }
       } catch (error) {
-        throw new ItemOperationError('reload', error, null, createdId)
+        throw new BoardOperationError('reload', error, null, createdId)
       }
     },
   })

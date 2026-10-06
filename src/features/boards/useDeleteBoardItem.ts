@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { deleteBoardItem } from './boardItemsApi'
-import { ItemOperationError, reloadBoard } from './itemOperations'
+import { BoardOperationError, reloadBoard } from './boardOperations'
 import type { Board } from './types'
 
 export interface DeleteItemInput {
@@ -15,18 +15,18 @@ export interface DeleteItemInput {
 export function useDeleteBoardItem(patientId: string, boardId: string) {
   const queryClient = useQueryClient()
 
-  return useMutation<Board, ItemOperationError, DeleteItemInput>({
+  return useMutation<Board, BoardOperationError, DeleteItemInput>({
     mutationFn: async ({ categoryId, itemId }) => {
       try {
         await deleteBoardItem({ patientId, boardId, categoryId, itemId })
       } catch (error) {
-        throw new ItemOperationError('request', error)
+        throw new BoardOperationError('request', error)
       }
 
       try {
         return await reloadBoard(queryClient, patientId, boardId)
       } catch (error) {
-        throw new ItemOperationError('reload', error)
+        throw new BoardOperationError('reload', error)
       }
     },
   })

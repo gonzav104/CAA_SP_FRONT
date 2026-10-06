@@ -2,6 +2,7 @@ import { useMemo, useReducer, useState } from 'react'
 import { Link } from 'react-router'
 import { ArrowLeft, Play, Plus, Save, Star } from 'lucide-react'
 import {
+  getCategoryErrorMessage,
   getCreateErrorMessage,
   getDeleteErrorMessage,
   getMaterializeErrorMessage,
@@ -14,12 +15,16 @@ import { useSpeech } from '@/features/communication/speech/useSpeech'
 import { cn } from '@/lib/utils'
 import { UNSAVED_CHANGES_MESSAGE, useUnsavedChangesGuard } from '@/lib/useUnsavedChangesGuard'
 import { boardReducer, MAX_BOARD_ITEMS, rebaseDraft, sortByVisualOrder } from '../boardReducer'
-import { ItemOperationError } from '../itemOperations'
+import { BoardOperationError } from '../boardOperations'
+import { isCategoryEditorDirty } from '../categoryEditor'
+import type { CategoryEditor, CategoryEditorError } from '../categoryEditor'
+import { validateCategoryName } from '../categoryPlan'
 import { createEmptyNewCard, isNewCardDirty, isNewCardValid } from '../newCardForm'
 import type { NewCardForm } from '../newCardForm'
 import { useGlobalPictograms } from '../pictogramHooks'
 import { describeBlocker, planBoardSave } from '../savePlan'
 import { toCommunicationItems } from '../toCommunicationItems'
+import { useCategoryOperations } from '../useCategoryOperations'
 import { useCreateBoardItem } from '../useCreateBoardItem'
 import { useDeleteBoardItem } from '../useDeleteBoardItem'
 import { SaveBoardError, useSaveBoard } from '../useSaveBoard'
@@ -55,7 +60,21 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
   const save = useSaveBoard(patient.id, board.id)
   const create = useCreateBoardItem(patient.id, board.id)
   const remove = useDeleteBoardItem(patient.id, board.id)
-  const isBusy = save.isPending || create.isPending || remove.isPending
+  const categoryOps = useCategoryOperations(patient.id, board.id)
+  const [categoryEditor, setCategoryEditor] = useState<CategoryEditor | null>(null)
+  const [categoryError, setCategoryError] = useState<CategoryEditorError | null>(null)
+  // Page-level failure of a category write that DID succeed (only the reload failed): its editor is closed so it cannot be repeated.
+  const [categoryReloadError, setCategoryReloadError] = useState<string | null>(null)
+  const pendingCategoryOperation = categoryOps.create.isPending
+    ? 'create'
+    : categoryOps.rename.isPending
+      ? 'rename'
+      : categoryOps.move.isPending
+        ? 'move'
+        : categoryOps.remove.isPending
+          ? 'delete'
+          : null
+  const isBusy = save.isPending || create.isPending || remove.isPending || pendingCategoryOperation !== null
   const plan = useMemo(() => planBoardSave(baseline, board), [baseline, board])
   const isDirty = plan.updates.length > 0 || plan.blockers.length > 0
   const hasBlockers = plan.blockers.length > 0
@@ -65,13 +84,17 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
   const { say } = useSpeech()
   const library = useGlobalPictograms()
   const isFormDirty = isNewCardDirty(newCard)
-  useUnsavedChangesGuard(isDirty || isFormDirty)
+  const isCategoryEditorOpenDirty = isCategoryEditorDirty(categoryEditor, board.categories)
+  useUnsavedChangesGuard(isDirty || isFormDirty || isCategoryEditorOpenDirty)
 
   const selectedItem = items.find((item) => item.id === selectedId)
   const previewItems = toCommunicationItems(board)
   const boardPictograms = [...baseline.items, ...board.items].flatMap((item): Pictogram[] =>
     item.pictogram ? [item.pictogram] : [],
   )
+
+  const changedItemIds = new Set([...plan.updates.map((update) => update.itemId), ...plan.blockers.map((blocker) => blocker.itemId)])
+  const highlightedCategoryId = newCard ? newCard.categoryId : (selectedItem?.categoryId ?? null)
 
   const canAdd = board.categories.length > 0 && items.length < MAX_BOARD_ITEMS && !isBusy && newCard === null
 
@@ -92,12 +115,100 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
     dispatch({ type: 'rebase', fresh })
   }
 
-  const handleOpenNewCard = () => {
-    const selectedCategory = board.categories.find((category) => category.id === selectedItem?.categoryId)
+  // Like `applyFresh`, and keeps the selected card when it still exists (else the first card, or none).
+  const applyFreshKeepingSelection = (fresh: Board) => {
+    const remaining = sortByVisualOrder(rebaseDraft(board, fresh).items)
+    applyFresh(fresh)
+    if (!remaining.some((item) => item.id === selectedId)) select(remaining[0]?.id ?? null)
+  }
+
+  // `categoryId` preselects a category ("Agregar tarjeta en ..."); otherwise the selected card's one, else the first.
+  const handleOpenNewCard = (categoryId?: string) => {
+    const preselected = board.categories.find((category) => category.id === (categoryId ?? selectedItem?.categoryId))
     setSaved(false)
     setStatusMessage(null)
     setCreateError(null)
-    setNewCard(createEmptyNewCard((selectedCategory ?? board.categories[0]).id))
+    setCategoryEditor(null)
+    setCategoryError(null)
+    setNewCard(createEmptyNewCard((preselected ?? board.categories[0]).id))
+  }
+
+  const handleOpenCategoryEditor = (editor: CategoryEditor) => {
+    setCategoryError(null)
+    setCategoryEditor(editor)
+  }
+
+  const handleChangeCategoryName = (name: string) => {
+    setCategoryEditor((current) => (current && current.kind !== 'delete' ? { ...current, name } : current))
+  }
+
+  const handleCloseCategoryEditor = () => {
+    setCategoryError(null)
+    setCategoryEditor(null)
+  }
+
+  // Every category operation ends in the server truth. On failure, `fresh` (when known) is still applied and the
+  // editor stays open with what the user typed.
+  const runCategoryOperation = async (
+    operation: 'create' | 'rename' | 'move' | 'delete',
+    run: () => Promise<Board>,
+    errorCategoryId: string | null,
+    successMessage: string,
+    closesEditor: boolean,
+  ) => {
+    setCategoryError(null)
+    setCategoryReloadError(null)
+    setStatusMessage(null)
+    setSaved(false)
+    try {
+      applyFreshKeepingSelection(await run())
+      if (closesEditor) setCategoryEditor(null)
+      setStatusMessage(successMessage)
+    } catch (error) {
+      if (!(error instanceof BoardOperationError)) throw error
+      if (error.fresh) applyFreshKeepingSelection(error.fresh)
+      const message = getCategoryErrorMessage(error.cause, error.stage === 'reload' ? 'reload' : 'request', operation)
+      if (error.stage === 'reload' && (operation === 'create' || operation === 'delete')) {
+        // The category was created/deleted on the server: a second submit would duplicate it or fail with 404.
+        setCategoryEditor(null)
+        setCategoryReloadError(message)
+        return
+      }
+      setCategoryError({ categoryId: errorCategoryId, message })
+    }
+  }
+
+  const handleSubmitCategoryEditor = () => {
+    if (!categoryEditor) return
+    if (categoryEditor.kind === 'create') {
+      if (validateCategoryName(categoryEditor.name) !== null) return
+      void runCategoryOperation('create', () => categoryOps.create.mutateAsync(categoryEditor.name), null, 'Categoría creada.', true)
+      return
+    }
+    const category = board.categories.find((candidate) => candidate.id === categoryEditor.categoryId)
+    if (!category) return
+    if (categoryEditor.kind === 'rename') {
+      if (validateCategoryName(categoryEditor.name) !== null) return
+      void runCategoryOperation(
+        'rename',
+        () => categoryOps.rename.mutateAsync({ category, name: categoryEditor.name }),
+        category.id,
+        'Categoría renombrada.',
+        true,
+      )
+      return
+    }
+    void runCategoryOperation('delete', () => categoryOps.remove.mutateAsync(category), category.id, 'Categoría eliminada.', true)
+  }
+
+  const handleMoveCategory = (categoryId: string, direction: -1 | 1) => {
+    void runCategoryOperation(
+      'move',
+      () => categoryOps.move.mutateAsync({ categories: board.categories, categoryId, direction }),
+      categoryId,
+      'Categoría movida.',
+      false,
+    )
   }
 
   const handleCancelNewCard = () => {
@@ -123,7 +234,7 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
       setNewCard(null)
       setStatusMessage('Tarjeta creada.')
     } catch (error) {
-      if (!(error instanceof ItemOperationError)) throw error
+      if (!(error instanceof BoardOperationError)) throw error
       // The form keeps exactly what the user typed.
       if (error.fresh) applyFresh(error.fresh)
       setCreateError({
@@ -146,7 +257,7 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
       select((remaining[position] ?? remaining.at(-1))?.id ?? null)
       setStatusMessage('Tarjeta eliminada.')
     } catch (error) {
-      if (!(error instanceof ItemOperationError)) throw error
+      if (!(error instanceof BoardOperationError)) throw error
       if (error.fresh) applyFresh(error.fresh)
       setRemoveError(getDeleteErrorMessage(error.cause, error.stage === 'reload' ? 'reload' : 'request'))
     }
@@ -208,7 +319,7 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
             <Play aria-hidden="true" />
             Abrir Modo Uso
           </Link>
-          <LogoutButton confirmMessage={isDirty || isFormDirty ? UNSAVED_CHANGES_MESSAGE : undefined} />
+          <LogoutButton confirmMessage={isDirty || isFormDirty || isCategoryEditorOpenDirty ? UNSAVED_CHANGES_MESSAGE : undefined} />
         </div>
       </header>
 
@@ -223,6 +334,12 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
           {saveError.failed.length > 0
             ? `No se pudieron guardar ${saveError.failed.length} de ${saveError.total} tarjetas. ${describeFailure(saveError.failed[0])} Tus cambios siguen en pantalla.`
             : 'Los cambios se guardaron, pero no se pudo recargar la cartilla. Recarga la página.'}
+        </div>
+      )}
+
+      {categoryReloadError && (
+        <div role="alert" className="border-b border-red-300 bg-red-50 px-6 py-2 text-sm text-red-900">
+          {categoryReloadError}
         </div>
       )}
 
@@ -315,9 +432,21 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
             selectedId={selectedId}
             onSelect={select}
             onMove={(itemId, direction) => edit({ type: 'moveItem', itemId, direction })}
-            onAdd={handleOpenNewCard}
+            onAdd={() => handleOpenNewCard()}
             canAdd={canAdd}
-            hasCategories={board.categories.length > 0}
+            categories={board.categories}
+            baselineItems={baseline.items}
+            changedItemIds={changedItemIds}
+            highlightedCategoryId={highlightedCategoryId}
+            editor={categoryEditor}
+            editorError={categoryError}
+            pending={pendingCategoryOperation}
+            onAddInCategory={handleOpenNewCard}
+            onMoveCategory={handleMoveCategory}
+            onOpenEditor={handleOpenCategoryEditor}
+            onChangeEditorName={handleChangeCategoryName}
+            onCloseEditor={handleCloseCategoryEditor}
+            onSubmitEditor={handleSubmitCategoryEditor}
           />
         </div>
         <div className="lg:col-start-3 lg:row-start-1">

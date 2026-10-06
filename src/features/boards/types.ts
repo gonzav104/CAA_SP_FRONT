@@ -38,8 +38,10 @@ export interface BoardCategory {
   id: string
   /** Backend: `nombre`. */
   name: string
-  /** Backend: `orden`. */
+  /** Backend: `orden`. Not unique: ties are possible. */
   order: number
+  /** Backend: `colorHex`. Never edited in the UI, but always resent when the category is updated. */
+  colorHex: string
 }
 
 export interface Board {

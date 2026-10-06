@@ -73,6 +73,33 @@ export interface CategoriaDetalleResponse {
   items: ItemDetalleResponse[]
 }
 
+// Mirrors CategoriaRegistroDTO (create). `orden` null/omitted: the backend appends the category (max + 1).
+export interface CategoriaRegistroRequest {
+  /** Required, not blank; the DB column holds at most 100 characters (longer names answer 409). */
+  nombre: string
+  /** Required, `^#[0-9A-Fa-f]{6}$`. */
+  colorHex: string
+  orden?: number | null
+}
+
+// Mirrors CategoriaActualizacionDTO (update). `nombre` and `colorHex` are always replaced, so the current
+// color must be resent; `orden` null/omitted keeps the current value.
+export interface CategoriaActualizacionRequest {
+  nombre: string
+  colorHex: string
+  orden?: number | null
+}
+
+// Mirrors CategoriaResponseDTO.
+export interface CategoriaResponse {
+  id: string
+  cartillaId: string
+  nombre: string
+  colorHex: string
+  orden: number
+  creadoEn: string | null
+}
+
 // Mirrors CartillaDetalleResponseDTO: the single aggregated source for the editor and Use Mode.
 export interface CartillaDetalleResponse {
   id: string

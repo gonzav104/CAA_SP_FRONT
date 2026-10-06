@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/api/client'
 import type { CartillaDetalleResponse } from './apiTypes'
 import { boardKeys } from './hooks'
-import { ItemOperationError } from './itemOperations'
+import { BoardOperationError } from './boardOperations'
 import { boardDetailResponse, BOARD_ID, PATIENT_ID } from './testing/fixtures'
 import { useDeleteBoardItem } from './useDeleteBoardItem'
 
@@ -64,9 +64,9 @@ describe('useDeleteBoardItem', () => {
     const { result, queryClient } = setup()
     queryClient.setQueryData(boardKeys.detail(PATIENT_ID, BOARD_ID), boardDetailResponse)
 
-    const error = (await result.current.mutateAsync(target).catch((e: unknown) => e)) as ItemOperationError
+    const error = (await result.current.mutateAsync(target).catch((e: unknown) => e)) as BoardOperationError
 
-    expect(error).toBeInstanceOf(ItemOperationError)
+    expect(error).toBeInstanceOf(BoardOperationError)
     expect(error.stage).toBe('request')
     expect(error.cause).toBe(failure)
     expect(error.fresh).toBeNull()
@@ -80,9 +80,9 @@ describe('useDeleteBoardItem', () => {
     mockGet(() => Promise.reject(failure))
     const { result } = setup()
 
-    const error = (await result.current.mutateAsync(target).catch((e: unknown) => e)) as ItemOperationError
+    const error = (await result.current.mutateAsync(target).catch((e: unknown) => e)) as BoardOperationError
 
-    expect(error).toBeInstanceOf(ItemOperationError)
+    expect(error).toBeInstanceOf(BoardOperationError)
     expect(error.stage).toBe('reload')
     expect(error.cause).toBe(failure)
     expect(del).toHaveBeenCalledTimes(1)

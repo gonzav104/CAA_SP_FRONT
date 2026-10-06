@@ -196,9 +196,9 @@ describe('rebaseDraft', () => {
 
     expect(result.name).toBe('Renombrada')
     expect(result.categories).toEqual([
-      { id: 'cat-a', name: 'Básicas', order: 0 },
-      { id: 'cat-b', name: 'Acciones', order: 1 },
-      { id: 'cat-c', name: 'Lugares', order: 7 },
+      { id: 'cat-a', name: 'Básicas', order: 0, colorHex: '#3366FF' },
+      { id: 'cat-b', name: 'Acciones', order: 1, colorHex: '#22AA55' },
+      { id: 'cat-c', name: 'Lugares', order: 7, colorHex: '#000000' },
     ])
   })
 

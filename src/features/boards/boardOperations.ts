@@ -6,22 +6,22 @@ import type { Board } from './types'
 
 /**
  * `pictogram`: registering the chosen ARASAAC pictogram failed (nothing was created);
- * `request`: the POST/DELETE failed (nothing changed on the server);
+ * `request`: the POST/PUT/DELETE failed (for a category move: at least one of the PUTs failed);
  * `reload`: the write succeeded but the board could not be reloaded.
  */
-export type ItemOperationStage = 'pictogram' | 'request' | 'reload'
+export type BoardOperationStage = 'pictogram' | 'request' | 'reload'
 
-/** Thrown by the create and delete hooks. `fresh` is what the server holds now, or null when unknown. */
-export class ItemOperationError extends Error {
-  stage: ItemOperationStage
+/** Thrown by the immediate item and category operations. `fresh` is what the server holds now, or null when unknown. */
+export class BoardOperationError extends Error {
+  stage: BoardOperationStage
   cause: unknown
   fresh: Board | null
   /** Id of the item that WAS created (only for a `reload` failure of a create). */
   createdId: string | null
 
-  constructor(stage: ItemOperationStage, cause: unknown, fresh: Board | null = null, createdId: string | null = null) {
-    super(`Item operation failed at stage "${stage}"`)
-    this.name = 'ItemOperationError'
+  constructor(stage: BoardOperationStage, cause: unknown, fresh: Board | null = null, createdId: string | null = null) {
+    super(`Board operation failed at stage "${stage}"`)
+    this.name = 'BoardOperationError'
     this.stage = stage
     this.cause = cause
     this.fresh = fresh

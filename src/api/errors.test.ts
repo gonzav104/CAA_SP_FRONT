@@ -2,6 +2,7 @@ import { AxiosError } from 'axios'
 import type { InternalAxiosRequestConfig } from 'axios'
 import { describe, expect, it } from 'vitest'
 import {
+  getCategoryErrorMessage,
   getCreateErrorMessage,
   getDeleteErrorMessage,
   getMaterializeErrorMessage,
@@ -121,5 +122,52 @@ describe('getDeleteErrorMessage', () => {
     )
     expect(getDeleteErrorMessage(httpError(409), 'request')).toBe('La operación entra en conflicto con datos existentes.')
     expect(getDeleteErrorMessage(httpError(500), 'request')).toBe('Ocurrió un error inesperado.')
+  })
+})
+
+describe('getCategoryErrorMessage', () => {
+  const network = new AxiosError('Network Error', 'ERR_NETWORK')
+  const operations = ['create', 'rename', 'move', 'delete'] as const
+
+  it('maps the reload stage for every operation regardless of the cause', () => {
+    for (const operation of operations) {
+      expect(getCategoryErrorMessage(network, 'reload', operation)).toBe(
+        'El cambio se guardó, pero no se pudo recargar la cartilla. Recarga la página.',
+      )
+    }
+  })
+
+  it('maps the request stage by failure kind for create, rename and delete', () => {
+    for (const operation of ['create', 'rename', 'delete'] as const) {
+      expect(getCategoryErrorMessage(network, 'request', operation)).toBe('No se pudo conectar con el servidor.')
+      expect(getCategoryErrorMessage(httpError(400, 'Nombre inválido'), 'request', operation)).toBe(
+        'El servidor rechazó los datos: Nombre inválido',
+      )
+      expect(getCategoryErrorMessage(httpError(400, 'x'.repeat(201)), 'request', operation)).toBe('El servidor rechazó los datos.')
+      expect(getCategoryErrorMessage(httpError(400, 42), 'request', operation)).toBe('El servidor rechazó los datos.')
+      expect(getCategoryErrorMessage(httpError(404), 'request', operation)).toBe(
+        'No tienes permiso para modificar esta cartilla o la categoría ya no existe.',
+      )
+      expect(getCategoryErrorMessage(httpError(409), 'request', operation)).toBe(
+        'La operación entra en conflicto con datos existentes.',
+      )
+      expect(getCategoryErrorMessage(httpError(500), 'request', operation)).toBe('Ocurrió un error inesperado.')
+      expect(getCategoryErrorMessage(new Error('boom'), 'request', operation)).toBe('Ocurrió un error inesperado.')
+    }
+  })
+
+  it('prefixes move request failures', () => {
+    expect(getCategoryErrorMessage(network, 'request', 'move')).toBe(
+      'No se pudo mover la categoría. No se pudo conectar con el servidor.',
+    )
+    expect(getCategoryErrorMessage(httpError(404), 'request', 'move')).toBe(
+      'No se pudo mover la categoría. No tienes permiso para modificar esta cartilla o la categoría ya no existe.',
+    )
+    expect(getCategoryErrorMessage(httpError(409), 'request', 'move')).toBe(
+      'No se pudo mover la categoría. La operación entra en conflicto con datos existentes.',
+    )
+    expect(getCategoryErrorMessage(httpError(500), 'request', 'move')).toBe(
+      'No se pudo mover la categoría. Ocurrió un error inesperado.',
+    )
   })
 })

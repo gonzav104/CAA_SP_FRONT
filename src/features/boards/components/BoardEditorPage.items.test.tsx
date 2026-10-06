@@ -161,8 +161,9 @@ describe('BoardEditorPage creating cards', () => {
     await openEditor()
     await openForm()
 
-    expect(screen.getByText('Necesidades')).toBeInTheDocument()
-    expect(screen.getByText('Categoría:')).toBeInTheDocument()
+    const form = screen.getByRole('heading', { name: 'Nueva tarjeta' }).closest('section') as HTMLElement
+    expect(within(form).getByText('Necesidades')).toBeInTheDocument()
+    expect(within(form).getByText('Categoría:')).toBeInTheDocument()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
   })
 
@@ -201,7 +202,7 @@ describe('BoardEditorPage creating cards', () => {
 
     expect(addButton()).toBeDisabled()
     expect(addButton()).not.toHaveAttribute('title')
-    expect(screen.getByText('Esta cartilla no tiene categorías. Crear categorías todavía no está disponible.')).toBeInTheDocument()
+    expect(screen.getByText('Esta cartilla no tiene categorías. Crea una con «Nueva categoría» para poder agregar tarjetas.')).toBeInTheDocument()
     expect(fake.post).not.toHaveBeenCalled()
   })
 
