@@ -4,7 +4,7 @@ import type { InternalAxiosRequestConfig } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchCurrentUser } from '@/features/auth/authApi'
 import { fetchPatient } from '@/features/patients/patientsApi'
-import { therapist, therapistPatientsResponse } from '@/features/patients/testing/fixtures'
+import { familyMember, therapist, therapistPatientsResponse } from '@/features/patients/testing/fixtures'
 import { renderApp } from '@/test/renderApp'
 import { fetchBoards } from '../boardsApi'
 import { boardsListResponse, PATIENT_ID } from '../testing/fixtures'
@@ -58,7 +58,16 @@ describe('BoardsPage', () => {
     expect(await screen.findByRole('link', { name: 'Pacientes' })).toHaveAttribute('href', '/pacientes')
   })
 
-  it('shows the empty state without a create button', async () => {
+  it('shows the empty state with a create button for the responsible therapist', async () => {
+    vi.mocked(fetchBoards).mockResolvedValue([])
+    renderApp(url)
+    expect(await screen.findByText('Este paciente todavía no tiene cartillas.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Nueva cartilla' })).toBeInTheDocument()
+  })
+
+  it('shows the empty state without a create button for a read-only familiar', async () => {
+    vi.mocked(fetchCurrentUser).mockResolvedValue(familyMember)
+    vi.mocked(fetchPatient).mockResolvedValue({ ...therapistPatientsResponse[0], miPermiso: 'LECTURA' })
     vi.mocked(fetchBoards).mockResolvedValue([])
     renderApp(url)
     expect(await screen.findByText('Este paciente todavía no tiene cartillas.')).toBeInTheDocument()

@@ -1,90 +1,230 @@
-import { Star } from 'lucide-react'
-import { Link, Navigate, useParams } from 'react-router'
+import { useState } from 'react'
+import { Plus } from 'lucide-react'
+import { Navigate, useParams } from 'react-router'
 import { paths } from '@/app/paths'
-import { getReadErrorMessage } from '@/api/errors'
+import { getCartillaErrorMessage, getErrorStatus, getReadErrorMessage } from '@/api/errors'
 import { ErrorState } from '@/components/ErrorState'
 import { LoadingState } from '@/components/LoadingState'
-import { buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { useCurrentUser } from '@/features/auth/hooks'
 import { usePatient } from '@/features/patients/hooks'
+import type { Patient } from '@/features/patients/types'
 import { PageLayout } from '@/layouts/PageLayout'
-import { cn } from '@/lib/utils'
+import { CartillaOperationError } from '../cartillaOperations'
+import type { CartillaOperation } from '../cartillaOperations'
 import { useBoards } from '../hooks'
-import { canEditBoard } from '../permissions'
-import type { BoardSummary } from '../types'
+import { canCreateBoard, canEditBoard, canSetPrimaryBoard } from '../permissions'
+import { useBoardListOperations } from '../useBoardListOperations'
+import { BoardNameForm } from './BoardNameForm'
+import { BoardRow } from './BoardRow'
+import { ListNotice } from './ListNotice'
+import type { Notice } from './ListNotice'
 
-interface BoardRowProps {
+type Editor = { kind: 'create' } | { kind: 'rename'; boardId: string } | { kind: 'delete'; boardId: string }
+
+const RELOAD_NOTICE: Notice = {
+  tone: 'error',
+  message: getCartillaErrorMessage(null, 'reload', 'create'),
+  retry: true,
+}
+
+function describeFailure(error: unknown): { stage: 'request' | 'reload'; cause: unknown } {
+  if (error instanceof CartillaOperationError) return { stage: error.stage, cause: error.cause }
+  return { stage: 'request', cause: error }
+}
+
+interface BoardsContentProps {
   patientId: string
-  board: BoardSummary
-  canEdit: boolean
+  patient: Patient | undefined
 }
 
-function BoardRow({ patientId, board, canEdit }: BoardRowProps) {
-  return (
-    <li
-      className={cn(
-        'flex min-h-16 flex-wrap items-center justify-between gap-3 rounded-xl border bg-background px-5 py-3',
-        board.isPrimary && 'border-primary/60 shadow-sm',
-      )}
-    >
-      <div className="flex min-w-0 items-center gap-3">
-        <span className="truncate text-base font-medium">{board.name}</span>
-        {board.isPrimary && (
-          <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-            <Star aria-hidden="true" className="size-3.5 fill-current" />
-            Principal
-          </span>
-        )}
-      </div>
-      <div className="flex items-center gap-2">
-        {!canEdit && <span className="text-sm text-muted-foreground">Solo lectura</span>}
-        {canEdit && (
-          <Link
-            to={paths.boardEditor(patientId, board.id)}
-            className={buttonVariants({ variant: 'outline', size: 'lg' })}
-          >
-            Editar
-          </Link>
-        )}
-        <Link to={paths.boardUse(patientId, board.id)} className={buttonVariants({ size: 'lg' })}>
-          Modo Uso
-        </Link>
-      </div>
-    </li>
-  )
-}
-
-function BoardsContent({ patientId }: { patientId: string }) {
+function BoardsContent({ patientId, patient }: BoardsContentProps) {
   const { data: user } = useCurrentUser()
-  const { data: boards, isPending, isError, error, refetch } = useBoards(patientId)
+  const { data: boards, isError, error, refetch } = useBoards(patientId)
+  const operations = useBoardListOperations(patientId)
+  // Only ONE inline editor is open at a time; opening another replaces it.
+  const [editor, setEditor] = useState<Editor | null>(null)
+  const [editorError, setEditorError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<Notice | null>(null)
 
-  if (isError) {
-    return (
-      <ErrorState
-        message={getReadErrorMessage(error, 'No encontramos las cartillas o no tienes acceso.')}
-        onRetry={() => void refetch()}
-      />
-    )
+  const isAnyPending =
+    operations.create.isPending ||
+    operations.rename.isPending ||
+    operations.setPrimary.isPending ||
+    operations.remove.isPending
+
+  const openEditor = (next: Editor) => {
+    setEditor(next)
+    setEditorError(null)
   }
-  if (isPending) return <LoadingState message="Cargando cartillas…" />
-  if (boards.length === 0) {
-    return (
-      <p className="rounded-xl border bg-background px-6 py-10 text-center text-muted-foreground">
-        Este paciente todavía no tiene cartillas.
-      </p>
-    )
+  const closeEditor = () => {
+    setEditor(null)
+    setEditorError(null)
   }
-  return (
-    <ul className="flex flex-col gap-3">
-      {boards.map((board) => (
-        <BoardRow
-          key={board.id}
-          patientId={patientId}
-          board={board}
-          canEdit={canEditBoard(user, board.creatorId)}
+
+  const fail = (error: unknown, operation: CartillaOperation) => {
+    const { stage, cause } = describeFailure(error)
+    const message = getCartillaErrorMessage(cause, stage, operation)
+    const status = getErrorStatus(cause)
+    if (stage === 'reload') {
+      // The write DID succeed: close the editor and keep the stale list with a retry.
+      closeEditor()
+      setNotice(RELOAD_NOTICE)
+    } else if (operation === 'primary') {
+      setNotice({ tone: status === 409 ? 'info' : 'error', message })
+    } else if (status === 404 && operation !== 'create') {
+      // The cartilla is gone (or not ours any more): the list was reloaded, so there is nothing left to edit.
+      closeEditor()
+      setNotice({ tone: 'error', message })
+    } else {
+      setEditorError(message)
+    }
+  }
+
+  const handleCreate = async (name: string) => {
+    setNotice(null)
+    setEditorError(null)
+    try {
+      await operations.create.mutateAsync(name)
+      closeEditor()
+      setNotice({ tone: 'success', message: 'Cartilla creada.' })
+    } catch (failure) {
+      fail(failure, 'create')
+    }
+  }
+
+  const handleRename = async (boardId: string, name: string) => {
+    setNotice(null)
+    setEditorError(null)
+    try {
+      await operations.rename.mutateAsync({ boardId, name })
+      closeEditor()
+      setNotice({ tone: 'success', message: 'Cartilla renombrada.' })
+    } catch (failure) {
+      fail(failure, 'rename')
+    }
+  }
+
+  const handleSetPrimary = async (boardId: string, name: string) => {
+    setNotice(null)
+    try {
+      await operations.setPrimary.mutateAsync(boardId)
+      setNotice({ tone: 'success', message: `«${name}» es ahora la cartilla principal.` })
+    } catch (failure) {
+      fail(failure, 'primary')
+    }
+  }
+
+  const handleDelete = async (boardId: string) => {
+    setNotice(null)
+    setEditorError(null)
+    try {
+      await operations.remove.mutateAsync(boardId)
+      closeEditor()
+      setNotice({ tone: 'success', message: 'Cartilla eliminada.' })
+    } catch (failure) {
+      fail(failure, 'delete')
+    }
+  }
+
+  if (!boards) {
+    if (isError) {
+      return (
+        <ErrorState
+          message={getReadErrorMessage(error, 'No encontramos las cartillas o no tienes acceso.')}
+          onRetry={() => void refetch()}
         />
-      ))}
-    </ul>
+      )
+    }
+    return <LoadingState message="Cargando cartillas…" />
+  }
+
+  const retry = () => void refetch()
+  const canCreate = canCreateBoard(user, patient)
+  const isCreating = editor?.kind === 'create'
+  // A reload notice already says the list is stale (and offers the retry): never show two alerts for it.
+  const showListError = isError && !notice?.retry
+  const visibleNotice = notice && (!notice.retry || isError) ? notice : null
+
+  const createForm = (
+    <div className="flex rounded-xl border bg-background px-5 py-3">
+      <BoardNameForm
+        label="Nombre de la nueva cartilla"
+        submitLabel="Crear cartilla"
+        pendingLabel="Creando…"
+        isPending={operations.create.isPending}
+        error={editorError}
+        onSubmit={(name) => void handleCreate(name)}
+        onCancel={closeEditor}
+      />
+    </div>
+  )
+  const createButton = (
+    <Button
+      type="button"
+      variant="outline"
+      size="lg"
+      disabled={isAnyPending}
+      onClick={() => {
+        setNotice(null)
+        openEditor({ kind: 'create' })
+      }}
+    >
+      <Plus aria-hidden="true" />
+      Nueva cartilla
+    </Button>
+  )
+
+  return (
+    <div className="flex flex-col gap-3">
+      {visibleNotice && <ListNotice notice={visibleNotice} onRetry={retry} />}
+      {showListError && (
+        <ListNotice notice={{ tone: 'error', message: 'No se pudo actualizar la lista.', retry: true }} onRetry={retry} />
+      )}
+
+      {boards.length === 0 ? (
+        <div className="flex flex-col items-center gap-4 rounded-xl border bg-background px-6 py-10 text-center">
+          <p className="text-muted-foreground">Este paciente todavía no tiene cartillas.</p>
+          {canCreate && (isCreating ? createForm : createButton)}
+        </div>
+      ) : (
+        <>
+          {canCreate && !isCreating && <div className="flex">{createButton}</div>}
+          {canCreate && isCreating && createForm}
+          <ul className="flex flex-col gap-3">
+            {boards.map((board) => {
+              const mode = editor && editor.kind !== 'create' && editor.boardId === board.id ? editor.kind : 'view'
+              return (
+                <BoardRow
+                  key={board.id}
+                  patientId={patientId}
+                  board={board}
+                  canEdit={canEditBoard(user, board.creatorId)}
+                  canSetPrimary={canSetPrimaryBoard(user, patient, board)}
+                  mode={mode}
+                  actionsDisabled={isAnyPending}
+                  isEditorPending={mode === 'rename' ? operations.rename.isPending : operations.remove.isPending}
+                  isPrimaryPending={operations.setPrimary.isPending && operations.setPrimary.variables === board.id}
+                  error={mode === 'view' ? null : editorError}
+                  onStartRename={() => {
+                    setNotice(null)
+                    openEditor({ kind: 'rename', boardId: board.id })
+                  }}
+                  onStartDelete={() => {
+                    setNotice(null)
+                    openEditor({ kind: 'delete', boardId: board.id })
+                  }}
+                  onSetPrimary={() => void handleSetPrimary(board.id, board.name)}
+                  onRename={(name) => void handleRename(board.id, name)}
+                  onConfirmDelete={() => void handleDelete(board.id)}
+                  onCancel={closeEditor}
+                />
+              )
+            })}
+          </ul>
+        </>
+      )}
+    </div>
   )
 }
 
@@ -108,7 +248,7 @@ function BoardsPageContent({ patientId }: { patientId: string }) {
           onRetry={() => void patient.refetch()}
         />
       )}
-      {!patient.isError && <BoardsContent patientId={patientId} />}
+      {!patient.isError && <BoardsContent patientId={patientId} patient={patient.data} />}
     </PageLayout>
   )
 }

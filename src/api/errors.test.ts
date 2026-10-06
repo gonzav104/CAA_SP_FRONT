@@ -2,6 +2,7 @@ import { AxiosError } from 'axios'
 import type { InternalAxiosRequestConfig } from 'axios'
 import { describe, expect, it } from 'vitest'
 import {
+  getCartillaErrorMessage,
   getCategoryErrorMessage,
   getCreateErrorMessage,
   getDeleteErrorMessage,
@@ -169,5 +170,75 @@ describe('getCategoryErrorMessage', () => {
     expect(getCategoryErrorMessage(httpError(500), 'request', 'move')).toBe(
       'No se pudo mover la categoría. Ocurrió un error inesperado.',
     )
+  })
+})
+
+describe('getCartillaErrorMessage', () => {
+  const network = new AxiosError('Network Error', 'ERR_NETWORK')
+  const operations = ['create', 'rename', 'primary', 'delete'] as const
+
+  it('maps the reload stage for every operation regardless of the cause', () => {
+    for (const operation of operations) {
+      expect(getCartillaErrorMessage(network, 'reload', operation)).toBe(
+        'El cambio se guardó, pero no se pudo actualizar la lista.',
+      )
+      expect(getCartillaErrorMessage(httpError(500), 'reload', operation)).toBe(
+        'El cambio se guardó, pero no se pudo actualizar la lista.',
+      )
+    }
+  })
+
+  it('maps network, 400 and fallback errors the same way for every operation', () => {
+    for (const operation of operations) {
+      expect(getCartillaErrorMessage(network, 'request', operation)).toBe('No se pudo conectar con el servidor.')
+      expect(getCartillaErrorMessage(httpError(400, 'Nombre inválido'), 'request', operation)).toBe(
+        'El servidor rechazó los datos: Nombre inválido',
+      )
+      expect(getCartillaErrorMessage(httpError(400, 'x'.repeat(200)), 'request', operation)).toBe(
+        `El servidor rechazó los datos: ${'x'.repeat(200)}`,
+      )
+      expect(getCartillaErrorMessage(httpError(400, 'x'.repeat(201)), 'request', operation)).toBe(
+        'El servidor rechazó los datos.',
+      )
+      expect(getCartillaErrorMessage(httpError(400, 42), 'request', operation)).toBe('El servidor rechazó los datos.')
+      expect(getCartillaErrorMessage(httpError(500), 'request', operation)).toBe('Ocurrió un error inesperado.')
+      expect(getCartillaErrorMessage(new Error('boom'), 'request', operation)).toBe('Ocurrió un error inesperado.')
+    }
+  })
+
+  it('maps 403 by operation', () => {
+    expect(getCartillaErrorMessage(httpError(403), 'request', 'primary')).toBe(
+      'Solo el terapeuta responsable del paciente puede cambiar la cartilla principal.',
+    )
+    for (const operation of ['create', 'rename', 'delete'] as const) {
+      expect(getCartillaErrorMessage(httpError(403), 'request', operation)).toBe(
+        'No tienes permiso para hacer este cambio.',
+      )
+    }
+  })
+
+  it('maps 404 by operation', () => {
+    expect(getCartillaErrorMessage(httpError(404), 'request', 'create')).toBe(
+      'No tienes permiso para crear cartillas para este paciente.',
+    )
+    expect(getCartillaErrorMessage(httpError(404), 'request', 'primary')).toBe(
+      'La cartilla ya no existe o no tienes acceso.',
+    )
+    for (const operation of ['rename', 'delete'] as const) {
+      expect(getCartillaErrorMessage(httpError(404), 'request', operation)).toBe(
+        'La cartilla ya no existe o no tienes permiso para modificarla.',
+      )
+    }
+  })
+
+  it('maps 409 by operation', () => {
+    expect(getCartillaErrorMessage(httpError(409), 'request', 'primary')).toBe(
+      'La cartilla principal cambió mientras hacías el cambio. Se actualizó la lista con la información actual.',
+    )
+    for (const operation of ['create', 'rename', 'delete'] as const) {
+      expect(getCartillaErrorMessage(httpError(409), 'request', operation)).toBe(
+        'La operación entra en conflicto con datos existentes.',
+      )
+    }
   })
 })

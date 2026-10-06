@@ -92,6 +92,39 @@ export function getCategoryErrorMessage(
   return operation === 'move' ? `No se pudo mover la categoría. ${message}` : message
 }
 
+// User-facing copy for a failed cartilla operation (POST/PUT/DELETE, or the list reload that follows).
+export function getCartillaErrorMessage(
+  error: unknown,
+  stage: 'request' | 'reload',
+  operation: 'create' | 'rename' | 'primary' | 'delete',
+): string {
+  if (stage === 'reload') return 'El cambio se guardó, pero no se pudo actualizar la lista.'
+  if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
+  const status = getErrorStatus(error)
+  if (status === 400) {
+    const message = getApiErrorBody(error)?.message.trim()
+    return message && message.length <= MAX_ECHOED_MESSAGE_LENGTH
+      ? `El servidor rechazó los datos: ${message}`
+      : 'El servidor rechazó los datos.'
+  }
+  if (status === 403) {
+    return operation === 'primary'
+      ? 'Solo el terapeuta responsable del paciente puede cambiar la cartilla principal.'
+      : 'No tienes permiso para hacer este cambio.'
+  }
+  if (status === 404) {
+    if (operation === 'create') return 'No tienes permiso para crear cartillas para este paciente.'
+    if (operation === 'primary') return 'La cartilla ya no existe o no tienes acceso.'
+    return 'La cartilla ya no existe o no tienes permiso para modificarla.'
+  }
+  if (status === 409) {
+    return operation === 'primary'
+      ? 'La cartilla principal cambió mientras hacías el cambio. Se actualizó la lista con la información actual.'
+      : 'La operación entra en conflicto con datos existentes.'
+  }
+  return 'Ocurrió un error inesperado.'
+}
+
 // User-facing copy for failed GET requests. Backend `message` strings are never echoed.
 export function getReadErrorMessage(error: unknown, notFoundMessage: string): string {
   const status = getErrorStatus(error)

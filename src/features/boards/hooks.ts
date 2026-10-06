@@ -6,6 +6,8 @@ import type { Board, BoardSummary } from './types'
 
 export const boardKeys = {
   all: ['boards'] as const,
+  /** Prefix of every list and detail query of one patient. */
+  patient: (patientId: string) => ['boards', 'patient', patientId] as const,
   list: (patientId: string) => ['boards', 'patient', patientId, 'list'] as const,
   detail: (patientId: string, boardId: string) =>
     ['boards', 'patient', patientId, 'detail', boardId] as const,
@@ -22,9 +24,10 @@ export function useBoards(patientId: string) {
   })
 }
 
-export function useBoardDetail(patientId: string, boardId: string) {
+export function useBoardDetail(patientId: string, boardId: string, options?: { enabled?: boolean }) {
   return useQuery<CartillaDetalleResponse, Error, Board>({
     queryKey: boardKeys.detail(patientId, boardId),
+    enabled: options?.enabled ?? true,
     queryFn: () => fetchBoardDetail(patientId, boardId),
     select: toBoard,
     staleTime: STALE_TIME,

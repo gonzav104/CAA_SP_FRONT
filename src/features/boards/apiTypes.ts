@@ -12,6 +12,23 @@ export interface CartillaResponse {
   creadoEn: string
 }
 
+// Mirrors CartillaRegistroDTO (create). The UI sends only `nombre`: `esPrincipal` keeps the backend
+// default (false) and `paradigma` its default; the principal is marked through its own endpoint.
+export interface CartillaRegistroRequest {
+  /** Required, not blank; the DB column holds at most 100 characters (longer names answer 409). */
+  nombre: string
+  esPrincipal?: boolean | null
+  paradigma?: ParadigmaCartilla | null
+}
+
+// Mirrors CartillaActualizacionDTO (update). `nombre` is always replaced; `esPrincipal` and `paradigma`
+// null/omitted keep the current value. The UI sends only `nombre`.
+export interface CartillaActualizacionRequest {
+  nombre: string
+  esPrincipal?: boolean | null
+  paradigma?: ParadigmaCartilla | null
+}
+
 // Mirrors the nested pictogram of ItemDetalleResponseDTO.
 export interface PictogramaInfo {
   id: string
