@@ -33,6 +33,12 @@ describe('BoardsPage', () => {
     vi.mocked(fetchBoards).mockReset().mockResolvedValue(boardsListResponse)
   })
 
+  it('shows the section title and the primary action together in the content header', async () => {
+    renderApp(url)
+    await screen.findByRole('heading', { name: 'Cartillas' })
+    expect(screen.getByRole('button', { name: 'Nueva cartilla' })).toBeInTheDocument()
+  })
+
   it('lists boards with the principal first and badged', async () => {
     renderApp(url)
     expect(await screen.findByRole('heading', { name: 'Tomás Pérez' })).toBeInTheDocument()
@@ -103,5 +109,10 @@ describe('BoardsPage', () => {
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
     // No patient identity is known yet: the contextual header and the "Cartillas" section stay out, not a fake fallback.
     expect(screen.queryByRole('heading', { name: 'Cartillas' })).not.toBeInTheDocument()
+  })
+
+  it('opens the create form directly when the workspace nav shortcut is used', async () => {
+    renderApp(`${url}?crear=1`)
+    expect(await screen.findByLabelText('Nombre de la nueva cartilla')).toBeInTheDocument()
   })
 })

@@ -1,23 +1,18 @@
 import { useState } from 'react'
-import { Play, Plus } from 'lucide-react'
-import { Link, Navigate, useParams } from 'react-router'
+import { Plus } from 'lucide-react'
+import { Navigate, useParams, useSearchParams } from 'react-router'
 import { paths } from '@/app/paths'
 import { getCartillaErrorMessage, getErrorStatus, getReadErrorMessage } from '@/api/errors'
 import { ErrorState } from '@/components/ErrorState'
 import { LoadingState } from '@/components/LoadingState'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { useCurrentUser } from '@/features/auth/hooks'
-import { ageFrom } from '@/features/patients/age'
-import { formatBirthDate } from '@/features/patients/format'
 import { usePatient } from '@/features/patients/hooks'
 import type { Patient } from '@/features/patients/types'
-import { PageLayout } from '@/layouts/PageLayout'
-import { initialOf } from '@/lib/utils'
 import { CartillaOperationError } from '../cartillaOperations'
 import type { CartillaOperation } from '../cartillaOperations'
 import { useBoards } from '../hooks'
 import { canCreateBoard, canEditBoard, canSetPrimaryBoard } from '../permissions'
-import type { BoardSummary } from '../types'
 import { useBoardListOperations } from '../useBoardListOperations'
 import { BoardNameForm } from './BoardNameForm'
 import { BoardRow } from './BoardRow'
@@ -46,8 +41,10 @@ function BoardsContent({ patientId, patient }: BoardsContentProps) {
   const { data: user } = useCurrentUser()
   const { data: boards, isError, error, refetch } = useBoards(patientId)
   const operations = useBoardListOperations(patientId)
+  const [searchParams] = useSearchParams()
   // Only ONE inline editor is open at a time; opening another replaces it.
-  const [editor, setEditor] = useState<Editor | null>(null)
+  // A workspace-nav shortcut ("Nueva cartilla") can land here with the form already open.
+  const [editor, setEditor] = useState<Editor | null>(() => (searchParams.get('crear') === '1' ? { kind: 'create' } : null))
   const [editorError, setEditorError] = useState<string | null>(null)
   const [notice, setNotice] = useState<Notice | null>(null)
 
@@ -181,6 +178,13 @@ function BoardsContent({ patientId, patient }: BoardsContentProps) {
 
   return (
     <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl font-semibold text-foreground">Cartillas</h2>
+        {canCreate && !isCreating && createButton}
+      </div>
+
+      {canCreate && isCreating && createForm}
+
       {visibleNotice && <ListNotice notice={visibleNotice} onRetry={retry} />}
       {showListError && (
         <ListNotice notice={{ tone: 'error', message: 'No se pudo actualizar la lista.', retry: true }} onRetry={retry} />
@@ -189,12 +193,9 @@ function BoardsContent({ patientId, patient }: BoardsContentProps) {
       {boards.length === 0 ? (
         <div className="flex flex-col items-center gap-4 rounded-2xl border border-border/60 bg-background px-6 py-10 text-center">
           <p className="text-muted-foreground">Este paciente todavía no tiene cartillas.</p>
-          {canCreate && (isCreating ? createForm : createButton)}
         </div>
       ) : (
         <>
-          {canCreate && !isCreating && <div className="flex">{createButton}</div>}
-          {canCreate && isCreating && createForm}
           <ul className="flex flex-col gap-3">
             {boards.map((board) => {
               const mode = editor && editor.kind !== 'create' && editor.boardId === board.id ? editor.kind : 'view'
@@ -232,40 +233,7 @@ function BoardsContent({ patientId, patient }: BoardsContentProps) {
   )
 }
 
-/** Identity, age and (when the patient has one) a direct way into their principal cartilla. */
-function PatientSpaceHeader({ patient, principal }: { patient: Patient; principal: BoardSummary | undefined }) {
-  const age = ageFrom(patient.birthDate, new Date())
-
-  return (
-    <section className="flex flex-col gap-5 rounded-3xl border border-border/60 bg-background px-6 py-7 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-      <div className="flex items-center gap-4">
-        <span
-          aria-hidden="true"
-          className="flex size-14 shrink-0 items-center justify-center rounded-full bg-caa-accent/10 text-lg font-semibold text-caa-accent"
-        >
-          {initialOf(patient.firstName)}
-        </span>
-        <div className="flex flex-col gap-0.5">
-          <h1 className="text-2xl font-semibold text-foreground">{patient.fullName}</h1>
-          <p className="text-sm text-muted-foreground">
-            {age !== null && `${age} ${age === 1 ? 'año' : 'años'} · `}
-            Nacimiento: {formatBirthDate(patient.birthDate)}
-          </p>
-        </div>
-      </div>
-      {principal && (
-        <Link
-          to={paths.boardUse(patient.id, principal.id)}
-          className={buttonVariants({ size: 'lg', className: 'shrink-0' })}
-        >
-          <Play aria-hidden="true" />
-          Abrir Modo Uso
-        </Link>
-      )}
-    </section>
-  )
-}
-
+/** Cartillas tab of the patient workspace. The identity header and tab nav live in `PatientWorkspaceLayout`. */
 export function BoardsPage() {
   const { pacienteId } = useParams()
   if (!pacienteId) return <Navigate to={paths.patients()} replace />
@@ -273,27 +241,18 @@ export function BoardsPage() {
 }
 
 function BoardsPageContent({ patientId }: { patientId: string }) {
+  // Same cache entry the workspace header reads (patientKeys.detail): one shared GET, not a second request.
   const patient = usePatient(patientId)
-  // Same query the "Cartillas" section below reads: one shared cache entry, not a second request.
-  const boards = useBoards(patientId)
-  const principal = boards.data?.find((board) => board.isPrimary)
 
-  return (
-    <PageLayout backLink={{ to: paths.patients(), label: 'Volver a pacientes' }} tone="warm">
-      {patient.isError && (
-        <ErrorState
-          message={getReadErrorMessage(patient.error, 'No encontramos al paciente o no tienes acceso.')}
-          onRetry={() => void patient.refetch()}
-        />
-      )}
-      {!patient.isError && patient.data && <PatientSpaceHeader patient={patient.data} principal={principal} />}
-      {!patient.isError && !patient.data && <LoadingState message="Cargando paciente…" />}
-      {!patient.isError && (
-        <section className="flex flex-col gap-3">
-          <h2 className="font-semibold text-foreground">Cartillas</h2>
-          <BoardsContent patientId={patientId} patient={patient.data} />
-        </section>
-      )}
-    </PageLayout>
-  )
+  if (patient.isError) {
+    return (
+      <ErrorState
+        message={getReadErrorMessage(patient.error, 'No encontramos al paciente o no tienes acceso.')}
+        onRetry={() => void patient.refetch()}
+      />
+    )
+  }
+  if (!patient.data) return <LoadingState message="Cargando paciente…" />
+
+  return <BoardsContent patientId={patientId} patient={patient.data} />
 }

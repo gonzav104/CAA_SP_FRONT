@@ -11,6 +11,7 @@ const ownPatient: Patient = {
   fullName: 'Tomás Pérez',
   birthDate: '2018-05-12',
   collaboratorPermission: null,
+  gridSize: null,
 }
 const limitedPatient: Patient = { ...ownPatient, collaboratorPermission: 'EDICION_LIMITADA' }
 const readOnlyPatient: Patient = { ...ownPatient, collaboratorPermission: 'LECTURA' }

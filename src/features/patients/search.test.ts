@@ -3,7 +3,15 @@ import type { Patient } from '@/features/patients/types'
 import { filterPatients } from './search'
 
 function patient(firstName: string, lastName: string): Patient {
-  return { id: `${firstName}-${lastName}`, firstName, lastName, fullName: `${firstName} ${lastName}`, birthDate: '2020-01-01', collaboratorPermission: null }
+  return {
+    id: `${firstName}-${lastName}`,
+    firstName,
+    lastName,
+    fullName: `${firstName} ${lastName}`,
+    birthDate: '2020-01-01',
+    collaboratorPermission: null,
+    gridSize: null,
+  }
 }
 
 const patients: Patient[] = [patient('Tomás', 'Pérez'), patient('Bruno', 'Álvarez'), patient('Alma', 'Pérez')]

@@ -9,6 +9,7 @@ export function toPatient(dto: PacienteResponse): Patient {
     fullName: `${dto.nombre} ${dto.apellido}`.trim(),
     birthDate: dto.fechaNacimiento,
     collaboratorPermission: dto.miPermiso,
+    gridSize: dto.gridSize,
   }
 }
 

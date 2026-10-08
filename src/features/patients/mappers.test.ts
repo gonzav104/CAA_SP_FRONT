@@ -12,6 +12,7 @@ describe('patients mappers', () => {
       fullName: 'Teo Gómez',
       birthDate: '2016-07-21',
       collaboratorPermission: 'EDICION_LIMITADA',
+      gridSize: null,
     })
   })
 

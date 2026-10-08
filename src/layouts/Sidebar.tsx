@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import { CalendarDays, Home, Image, Settings, Users } from 'lucide-react'
+import { Home, Settings, Users } from 'lucide-react'
 import { Link, NavLink } from 'react-router'
 import { paths } from '@/app/paths'
 import { PictogramGridMark } from '@/components/PictogramGridMark'
@@ -14,13 +14,13 @@ interface NavItem {
   icon: LucideIcon
 }
 
-// The architecture supports every item below without reshaping the shell; only Inicio and
-// Pacientes are real destinations today.
+// Sesiones, Familia and Pictogramas are real today, but contextual to one patient
+// (/pacientes/:id/...), not global destinations — a global "Sesiones" screen would mean one
+// request per patient (N+1), which this shell deliberately does not do. Only Configuración
+// remains genuinely planned.
 const NAV_ITEMS: NavItem[] = [
   { label: 'Inicio', to: paths.dashboard(), icon: Home },
   { label: 'Pacientes', to: paths.patients(), icon: Users },
-  { label: 'Sesiones', to: null, icon: CalendarDays },
-  { label: 'Pictogramas', to: null, icon: Image },
   { label: 'Configuración', to: null, icon: Settings },
 ]
 

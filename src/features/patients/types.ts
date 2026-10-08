@@ -9,4 +9,6 @@ export interface Patient {
   birthDate: string
   /** Set only for family collaborators; null for the owning therapist. */
   collaboratorPermission: PermisoColaborador | null
+  /** Preferred Modo Uso grid size (6/9/12); null when not set. */
+  gridSize: number | null
 }

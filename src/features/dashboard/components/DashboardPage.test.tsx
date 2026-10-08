@@ -111,15 +111,22 @@ describe('DashboardPage', () => {
     expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument()
   })
 
-  it('groups the planned sections under one "Próximamente" heading, as non-interactive items', async () => {
+  it('shows Configuración as a planned, non-interactive section', async () => {
     setup(therapist)
     vi.mocked(fetchPatients).mockResolvedValue([])
     renderApp('/')
     await screen.findByRole('navigation', { name: 'Principal' })
     expect(screen.getByText('Próximamente')).toBeInTheDocument()
-    for (const label of ['Sesiones', 'Pictogramas', 'Configuración']) {
-      expect(screen.queryByRole('link', { name: label })).not.toBeInTheDocument()
-      expect(screen.getByTitle(`${label}: próximamente`)).toHaveAttribute('aria-disabled', 'true')
-    }
+    expect(screen.queryByRole('link', { name: 'Configuración' })).not.toBeInTheDocument()
+    expect(screen.getByTitle('Configuración: próximamente')).toHaveAttribute('aria-disabled', 'true')
+  })
+
+  it('does not list Sesiones or Pictogramas globally: they are contextual to one patient', async () => {
+    setup(therapist)
+    vi.mocked(fetchPatients).mockResolvedValue([])
+    renderApp('/')
+    await screen.findByRole('navigation', { name: 'Principal' })
+    expect(screen.queryByText('Sesiones')).not.toBeInTheDocument()
+    expect(screen.queryByText('Pictogramas')).not.toBeInTheDocument()
   })
 })

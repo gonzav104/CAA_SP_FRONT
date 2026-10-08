@@ -1,19 +1,14 @@
 import type { CurrentUser } from '@/features/auth/types'
+import { isResponsibleTherapist } from '@/features/patients/permissions'
 import type { Patient } from '@/features/patients/types'
 import type { BoardSummary } from './types'
+
+export { isResponsibleTherapist }
 
 // Mirrors the backend ownership check used for item edits: only the board's creator may edit.
 // Renaming, deleting and opening the Editor are creator-only too (being the responsible therapist is not enough).
 export function canEditBoard(user: CurrentUser | null | undefined, creatorId: string): boolean {
   return !!user && user.id === creatorId
-}
-
-/** The patient's responsible therapist: a therapist who is not a collaborator of the patient. */
-export function isResponsibleTherapist(
-  user: CurrentUser | null | undefined,
-  patient: Patient | null | undefined,
-): boolean {
-  return !!user && !!patient && user.rol === 'TERAPEUTA' && patient.collaboratorPermission === null
 }
 
 /** Creating a cartilla: the responsible therapist or a family collaborator with limited edition. */

@@ -20,3 +20,12 @@ export interface PacienteRegistroRequest {
   /** ISO local date, `YYYY-MM-DD`. */
   fechaNacimiento: string
 }
+
+// Mirrors PacienteActualizacionDTO. Same required fields as registro, plus the optional grid size.
+export interface PacienteActualizacionRequest {
+  nombre: string
+  apellido: string
+  /** ISO local date, `YYYY-MM-DD`. */
+  fechaNacimiento: string
+  gridSize: number | null
+}
