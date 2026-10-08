@@ -1,11 +1,10 @@
 import { screen, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchCurrentUser } from '@/features/auth/authApi'
 import type { CurrentUser } from '@/features/auth/types'
 import { fetchPatients } from '@/features/patients/patientsApi'
-import { familyMember, familyPatientsResponse, therapist, therapistPatientsResponse } from '@/features/patients/testing/fixtures'
+import { familyMember, therapist, therapistPatientsResponse } from '@/features/patients/testing/fixtures'
 import { renderApp } from '@/test/renderApp'
 
 vi.mock('@/features/auth/authApi')
@@ -28,98 +27,69 @@ describe('DashboardPage', () => {
     expect(await screen.findByRole('heading', { level: 1, name: /Ana/ })).toBeInTheDocument()
   })
 
-  it('shows a loading state for the patients list', async () => {
-    setup(therapist)
-    vi.mocked(fetchPatients).mockReturnValue(new Promise(() => {}))
-    renderApp('/')
-    expect(await screen.findByText('Cargando pacientes…')).toHaveAttribute('role', 'status')
-  })
-
-  it('shows an error and retries', async () => {
-    setup(therapist)
-    vi.mocked(fetchPatients)
-      .mockRejectedValueOnce(new AxiosError('Network Error', 'ERR_NETWORK'))
-      .mockResolvedValue(therapistPatientsResponse)
-    renderApp('/')
-    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo conectar con el servidor.')
-    await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
-    expect(await screen.findByText('Bruno Álvarez')).toBeInTheDocument()
-    expect(fetchPatients).toHaveBeenCalledTimes(2)
-  })
-
-  it('shows the empty state for a therapist with no patients', async () => {
-    setup(therapist)
-    vi.mocked(fetchPatients).mockResolvedValue([])
-    renderApp('/')
-    expect(await screen.findByText('Todavía no tenés pacientes disponibles.')).toBeInTheDocument()
-  })
-
-  it('shows the empty state for a family member with no linked patients', async () => {
-    setup(familyMember)
-    vi.mocked(fetchPatients).mockResolvedValue([])
-    renderApp('/')
-    expect(await screen.findByText('Todavía no tenés pacientes vinculados.')).toBeInTheDocument()
-  })
-
-  it('shows real patients, sorted, as quick-access cards with a working open action', async () => {
+  it('never duplicates the patients directory: no search box, no patient list', async () => {
     setup(therapist)
     vi.mocked(fetchPatients).mockResolvedValue(therapistPatientsResponse)
     renderApp('/')
-    const cards = await screen.findAllByRole('link', { name: /Abrir espacio de comunicación de/ })
-    expect(cards.map((c) => c.getAttribute('href'))).toEqual([
-      '/pacientes/p-1/cartillas',
-      '/pacientes/p-2/cartillas',
-      '/pacientes/p-3/cartillas',
-    ])
-    expect(cards[0]).toHaveAccessibleName('Abrir espacio de comunicación de Bruno Álvarez')
-    expect(cards[0]).toHaveTextContent('Bruno Álvarez')
-    // Age is derived locally from the real birth date, not asserted as a fixed number (it moves with the clock).
-    expect(cards[0]).toHaveTextContent(/\d+ años?/)
-  })
-
-  it('shows the collaborator permission badge when present', async () => {
-    setup(familyMember)
-    vi.mocked(fetchPatients).mockResolvedValue(familyPatientsResponse)
-    renderApp('/')
-    expect(await screen.findByText('Solo lectura')).toBeInTheDocument()
-    expect(screen.getByText('Edición limitada')).toBeInTheDocument()
-  })
-
-  it('links to the full patients directory and never duplicates it inline', async () => {
-    setup(therapist)
-    vi.mocked(fetchPatients).mockResolvedValue(therapistPatientsResponse)
-    renderApp('/')
-    const link = await screen.findByRole('link', { name: 'Ver todos los pacientes' })
-    expect(link).toHaveAttribute('href', '/pacientes')
-  })
-
-  it('filters patients immediately as you type, case-insensitively', async () => {
-    setup(therapist)
-    vi.mocked(fetchPatients).mockResolvedValue(therapistPatientsResponse)
-    renderApp('/')
-    await screen.findByText('Bruno Álvarez')
-
-    await userEvent.type(screen.getByRole('searchbox', { name: /Buscar paciente/ }), 'ALMA')
-
-    expect(screen.getByText('Alma Pérez')).toBeInTheDocument()
+    await screen.findByRole('heading', { level: 1 })
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument()
     expect(screen.queryByText('Bruno Álvarez')).not.toBeInTheDocument()
-    expect(screen.queryByText('Tomás Pérez')).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Resultados' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Ver todos los pacientes' })).not.toBeInTheDocument()
   })
 
-  it('shows a no-matches state and clears back to the full list', async () => {
+  it('shows the real patient count while it loads, on success and on error', async () => {
+    setup(therapist)
+    vi.mocked(fetchPatients).mockReturnValue(new Promise(() => {}))
+    renderApp('/')
+    expect(await screen.findByText('Cargando pacientes…')).toBeInTheDocument()
+  })
+
+  it('shows the real patient count and the right noun for a therapist', async () => {
     setup(therapist)
     vi.mocked(fetchPatients).mockResolvedValue(therapistPatientsResponse)
     renderApp('/')
-    const search = await screen.findByRole('searchbox', { name: /Buscar paciente/ })
-    await userEvent.type(search, 'zzz')
+    expect(await screen.findByText('3')).toBeInTheDocument()
+    expect(screen.getByText('Pacientes a tu cargo')).toBeInTheDocument()
+  })
 
-    expect(await screen.findByText('Ningún paciente coincide con «zzz».')).toBeInTheDocument()
+  it('shows the right noun for a family collaborator', async () => {
+    setup(familyMember)
+    vi.mocked(fetchPatients).mockResolvedValue([therapistPatientsResponse[0]])
+    renderApp('/')
+    expect(await screen.findByText('1')).toBeInTheDocument()
+    expect(screen.getByText('Paciente vinculado')).toBeInTheDocument()
+  })
 
-    await userEvent.click(screen.getByRole('button', { name: 'Limpiar búsqueda' }))
-    expect(search).toHaveValue('')
-    expect(await screen.findByText('Bruno Álvarez')).toBeInTheDocument()
+  it('shows a plain fallback for the count on error, without a blocking alert', async () => {
+    setup(therapist)
+    vi.mocked(fetchPatients).mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'))
+    renderApp('/')
+    expect(await screen.findByText('No se pudo cargar el total.')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('offers a real "Nuevo paciente" shortcut to a therapist, that lands on Pacientes with the form open', async () => {
+    setup(therapist)
+    vi.mocked(fetchPatients).mockResolvedValue([])
+    renderApp('/')
+    const shortcut = await screen.findByRole('link', { name: /Nuevo paciente/ })
+    expect(shortcut).toHaveAttribute('href', '/pacientes?crear=1')
+  })
+
+  it('does not offer "Nuevo paciente" to a family collaborator', async () => {
+    setup(familyMember)
+    vi.mocked(fetchPatients).mockResolvedValue([])
+    renderApp('/')
+    await screen.findByText('Gestionar pacientes')
+    expect(screen.queryByRole('link', { name: /Nuevo paciente/ })).not.toBeInTheDocument()
+  })
+
+  it('always offers "Gestionar pacientes" to the real directory', async () => {
+    setup(therapist)
+    vi.mocked(fetchPatients).mockResolvedValue([])
+    renderApp('/')
+    const link = await screen.findByRole('link', { name: /Gestionar pacientes/ })
+    expect(link).toHaveAttribute('href', '/pacientes')
   })
 
   it('has primary navigation for Inicio and Pacientes, with Inicio current on the dashboard', async () => {

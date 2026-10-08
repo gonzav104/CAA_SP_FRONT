@@ -125,6 +125,20 @@ export function getCartillaErrorMessage(
   return 'Ocurrió un error inesperado.'
 }
 
+// User-facing copy for a failed patient creation (POST /api/pacientes).
+export function getPatientCreateErrorMessage(error: unknown): string {
+  if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
+  const status = getErrorStatus(error)
+  if (status === 400) {
+    const message = getApiErrorBody(error)?.message.trim()
+    return message && message.length <= MAX_ECHOED_MESSAGE_LENGTH
+      ? `El servidor rechazó los datos: ${message}`
+      : 'El servidor rechazó los datos.'
+  }
+  if (status === 403) return 'Solo un terapeuta puede registrar un paciente.'
+  return 'Ocurrió un error inesperado.'
+}
+
 // User-facing copy for failed GET requests. Backend `message` strings are never echoed.
 export function getReadErrorMessage(error: unknown, notFoundMessage: string): string {
   const status = getErrorStatus(error)

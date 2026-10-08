@@ -1,7 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
-import type { PacienteResponse } from './apiTypes'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { PacienteRegistroRequest, PacienteResponse } from './apiTypes'
 import { toPatient, toPatients } from './mappers'
-import { fetchPatient, fetchPatients } from './patientsApi'
+import { createPatient, fetchPatient, fetchPatients } from './patientsApi'
+import type { Patient } from './types'
 
 export const patientKeys = {
   all: ['patients'] as const,
@@ -27,5 +28,16 @@ export function usePatient(id: string) {
     queryFn: () => fetchPatient(id),
     select: toPatient,
     staleTime: STALE_TIME,
+  })
+}
+
+/** Creates a patient, then refetches the directory so the new one shows up from the server truth. */
+export function useCreatePatient() {
+  const queryClient = useQueryClient()
+  return useMutation<Patient, Error, PacienteRegistroRequest>({
+    mutationFn: async (request) => toPatient(await createPatient(request)),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: patientKeys.list() })
+    },
   })
 }

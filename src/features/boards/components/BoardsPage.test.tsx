@@ -58,6 +58,20 @@ describe('BoardsPage', () => {
     expect(await screen.findByRole('link', { name: 'Volver a pacientes' })).toHaveAttribute('href', '/pacientes')
   })
 
+  it('shows the patient identity and age in the header, and a direct way into the principal board', async () => {
+    renderApp(url)
+    await screen.findByRole('heading', { name: 'Tomás Pérez' })
+    expect(screen.getByText(/años? · Nacimiento: 12\/05\/2018/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Abrir Modo Uso' })).toHaveAttribute('href', `${url}/c-1/uso`)
+  })
+
+  it('has no "Abrir Modo Uso" shortcut when the patient has no principal board', async () => {
+    vi.mocked(fetchBoards).mockResolvedValue(boardsListResponse.map((board) => ({ ...board, esPrincipal: false })))
+    renderApp(url)
+    await screen.findByRole('heading', { name: 'Tomás Pérez' })
+    expect(screen.queryByRole('link', { name: 'Abrir Modo Uso' })).not.toBeInTheDocument()
+  })
+
   it('shows the empty state with a create button for the responsible therapist', async () => {
     vi.mocked(fetchBoards).mockResolvedValue([])
     renderApp(url)
@@ -87,6 +101,7 @@ describe('BoardsPage', () => {
     renderApp(url)
     expect(await screen.findByRole('alert')).toHaveTextContent('No encontramos al paciente o no tienes acceso.')
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Cartillas' })).toBeInTheDocument()
+    // No patient identity is known yet: the contextual header and the "Cartillas" section stay out, not a fake fallback.
+    expect(screen.queryByRole('heading', { name: 'Cartillas' })).not.toBeInTheDocument()
   })
 })

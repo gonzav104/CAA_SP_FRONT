@@ -1,19 +1,23 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
-import { Navigate, useParams } from 'react-router'
+import { Play, Plus } from 'lucide-react'
+import { Link, Navigate, useParams } from 'react-router'
 import { paths } from '@/app/paths'
 import { getCartillaErrorMessage, getErrorStatus, getReadErrorMessage } from '@/api/errors'
 import { ErrorState } from '@/components/ErrorState'
 import { LoadingState } from '@/components/LoadingState'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { useCurrentUser } from '@/features/auth/hooks'
+import { ageFrom } from '@/features/patients/age'
+import { formatBirthDate } from '@/features/patients/format'
 import { usePatient } from '@/features/patients/hooks'
 import type { Patient } from '@/features/patients/types'
 import { PageLayout } from '@/layouts/PageLayout'
+import { initialOf } from '@/lib/utils'
 import { CartillaOperationError } from '../cartillaOperations'
 import type { CartillaOperation } from '../cartillaOperations'
 import { useBoards } from '../hooks'
 import { canCreateBoard, canEditBoard, canSetPrimaryBoard } from '../permissions'
+import type { BoardSummary } from '../types'
 import { useBoardListOperations } from '../useBoardListOperations'
 import { BoardNameForm } from './BoardNameForm'
 import { BoardRow } from './BoardRow'
@@ -147,7 +151,7 @@ function BoardsContent({ patientId, patient }: BoardsContentProps) {
   const visibleNotice = notice && (!notice.retry || isError) ? notice : null
 
   const createForm = (
-    <div className="flex rounded-xl border bg-background px-5 py-3">
+    <div className="flex rounded-2xl border border-border/60 bg-background px-5 py-3">
       <BoardNameForm
         label="Nombre de la nueva cartilla"
         submitLabel="Crear cartilla"
@@ -183,7 +187,7 @@ function BoardsContent({ patientId, patient }: BoardsContentProps) {
       )}
 
       {boards.length === 0 ? (
-        <div className="flex flex-col items-center gap-4 rounded-xl border bg-background px-6 py-10 text-center">
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-border/60 bg-background px-6 py-10 text-center">
           <p className="text-muted-foreground">Este paciente todavía no tiene cartillas.</p>
           {canCreate && (isCreating ? createForm : createButton)}
         </div>
@@ -228,6 +232,40 @@ function BoardsContent({ patientId, patient }: BoardsContentProps) {
   )
 }
 
+/** Identity, age and (when the patient has one) a direct way into their principal cartilla. */
+function PatientSpaceHeader({ patient, principal }: { patient: Patient; principal: BoardSummary | undefined }) {
+  const age = ageFrom(patient.birthDate, new Date())
+
+  return (
+    <section className="flex flex-col gap-5 rounded-3xl border border-border/60 bg-background px-6 py-7 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+      <div className="flex items-center gap-4">
+        <span
+          aria-hidden="true"
+          className="flex size-14 shrink-0 items-center justify-center rounded-full bg-caa-accent/10 text-lg font-semibold text-caa-accent"
+        >
+          {initialOf(patient.firstName)}
+        </span>
+        <div className="flex flex-col gap-0.5">
+          <h1 className="text-2xl font-semibold text-foreground">{patient.fullName}</h1>
+          <p className="text-sm text-muted-foreground">
+            {age !== null && `${age} ${age === 1 ? 'año' : 'años'} · `}
+            Nacimiento: {formatBirthDate(patient.birthDate)}
+          </p>
+        </div>
+      </div>
+      {principal && (
+        <Link
+          to={paths.boardUse(patient.id, principal.id)}
+          className={buttonVariants({ size: 'lg', className: 'shrink-0' })}
+        >
+          <Play aria-hidden="true" />
+          Abrir Modo Uso
+        </Link>
+      )}
+    </section>
+  )
+}
+
 export function BoardsPage() {
   const { pacienteId } = useParams()
   if (!pacienteId) return <Navigate to={paths.patients()} replace />
@@ -236,19 +274,26 @@ export function BoardsPage() {
 
 function BoardsPageContent({ patientId }: { patientId: string }) {
   const patient = usePatient(patientId)
+  // Same query the "Cartillas" section below reads: one shared cache entry, not a second request.
+  const boards = useBoards(patientId)
+  const principal = boards.data?.find((board) => board.isPrimary)
 
   return (
-    <PageLayout
-      title={patient.data?.fullName ?? 'Cartillas'}
-      backLink={{ to: paths.patients(), label: 'Volver a pacientes' }}
-    >
+    <PageLayout backLink={{ to: paths.patients(), label: 'Volver a pacientes' }} tone="warm">
       {patient.isError && (
         <ErrorState
           message={getReadErrorMessage(patient.error, 'No encontramos al paciente o no tienes acceso.')}
           onRetry={() => void patient.refetch()}
         />
       )}
-      {!patient.isError && <BoardsContent patientId={patientId} patient={patient.data} />}
+      {!patient.isError && patient.data && <PatientSpaceHeader patient={patient.data} principal={principal} />}
+      {!patient.isError && !patient.data && <LoadingState message="Cargando paciente…" />}
+      {!patient.isError && (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-semibold text-foreground">Cartillas</h2>
+          <BoardsContent patientId={patientId} patient={patient.data} />
+        </section>
+      )}
     </PageLayout>
   )
 }

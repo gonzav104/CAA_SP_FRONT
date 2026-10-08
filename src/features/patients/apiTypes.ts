@@ -12,3 +12,11 @@ export interface PacienteResponse {
   miPermiso: PermisoColaborador | null
   gridSize: number | null
 }
+
+// Mirrors PacienteRegistroDTO. Backend requires nombre/apellido non-blank and fechaNacimiento in the past.
+export interface PacienteRegistroRequest {
+  nombre: string
+  apellido: string
+  /** ISO local date, `YYYY-MM-DD`. */
+  fechaNacimiento: string
+}

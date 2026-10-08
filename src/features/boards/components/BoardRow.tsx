@@ -54,8 +54,8 @@ export function BoardRow({
   return (
     <li
       className={cn(
-        'flex min-h-16 flex-wrap items-center justify-between gap-3 rounded-xl border bg-background px-5 py-3',
-        board.isPrimary && 'border-primary/60 shadow-sm',
+        'flex min-h-16 flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background px-5 py-3',
+        board.isPrimary && 'border-caa-accent/50',
       )}
     >
       {mode === 'rename' ? (
@@ -74,7 +74,7 @@ export function BoardRow({
         <div className="flex min-w-0 items-center gap-3">
           <span className="truncate text-base font-medium">{name}</span>
           {board.isPrimary && (
-            <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+            <span className="flex items-center gap-1 rounded-full bg-caa-accent/10 px-2.5 py-0.5 text-xs font-medium text-caa-accent">
               <Star aria-hidden="true" className="size-3.5 fill-current" />
               Principal
             </span>
