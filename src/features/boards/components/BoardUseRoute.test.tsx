@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchCurrentUser } from '@/features/auth/authApi'
 import { fetchPatient } from '@/features/patients/patientsApi'
@@ -26,21 +26,71 @@ describe('BoardUseRoute', () => {
     expect(await screen.findByText('Cargando cartilla…')).toBeInTheDocument()
   })
 
-  it('renders only visible cards in visual order with label and spoken text mapped', async () => {
+  const cardsIn = () => screen.getAllByRole('button').filter((b) => b.hasAttribute('aria-description'))
+
+  it('opens on the first category (therapist order) showing only its visible cards, in visual order', async () => {
     renderApp(url)
     await screen.findByRole('heading', { name: 'Comunicación de Tomás', hidden: true })
-    const cards = screen.getAllByRole('button').filter((b) => b.hasAttribute('aria-description'))
-    expect(cards.map((c) => c.getAttribute('aria-label'))).toEqual(['Hambre', 'Baño', 'Ayuda', 'Jugar'])
+    expect(cardsIn().map((c) => c.getAttribute('aria-label'))).toEqual(['Hambre', 'Baño'])
     expect(screen.queryByRole('button', { name: 'Sed' })).not.toBeInTheDocument()
-    const jugar = screen.getByRole('button', { name: 'Jugar' })
-    expect(jugar).toHaveAttribute('aria-description', 'Quiero jugar un rato')
+    expect(screen.queryByRole('button', { name: 'Ayuda' })).not.toBeInTheDocument()
     expect(screen.getByText('Tomás', { selector: 'span' })).toBeInTheDocument()
   })
 
-  it('shows the empty state when no card is visible', async () => {
+  it('lists the real categories as navigation, in therapist order', async () => {
+    renderApp(url)
+    const nav = await screen.findByRole('navigation', { name: 'Categorías' })
+    expect(within(nav).getAllByRole('button').map((b) => b.textContent)).toEqual(['Necesidades', 'Acciones'])
+  })
+
+  it('switching category replaces the grid without speaking and without touching the other category', async () => {
+    renderApp(url)
+    await screen.findByRole('heading', { name: 'Comunicación de Tomás', hidden: true })
+    const nav = screen.getByRole('navigation', { name: 'Categorías' })
+
+    fireEvent.click(within(nav).getByRole('button', { name: 'Acciones' }))
+
+    expect(cardsIn().map((c) => c.getAttribute('aria-label'))).toEqual(['Ayuda', 'Jugar'])
+    expect(screen.queryByRole('button', { name: 'Hambre' })).not.toBeInTheDocument()
+    const jugar = screen.getByRole('button', { name: 'Jugar' })
+    expect(jugar).toHaveAttribute('aria-description', 'Quiero jugar un rato')
+    // Selecting a category is navigation, not communication: nothing is marked as speaking.
+    expect(jugar).not.toHaveAttribute('data-speaking')
+
+    fireEvent.click(within(nav).getByRole('button', { name: 'Necesidades' }))
+    expect(cardsIn().map((c) => c.getAttribute('aria-label'))).toEqual(['Hambre', 'Baño'])
+  })
+
+  it('repeated switching between categories is stable and never reorders either one', async () => {
+    renderApp(url)
+    const nav = await screen.findByRole('navigation', { name: 'Categorías' })
+    for (let i = 0; i < 3; i++) {
+      fireEvent.click(within(nav).getByRole('button', { name: 'Acciones' }))
+      expect(cardsIn().map((c) => c.getAttribute('aria-label'))).toEqual(['Ayuda', 'Jugar'])
+      fireEvent.click(within(nav).getByRole('button', { name: 'Necesidades' }))
+      expect(cardsIn().map((c) => c.getAttribute('aria-label'))).toEqual(['Hambre', 'Baño'])
+    }
+  })
+
+  it('omits a category from navigation when every one of its items is hidden', async () => {
+    vi.mocked(fetchBoardDetail).mockResolvedValue({
+      ...boardDetailResponse,
+      categorias: boardDetailResponse.categorias.map((category) =>
+        category.id === 'cat-b'
+          ? { ...category, items: category.items.map((item) => ({ ...item, visibleEnModoUso: false })) }
+          : category,
+      ),
+    })
+    renderApp(url)
+    const nav = await screen.findByRole('navigation', { name: 'Categorías' })
+    expect(within(nav).getAllByRole('button').map((b) => b.textContent)).toEqual(['Necesidades'])
+  })
+
+  it('shows the empty state when no board category has a visible card', async () => {
     vi.mocked(fetchBoardDetail).mockResolvedValue({ ...boardDetailResponse, categorias: [] })
     renderApp(url)
     expect(await screen.findByText('No hay tarjetas visibles en esta cartilla.')).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: 'Categorías' })).not.toBeInTheDocument()
   })
 
   it('shows an error with retry and a link back to the boards', async () => {

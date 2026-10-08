@@ -23,7 +23,7 @@ import { createEmptyNewCard, isNewCardDirty, isNewCardValid } from '../newCardFo
 import type { NewCardForm } from '../newCardForm'
 import { useGlobalPictograms } from '../pictogramHooks'
 import { describeBlocker, planBoardSave } from '../savePlan'
-import { toCommunicationItems } from '../toCommunicationItems'
+import { toCommunicationCategories } from '../toCommunicationCategories'
 import { useCategoryOperations } from '../useCategoryOperations'
 import { useCreateBoardItem } from '../useCreateBoardItem'
 import { useDeleteBoardItem } from '../useDeleteBoardItem'
@@ -88,7 +88,8 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
   useUnsavedChangesGuard(isDirty || isFormDirty || isCategoryEditorOpenDirty)
 
   const selectedItem = items.find((item) => item.id === selectedId)
-  const previewItems = toCommunicationItems(board)
+  const previewCategories = toCommunicationCategories(board)
+  const previewVisibleCount = previewCategories.reduce((sum, category) => sum + category.items.length, 0)
   const boardPictograms = [...baseline.items, ...board.items].flatMap((item): Pictogram[] =>
     item.pictogram ? [item.pictogram] : [],
   )
@@ -421,8 +422,8 @@ export function BoardEditorPage({ patient, serverBoard }: BoardEditorPageProps) 
         >
           <BoardPreview
             patientName={patient.firstName}
-            items={previewItems}
-            hiddenCount={items.length - previewItems.length}
+            categories={previewCategories}
+            hiddenCount={items.length - previewVisibleCount}
             onSelect={select}
           />
         </div>

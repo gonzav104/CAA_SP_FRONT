@@ -930,3 +930,44 @@ describe('BoardEditorPage category navigation guard', () => {
     expect(fake.post).not.toHaveBeenCalled()
   })
 })
+
+describe('BoardEditorPage preview category navigation', () => {
+  const preview = () => screen.getByTestId('board-preview')
+  const previewNav = () => within(preview()).getByRole('navigation', { name: 'Categorías' })
+
+  it('shows only the first category by default, with a category button per real category', async () => {
+    setupApi()
+    await openEditor()
+
+    expect(within(preview()).getByText('Hambre')).toBeInTheDocument()
+    expect(within(preview()).getByText('Baño')).toBeInTheDocument()
+    expect(within(preview()).queryByText('Ayuda')).not.toBeInTheDocument()
+    expect(within(preview()).queryByText('Jugar')).not.toBeInTheDocument()
+    expect(within(previewNav()).getAllByRole('button').map((b) => b.textContent)).toEqual(['Necesidades', 'Acciones'])
+  })
+
+  it('switching the preview category only changes what the preview shows, never the editor selection', async () => {
+    setupApi()
+    await openEditor()
+    expect(labelInput()).toHaveValue('Hambre')
+
+    await userEvent.click(within(previewNav()).getByRole('button', { name: 'Acciones' }))
+
+    expect(within(preview()).getByText('Ayuda')).toBeInTheDocument()
+    expect(within(preview()).getByText('Jugar')).toBeInTheDocument()
+    expect(within(preview()).queryByText('Hambre')).not.toBeInTheDocument()
+    // The right-hand editor panel keeps editing whatever was selected before — the preview's own
+    // category switch is local and never drives the admin selection.
+    expect(labelInput()).toHaveValue('Hambre')
+  })
+
+  it('tapping a card in the preview still selects it for editing, in any preview category', async () => {
+    setupApi()
+    await openEditor()
+
+    await userEvent.click(within(previewNav()).getByRole('button', { name: 'Acciones' }))
+    await userEvent.click(within(preview()).getByText('Jugar'))
+
+    expect(labelInput()).toHaveValue('Jugar')
+  })
+})

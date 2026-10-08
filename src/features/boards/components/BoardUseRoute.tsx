@@ -8,7 +8,7 @@ import { CommunicationPage } from '@/features/communication/components/Communica
 import { usePatient } from '@/features/patients/hooks'
 import { useBoardDetail } from '../hooks'
 import { canEditBoard } from '../permissions'
-import { toCommunicationItems } from '../toCommunicationItems'
+import { toCommunicationCategories } from '../toCommunicationCategories'
 
 export function BoardUseRoute() {
   const { pacienteId, cartillaId } = useParams()
@@ -55,9 +55,12 @@ function BoardUseRouteContent({ patientId, boardId }: { patientId: string; board
     : paths.boards(patientId)
 
   return (
+    // `key`: a different cartilla (or the same route after a refresh) always starts on its own
+    // first category — never carries over an `activeCategoryId` that belonged to another board.
     <CommunicationPage
+      key={board.data.id}
       userName={patient.data.firstName}
-      items={toCommunicationItems(board.data)}
+      categories={toCommunicationCategories(board.data)}
       onExit={() => navigate(exitTo)}
     />
   )

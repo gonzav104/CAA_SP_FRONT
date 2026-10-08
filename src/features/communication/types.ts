@@ -9,3 +9,11 @@ export interface CommunicationItem {
   /** Stable position on the board (backend: `ItemCartilla.ordenVisual`). */
   order: number
 }
+
+/** One category of Use Mode navigation: its real name, in the therapist's order, with only its visible items. */
+export interface CommunicationCategory {
+  id: string
+  /** Backend: `Categoria.nombre`. */
+  name: string
+  items: CommunicationItem[]
+}
