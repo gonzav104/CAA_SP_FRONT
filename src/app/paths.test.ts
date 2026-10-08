@@ -3,6 +3,7 @@ import { paths, routes } from './paths'
 
 describe('paths', () => {
   it('builds the list and detail paths', () => {
+    expect(paths.dashboard()).toBe('/')
     expect(paths.patients()).toBe('/pacientes')
     expect(paths.boards('p1')).toBe('/pacientes/p1/cartillas')
     expect(paths.boardEditor('p1', 'c1')).toBe('/pacientes/p1/cartillas/c1/editor')
@@ -20,5 +21,6 @@ describe('paths', () => {
     expect(routes.boardEditor).toBe('/pacientes/:pacienteId/cartillas/:cartillaId/editor')
     expect(routes.boardUse).toBe('/pacientes/:pacienteId/cartillas/:cartillaId/uso')
     expect(routes.login).toBe('/login')
+    expect(routes.dashboard).toBe('/')
   })
 })

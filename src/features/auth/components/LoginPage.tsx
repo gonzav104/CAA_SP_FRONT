@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { getLoginErrorMessage } from '../errors'
 import { useCurrentUser, useLogin } from '../hooks'
 
-const DEFAULT_DESTINATION = paths.patients()
+const DEFAULT_DESTINATION = paths.dashboard()
 
 const loginSchema = z.object({
   email: z.email('Ingresa un email válido'),

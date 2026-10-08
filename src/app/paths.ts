@@ -2,6 +2,7 @@
 // so no component hardcodes a URL.
 export const routes = {
   login: '/login',
+  dashboard: '/',
   patients: '/pacientes',
   boards: '/pacientes/:pacienteId/cartillas',
   boardEditor: '/pacientes/:pacienteId/cartillas/:cartillaId/editor',
@@ -9,6 +10,7 @@ export const routes = {
 } as const
 
 export const paths = {
+  dashboard: () => routes.dashboard,
   patients: () => routes.patients,
   boards: (patientId: string) => `/pacientes/${encodeURIComponent(patientId)}/cartillas`,
   boardEditor: (patientId: string, boardId: string) =>

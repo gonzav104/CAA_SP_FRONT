@@ -55,7 +55,7 @@ describe('BoardsPage', () => {
 
   it('links back to the patients list', async () => {
     renderApp(url)
-    expect(await screen.findByRole('link', { name: 'Pacientes' })).toHaveAttribute('href', '/pacientes')
+    expect(await screen.findByRole('link', { name: 'Volver a pacientes' })).toHaveAttribute('href', '/pacientes')
   })
 
   it('shows the empty state with a create button for the responsible therapist', async () => {

@@ -5,6 +5,7 @@ import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute'
 import { BoardEditorRoute } from '@/features/boards/components/BoardEditorRoute'
 import { BoardUseRoute } from '@/features/boards/components/BoardUseRoute'
 import { BoardsPage } from '@/features/boards/components/BoardsPage'
+import { DashboardPage } from '@/features/dashboard/components/DashboardPage'
 import { PatientsPage } from '@/features/patients/components/PatientsPage'
 
 // A data router is required by `useBlocker` (unsaved-changes guard of the board editor).
@@ -13,13 +14,14 @@ const router = createBrowserRouter([
   {
     element: <ProtectedRoute />,
     children: [
+      { path: routes.dashboard, element: <DashboardPage /> },
       { path: routes.patients, element: <PatientsPage /> },
       { path: routes.boards, element: <BoardsPage /> },
       { path: routes.boardEditor, element: <BoardEditorRoute /> },
       { path: routes.boardUse, element: <BoardUseRoute /> },
     ],
   },
-  { path: '*', element: <Navigate to={paths.patients()} replace /> },
+  { path: '*', element: <Navigate to={paths.dashboard()} replace /> },
 ])
 
 function App() {

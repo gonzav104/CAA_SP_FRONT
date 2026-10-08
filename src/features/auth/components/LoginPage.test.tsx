@@ -39,7 +39,7 @@ function renderLogin() {
       <MemoryRouter initialEntries={['/login']}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/pacientes" element={<p>Editor stub</p>} />
+          <Route path="/" element={<p>Dashboard stub</p>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -78,12 +78,12 @@ describe('LoginPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Email o contraseña incorrectos.')
   })
 
-  it('navigates to /pacientes on success', async () => {
+  it('navigates to the dashboard on success', async () => {
     vi.mocked(login).mockResolvedValue({ token: null, tipo: 'Bearer' })
     vi.mocked(fetchCurrentUser).mockResolvedValueOnce(null).mockResolvedValue(user)
     renderLogin()
     await fillAndSubmit()
-    expect(await screen.findByText('Editor stub')).toBeInTheDocument()
+    expect(await screen.findByText('Dashboard stub')).toBeInTheDocument()
     expect(login).toHaveBeenCalledWith({ email: 'ana@example.com', password: 'secret' })
   })
 
@@ -102,10 +102,10 @@ describe('LoginPage', () => {
     expect(button).toBeDisabled()
   })
 
-  it('redirects an already authenticated visitor to /pacientes', async () => {
+  it('redirects an already authenticated visitor to the dashboard', async () => {
     vi.mocked(fetchCurrentUser).mockResolvedValue(user)
     renderLogin()
-    expect(await screen.findByText('Editor stub')).toBeInTheDocument()
+    expect(await screen.findByText('Dashboard stub')).toBeInTheDocument()
   })
 
   it('does not write anything to Web Storage during login', async () => {
@@ -114,7 +114,7 @@ describe('LoginPage', () => {
     vi.mocked(fetchCurrentUser).mockResolvedValueOnce(null).mockResolvedValue(user)
     renderLogin()
     await fillAndSubmit()
-    await waitFor(() => expect(screen.getByText('Editor stub')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Dashboard stub')).toBeInTheDocument())
     expect(setItem).not.toHaveBeenCalled()
   })
 })

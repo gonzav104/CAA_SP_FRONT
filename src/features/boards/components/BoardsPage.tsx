@@ -240,7 +240,7 @@ function BoardsPageContent({ patientId }: { patientId: string }) {
   return (
     <PageLayout
       title={patient.data?.fullName ?? 'Cartillas'}
-      backLink={{ to: paths.patients(), label: 'Pacientes' }}
+      backLink={{ to: paths.patients(), label: 'Volver a pacientes' }}
     >
       {patient.isError && (
         <ErrorState
