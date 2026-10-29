@@ -1,9 +1,11 @@
-import { screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError } from 'axios'
 import type { InternalAxiosRequestConfig } from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { acceptInvitation } from '@/features/invitations/invitationsApi'
+import { organizationKeys } from '@/features/organizations/hooks'
+import { patientKeys } from '@/features/patients/hooks'
 import { renderAuthRoutes } from '@/test/renderAuthRoutes'
 import {
   completeGoogleRecovery,
@@ -71,6 +73,31 @@ describe('Google login', () => {
     expect(googleLogin).toHaveBeenCalledExactlyOnceWith(ID_TOKEN)
     await screen.findByText('Dashboard stub')
     expect(completeGoogleRegistration).not.toHaveBeenCalled()
+  })
+
+  it('drops data cached for a previous account when the new session starts', async () => {
+    vi.mocked(googleLogin).mockResolvedValue(linked)
+    vi.mocked(fetchCurrentUser).mockResolvedValueOnce(null).mockResolvedValue(user)
+    const { queryClient } = renderAuthRoutes('/login')
+    // Left behind by an expired session of someone else in this browser.
+    queryClient.setQueryData(patientKeys.list(), [{ id: 'p-otro' }])
+    queryClient.setQueryData(organizationKeys.all, [{ id: 'org-otro' }])
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Google (simulado)' }))
+    await screen.findByText('Dashboard stub')
+
+    expect(queryClient.getQueryData(patientKeys.list())).toBeUndefined()
+    expect(queryClient.getQueryData(organizationKeys.all)).toBeUndefined()
+  })
+
+  it('sends a single request when Google delivers two credentials before re-rendering', async () => {
+    vi.mocked(googleLogin).mockReturnValue(new Promise(() => {}))
+    renderAuthRoutes('/login')
+    const button = await screen.findByRole('button', { name: 'Google (simulado)' })
+    fireEvent.click(button)
+    fireEvent.click(button)
+    await vi.waitFor(() => expect(googleLogin).toHaveBeenCalled())
+    expect(googleLogin).toHaveBeenCalledOnce()
   })
 
   it('asks to confirm a first Google registration, creates identity only, then logs in', async () => {
@@ -196,6 +223,28 @@ describe('Google identity recovery', () => {
       password: STRONG,
     })
     await screen.findByText('Dashboard stub')
+  })
+
+  it('never sends the single-use recovery twice, even on a double confirmation', async () => {
+    vi.mocked(completeGoogleRecovery).mockReturnValue(new Promise(() => {}))
+    renderAuthRoutes(`/recuperar-google?token=${RECOVERY_TOKEN}`)
+    await fillPasswords()
+    const button = screen.getByRole('button', { name: 'Google (simulado)' })
+    fireEvent.click(button)
+    fireEvent.click(button)
+    await vi.waitFor(() => expect(completeGoogleRecovery).toHaveBeenCalled())
+    expect(completeGoogleRecovery).toHaveBeenCalledOnce()
+  })
+
+  it('a recovery done while signed in as someone else drops that account cached data', async () => {
+    vi.mocked(completeGoogleRecovery).mockResolvedValue(linked)
+    const { queryClient } = renderAuthRoutes(`/recuperar-google?token=${RECOVERY_TOKEN}`)
+    queryClient.setQueryData(patientKeys.list(), [{ id: 'p-otro' }])
+    await fillPasswords()
+    vi.mocked(fetchCurrentUser).mockResolvedValue(user)
+    await userEvent.click(screen.getByRole('button', { name: 'Google (simulado)' }))
+    await screen.findByText('Dashboard stub')
+    expect(queryClient.getQueryData(patientKeys.list())).toBeUndefined()
   })
 
   it('validates the new password before sending any proof', async () => {

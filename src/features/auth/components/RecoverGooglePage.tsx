@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router'
@@ -46,6 +47,7 @@ export function RecoverGooglePage() {
 
 function RequestRecovery() {
   const requestRecovery = useRequestGoogleRecovery()
+  const inFlight = useRef(false)
 
   if (requestRecovery.isSuccess) {
     return (
@@ -67,7 +69,13 @@ function RequestRecovery() {
         <GoogleSignInButton
           text="continue_with"
           onCredential={(idToken) => {
-            if (!requestRecovery.isPending) requestRecovery.mutate(idToken)
+            if (inFlight.current) return
+            inFlight.current = true
+            requestRecovery.mutate(idToken, {
+              onSettled: () => {
+                inFlight.current = false
+              },
+            })
           }}
         />
         {requestRecovery.isPending && (
@@ -104,6 +112,8 @@ type CompleteFormValues = z.infer<typeof completeSchema>
 function CompleteRecovery({ token }: { token: string }) {
   const navigate = useNavigate()
   const completeRecovery = useCompleteGoogleRecovery()
+  // The e-mailed token is single use: a second submission must never race the first one.
+  const inFlight = useRef(false)
   const {
     register,
     trigger,
@@ -116,11 +126,20 @@ function CompleteRecovery({ token }: { token: string }) {
 
   // The Google confirmation is the submit: the password is validated first, then both proofs go together.
   const handleCredential = async (idToken: string) => {
-    if (completeRecovery.isPending) return
-    if (!(await trigger())) return
+    if (inFlight.current) return
+    inFlight.current = true
+    if (!(await trigger())) {
+      inFlight.current = false
+      return
+    }
     completeRecovery.mutate(
       { idToken, token, password: getValues('password') },
-      { onSuccess: () => navigate(paths.dashboard(), { replace: true }) },
+      {
+        onSuccess: () => navigate(paths.dashboard(), { replace: true }),
+        onSettled: () => {
+          inFlight.current = false
+        },
+      },
     )
   }
 

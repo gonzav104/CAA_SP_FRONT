@@ -37,6 +37,17 @@ describe('GoogleSignInButton', () => {
     expect(onCredential).toHaveBeenCalledExactlyOnceWith('id-token-1')
   })
 
+  it('ignores a credential that arrives after the button was unmounted', async () => {
+    vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'client-123')
+    const google = fakeGoogle()
+    const onCredential = vi.fn()
+    const { unmount } = render(<GoogleSignInButton onCredential={onCredential} />)
+    await vi.waitFor(() => expect(google.id.renderButton).toHaveBeenCalled())
+    unmount()
+    google.emit('late-id-token')
+    expect(onCredential).not.toHaveBeenCalled()
+  })
+
   it('renders nothing without a client ID', () => {
     vi.stubEnv('VITE_GOOGLE_CLIENT_ID', '')
     const { container } = render(<GoogleSignInButton onCredential={vi.fn()} />)

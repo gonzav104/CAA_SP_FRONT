@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { routes } from '@/app/paths'
 import { Button } from '@/components/ui/button'
@@ -29,11 +29,15 @@ export function GoogleLoginSection({ onAuthenticated }: GoogleLoginSectionProps)
   const googleLogin = useGoogleLogin()
   const completeRegistration = useCompleteGoogleRegistration()
   const [pending, setPending] = useState<PendingRegistration | null>(null)
+  // Single flight across renders: a second credential or click before React re-renders is ignored, so
+  // a later call can never replace the callbacks (and the navigation) of the one in progress.
+  const inFlight = useRef(false)
 
   if (!getGoogleClientId()) return null
 
   const handleCredential = (idToken: string) => {
-    if (googleLogin.isPending || completeRegistration.isPending) return
+    if (inFlight.current) return
+    inFlight.current = true
     setPending(null)
     completeRegistration.reset()
     googleLogin.mutate(idToken, {
@@ -41,15 +45,22 @@ export function GoogleLoginSection({ onAuthenticated }: GoogleLoginSectionProps)
         if (outcome.kind === 'authenticated') onAuthenticated()
         else setPending({ idToken, email: outcome.email, nombre: outcome.nombre })
       },
+      onSettled: () => {
+        inFlight.current = false
+      },
     })
   }
 
   const handleConfirmRegistration = () => {
-    if (!pending || completeRegistration.isPending) return
+    if (!pending || inFlight.current) return
+    inFlight.current = true
     completeRegistration.mutate(pending.idToken, {
       onSuccess: () => {
         setPending(null)
         onAuthenticated()
+      },
+      onSettled: () => {
+        inFlight.current = false
       },
     })
   }

@@ -35,9 +35,12 @@ export function useCurrentUser() {
 
 /**
  * After any successful login the backend has set the httpOnly cookie; /me proves the session is real
- * (a blocked cookie would leave it null) and seeds the current user for the rest of the app.
+ * (a blocked cookie would leave it null) and seeds the current user for the rest of the app. Data cached
+ * for a previous account (an expired session, or a Google recovery done while signed in) is dropped
+ * first, so the new account never sees it.
  */
 async function establishSession(queryClient: QueryClient): Promise<CurrentUser> {
+  queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== 'auth' })
   const user = await queryClient.fetchQuery({
     queryKey: authKeys.me,
     queryFn: fetchCurrentUser,

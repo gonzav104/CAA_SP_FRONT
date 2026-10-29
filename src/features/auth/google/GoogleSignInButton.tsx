@@ -30,8 +30,10 @@ export function GoogleSignInButton({ onCredential, text = 'continue_with' }: Goo
         if (!active || !container.current) return
         googleId.initialize({
           client_id: clientId,
+          // GIS keeps this callback after the button is gone (e.g. its popup outlives a navigation):
+          // a credential arriving after unmount must not act on a screen the user already left.
           callback: ({ credential }) => {
-            if (credential) latestOnCredential.current(credential)
+            if (active && credential) latestOnCredential.current(credential)
           },
           auto_select: false,
           cancel_on_tap_outside: true,
