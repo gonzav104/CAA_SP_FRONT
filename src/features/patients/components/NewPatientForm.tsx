@@ -28,6 +28,8 @@ export type NewPatientFormValues = z.infer<typeof newPatientSchema>
 interface NewPatientFormProps {
   /** Organizations where the user may register patients (at least one). With one, it is preselected. */
   organizations: readonly OrganizacionResponse[]
+  /** Preselected organization (the active space), when it is one of `organizations`. */
+  defaultOrganizationId?: string
   isPending: boolean
   /** Message of the last failed submit (server/network); field errors are shown separately. */
   error: string | null
@@ -36,7 +38,18 @@ interface NewPatientFormProps {
 }
 
 /** Inline card to register a new patient, in the same visual language as the rest of the shell. */
-export function NewPatientForm({ organizations, isPending, error, onSubmit, onCancel }: NewPatientFormProps) {
+export function NewPatientForm({
+  organizations,
+  defaultOrganizationId,
+  isPending,
+  error,
+  onSubmit,
+  onCancel,
+}: NewPatientFormProps) {
+  const preselected =
+    organizations.length === 1
+      ? organizations[0].id
+      : (organizations.find((organization) => organization.id === defaultOrganizationId)?.id ?? '')
   const {
     register,
     handleSubmit,
@@ -47,7 +60,7 @@ export function NewPatientForm({ organizations, isPending, error, onSubmit, onCa
       nombre: '',
       apellido: '',
       fechaNacimiento: '',
-      organizacionId: organizations.length === 1 ? organizations[0].id : '',
+      organizacionId: preselected,
     },
   })
 

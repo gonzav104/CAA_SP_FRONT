@@ -7,6 +7,14 @@ describe('getReturnTo', () => {
     expect(getReturnTo(state)).toEqual({ pathname: '/invitaciones/aceptar', state: { invitationToken: 't' } })
   })
 
+  it('keeps the query string of the internal destination (e.g. the active space)', () => {
+    expect(getReturnTo({ from: { pathname: '/pacientes', search: '?espacio=org-1' } })).toEqual({
+      pathname: '/pacientes?espacio=org-1',
+      state: undefined,
+    })
+    expect(getReturnTo({ from: { pathname: '/pacientes', search: '//evil.example' } }).pathname).toBe('/pacientes')
+  })
+
   it.each([
     ['an absolute URL', 'https://evil.example/phish'],
     ['a protocol-relative URL', '//evil.example'],

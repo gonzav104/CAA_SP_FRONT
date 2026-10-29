@@ -1,6 +1,7 @@
 import { paths, routes } from '@/app/paths'
 
 export interface ReturnTo {
+  /** Internal path, with its query string when there was one. */
   pathname: string
   /** History state of the original location (e.g. a pending invitation token), handed back as is. */
   state?: unknown
@@ -28,7 +29,9 @@ export function getReturnTo(locationState: unknown): ReturnTo {
   ) {
     return DEFAULT_RETURN_TO
   }
-  return { pathname, state: 'state' in from ? from.state : undefined }
+  // The query string (e.g. the active space) comes back too; it can only extend this same internal path.
+  const search = 'search' in from && typeof from.search === 'string' && from.search.startsWith('?') ? from.search : ''
+  return { pathname: pathname + search, state: 'state' in from ? from.state : undefined }
 }
 
 const AUTH_PATHS = new Set<string>([

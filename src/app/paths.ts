@@ -27,6 +27,8 @@ export const routes = {
 export const paths = {
   dashboard: () => routes.dashboard,
   patients: () => routes.patients,
+  /** Patients of one space: an organization id, or `compartidos` for family-shared patients. */
+  patientsInSpace: (spaceId: string) => `${routes.patients}?espacio=${encodeURIComponent(spaceId)}`,
   patientSpace: (patientId: string) => `/pacientes/${encodeURIComponent(patientId)}`,
   boards: (patientId: string) => `/pacientes/${encodeURIComponent(patientId)}/cartillas`,
   sessions: (patientId: string) => `/pacientes/${encodeURIComponent(patientId)}/sesiones`,

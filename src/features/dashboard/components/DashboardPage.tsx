@@ -4,6 +4,7 @@ import { paths } from '@/app/paths'
 import { PictogramGridMark } from '@/components/PictogramGridMark'
 import { useCurrentUser } from '@/features/auth/hooks'
 import { usePatients } from '@/features/patients/hooks'
+import { SpacesSection } from '@/features/organizations/components/SpacesSection'
 import { useOrganizations } from '@/features/organizations/hooks'
 import { canCreatePatient } from '@/features/organizations/permissions'
 import { PageLayout } from '@/layouts/PageLayout'
@@ -116,6 +117,8 @@ export function DashboardPage() {
           <ActionTile icon={Users} title="Gestionar pacientes" description="Ver el directorio completo" to={paths.patients()} />
         </div>
       </section>
+
+      <SpacesSection />
     </PageLayout>
   )
 }

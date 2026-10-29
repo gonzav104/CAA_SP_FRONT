@@ -253,6 +253,20 @@ export function getCustomPictogramDeleteErrorMessage(error: unknown): string {
   return 'Ocurrió un error inesperado.'
 }
 
+// User-facing copy for a failed workspace creation (POST /api/organizaciones).
+export function getOrganizationCreateErrorMessage(error: unknown): string {
+  if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
+  const status = getErrorStatus(error)
+  if (status === 400) {
+    const message = getApiErrorBody(error)?.message.trim()
+    return message && message.length <= MAX_ECHOED_MESSAGE_LENGTH
+      ? `El servidor rechazó los datos: ${message}`
+      : 'El servidor rechazó los datos.'
+  }
+  if (status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente.'
+  return 'Ocurrió un error inesperado.'
+}
+
 export const INVALID_INVITATION_MESSAGE = 'El enlace no es válido o ha expirado.'
 
 // User-facing copy for a failed invitation acceptance (POST /api/invitaciones/aceptar). The backend

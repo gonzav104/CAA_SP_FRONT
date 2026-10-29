@@ -278,4 +278,50 @@ describe('PatientsPage', () => {
     expect(screen.getByTestId('location')).toHaveTextContent(/^\/pacientes$/)
     expect(fetchPatients).toHaveBeenCalledOnce()
   })
+
+  describe('spaces', () => {
+    const mixed = [...therapistPatientsResponse, ...familyPatientsResponse]
+
+    it('shows only the clinical-team patients of the active organization, and lets the user switch', async () => {
+      setup(therapist, [ownerOrganization, adminOrganization])
+      vi.mocked(fetchPatients).mockResolvedValue(mixed)
+      renderApp('/pacientes?espacio=org-1')
+
+      expect(await screen.findByText('Bruno Álvarez')).toBeInTheDocument()
+      expect(screen.getByText('Centro Sol', { selector: 'p' })).toBeInTheDocument()
+      expect(screen.queryByText('Lola Gómez')).not.toBeInTheDocument()
+
+      await userEvent.selectOptions(screen.getByLabelText('Espacio'), 'Pacientes compartidos')
+      expect(await screen.findByText('Lola Gómez')).toBeInTheDocument()
+      expect(screen.queryByText('Bruno Álvarez')).not.toBeInTheDocument()
+
+      await userEvent.selectOptions(screen.getByLabelText('Espacio'), 'Todos los espacios')
+      expect(await screen.findByText('Bruno Álvarez')).toBeInTheDocument()
+      expect(screen.getByText('Lola Gómez')).toBeInTheDocument()
+    })
+
+    it('never trusts a space the user no longer belongs to: notice and every patient', async () => {
+      setup(therapist, [adminOrganization])
+      vi.mocked(fetchPatients).mockResolvedValue(mixed)
+      renderApp('/pacientes?espacio=org-1')
+      expect(await screen.findByText('Ya no tenés acceso a ese espacio. Mostramos todos tus pacientes.')).toBeInTheDocument()
+      expect(screen.getByText('Bruno Álvarez')).toBeInTheDocument()
+      expect(screen.getByText('Lola Gómez')).toBeInTheDocument()
+    })
+
+    it('says so when the active organization has no patients yet', async () => {
+      setup(therapist, [ownerOrganization, adminOrganization])
+      vi.mocked(fetchPatients).mockResolvedValue(therapistPatientsResponse)
+      renderApp('/pacientes?espacio=org-2')
+      expect(await screen.findByText('Este espacio todavía no tiene pacientes.')).toBeInTheDocument()
+    })
+
+    it('preselects the active organization when registering a patient', async () => {
+      setup(therapist, [ownerOrganization, adminOrganization])
+      vi.mocked(fetchPatients).mockResolvedValue([])
+      renderApp('/pacientes?espacio=org-2')
+      await userEvent.click(await screen.findByRole('button', { name: 'Nuevo paciente' }))
+      expect(screen.getByLabelText('Organización')).toHaveValue('org-2')
+    })
+  })
 })
