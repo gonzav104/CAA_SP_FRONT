@@ -2,6 +2,8 @@
 // so no component hardcodes a URL.
 export const routes = {
   login: '/login',
+  // Built by the backend EmailServiceImpl: `${app.frontend-url}/invitaciones/aceptar?token=...`.
+  acceptInvitation: '/invitaciones/aceptar',
   dashboard: '/',
   patients: '/pacientes',
   patientSpace: '/pacientes/:pacienteId',

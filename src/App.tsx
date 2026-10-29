@@ -8,6 +8,7 @@ import { BoardsPage } from '@/features/boards/components/BoardsPage'
 import { CollaboratorsPage } from '@/features/collaborators/components/CollaboratorsPage'
 import { CustomPictogramsPage } from '@/features/customPictograms/components/CustomPictogramsPage'
 import { DashboardPage } from '@/features/dashboard/components/DashboardPage'
+import { AcceptInvitationRoute } from '@/features/invitations/components/AcceptInvitationRoute'
 import { PatientWorkspaceLayout } from '@/features/patients/components/PatientWorkspaceLayout'
 import { PatientsPage } from '@/features/patients/components/PatientsPage'
 import { EditSessionPage } from '@/features/sessions/components/EditSessionPage'
@@ -18,6 +19,8 @@ import { SessionsListPage } from '@/features/sessions/components/SessionsListPag
 // A data router is required by `useBlocker` (unsaved-changes guard of the board editor).
 const router = createBrowserRouter([
   { path: routes.login, element: <LoginPage /> },
+  // Public on purpose: it resolves the session itself so the token survives the login round trip.
+  { path: routes.acceptInvitation, element: <AcceptInvitationRoute /> },
   {
     element: <ProtectedRoute />,
     children: [

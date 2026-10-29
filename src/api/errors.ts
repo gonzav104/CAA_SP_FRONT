@@ -253,6 +253,19 @@ export function getCustomPictogramDeleteErrorMessage(error: unknown): string {
   return 'Ocurrió un error inesperado.'
 }
 
+export const INVALID_INVITATION_MESSAGE = 'El enlace no es válido o ha expirado.'
+
+// User-facing copy for a failed invitation acceptance (POST /api/invitaciones/aceptar). The backend
+// answers every invalid case (unknown, used, revoked, expired token or another account's email) with
+// the same 404 on purpose: the UI must not guess which one it was.
+export function getInvitationAcceptErrorMessage(error: unknown): string {
+  if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
+  const status = getErrorStatus(error)
+  if (status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente.'
+  if (status === 400 || status === 404) return INVALID_INVITATION_MESSAGE
+  return 'Ocurrió un error inesperado.'
+}
+
 // User-facing copy for failed GET requests. Backend `message` strings are never echoed.
 export function getReadErrorMessage(error: unknown, notFoundMessage: string): string {
   const status = getErrorStatus(error)

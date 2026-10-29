@@ -19,11 +19,18 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>
 
+interface Destination {
+  pathname: string
+  /** History state of the original location (e.g. a pending invitation token), handed back as is. */
+  state?: unknown
+}
+
 // Only same-app paths are accepted, so the redirect can never leave the site or loop on /login.
-function getDestination(state: unknown): string {
-  if (typeof state !== 'object' || state === null || !('from' in state)) return DEFAULT_DESTINATION
+function getDestination(state: unknown): Destination {
+  const fallback = { pathname: DEFAULT_DESTINATION }
+  if (typeof state !== 'object' || state === null || !('from' in state)) return fallback
   const from = state.from
-  if (typeof from !== 'object' || from === null || !('pathname' in from)) return DEFAULT_DESTINATION
+  if (typeof from !== 'object' || from === null || !('pathname' in from)) return fallback
   const pathname = from.pathname
   if (
     typeof pathname !== 'string' ||
@@ -31,9 +38,9 @@ function getDestination(state: unknown): string {
     pathname.startsWith('//') ||
     pathname === routes.login
   ) {
-    return DEFAULT_DESTINATION
+    return fallback
   }
-  return pathname
+  return { pathname, state: 'state' in from ? from.state : undefined }
 }
 
 export function LoginPage() {
@@ -53,11 +60,11 @@ export function LoginPage() {
   const destination = getDestination(location.state)
 
   if (isPending) return <FullScreenStatus message="Cargando…" />
-  if (currentUser) return <Navigate to={destination} replace />
+  if (currentUser) return <Navigate to={destination.pathname} state={destination.state} replace />
 
   const onSubmit = (values: LoginFormValues) => {
     login.mutate(values, {
-      onSuccess: () => navigate(destination, { replace: true }),
+      onSuccess: () => navigate(destination.pathname, { replace: true, state: destination.state }),
     })
   }
 
