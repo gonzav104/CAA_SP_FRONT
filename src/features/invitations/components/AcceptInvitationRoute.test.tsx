@@ -164,9 +164,11 @@ describe('AcceptInvitationRoute', () => {
     })
   })
 
-  it('without a token shows the invalid-link message and calls nothing', async () => {
+  it('without a token (lost on reload or an interrupted navigation) asks to reopen the link and calls nothing', async () => {
     setup('/invitaciones/aceptar')
-    expect(await screen.findByRole('alert')).toHaveTextContent('El enlace no es válido o ha expirado.')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'No encontramos los datos de la invitación. Vuelve a abrir el enlace que recibiste por correo.',
+    )
     expect(screen.queryByRole('button', { name: 'Aceptar invitación' })).not.toBeInTheDocument()
     expect(acceptInvitation).not.toHaveBeenCalled()
   })

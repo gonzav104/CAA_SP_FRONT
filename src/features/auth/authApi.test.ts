@@ -2,7 +2,7 @@ import { AxiosError } from 'axios'
 import type { InternalAxiosRequestConfig } from 'axios'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/api/client'
-import { fetchCurrentUser, login, logout } from './authApi'
+import { fetchCurrentUser, login, logout, register, requestPasswordReset, resetPassword } from './authApi'
 import type { CurrentUser } from './types'
 
 const user: CurrentUser = {
@@ -62,5 +62,20 @@ describe('authApi', () => {
     vi.spyOn(api, 'post').mockResolvedValue({ data: undefined })
     await logout()
     expect(api.post).toHaveBeenCalledWith('/auth/logout')
+  })
+
+  it('register POSTs identity only to /api/usuarios/registro', async () => {
+    const request = { nombre: 'Ana', email: 'ana@example.com', password: 'Segura#2026' }
+    const post = vi.spyOn(api, 'post').mockResolvedValue({ status: 201, data: user })
+    await expect(register(request)).resolves.toBe(user)
+    expect(post).toHaveBeenCalledExactlyOnceWith('/api/usuarios/registro', request)
+  })
+
+  it('requestPasswordReset and resetPassword send the real bodies, the token never in the URL', async () => {
+    const post = vi.spyOn(api, 'post').mockResolvedValue({ data: { message: 'ok' } })
+    await requestPasswordReset('ana@example.com')
+    await resetPassword({ token: 'tok', password: 'Segura#2026' })
+    expect(post).toHaveBeenNthCalledWith(1, '/auth/olvide-password', { email: 'ana@example.com' })
+    expect(post).toHaveBeenNthCalledWith(2, '/auth/restablecer-password', { token: 'tok', password: 'Segura#2026' })
   })
 })

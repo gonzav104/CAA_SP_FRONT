@@ -1,6 +1,9 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import { paths, routes } from '@/app/paths'
+import { ForgotPasswordPage } from '@/features/auth/components/ForgotPasswordPage'
 import { LoginPage } from '@/features/auth/components/LoginPage'
+import { RegisterPage } from '@/features/auth/components/RegisterPage'
+import { ResetPasswordPage } from '@/features/auth/components/ResetPasswordPage'
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute'
 import { BoardEditorRoute } from '@/features/boards/components/BoardEditorRoute'
 import { BoardUseRoute } from '@/features/boards/components/BoardUseRoute'
@@ -19,6 +22,9 @@ import { SessionsListPage } from '@/features/sessions/components/SessionsListPag
 // A data router is required by `useBlocker` (unsaved-changes guard of the board editor).
 const router = createBrowserRouter([
   { path: routes.login, element: <LoginPage /> },
+  { path: routes.register, element: <RegisterPage /> },
+  { path: routes.forgotPassword, element: <ForgotPasswordPage /> },
+  { path: routes.resetPassword, element: <ResetPasswordPage /> },
   // Public on purpose: it resolves the session itself so the token survives the login round trip.
   { path: routes.acceptInvitation, element: <AcceptInvitationRoute /> },
   {

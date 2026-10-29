@@ -4,6 +4,10 @@ export const routes = {
   login: '/login',
   // Built by the backend EmailServiceImpl: `${app.frontend-url}/invitaciones/aceptar?token=...`.
   acceptInvitation: '/invitaciones/aceptar',
+  register: '/registro',
+  forgotPassword: '/olvide-password',
+  // Built by the backend EmailServiceImpl: `${app.frontend-url}/restablecer-password?token=...`.
+  resetPassword: '/restablecer-password',
   dashboard: '/',
   patients: '/pacientes',
   patientSpace: '/pacientes/:pacienteId',

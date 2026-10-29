@@ -1,23 +1,18 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import type { ReactNode } from 'react'
-import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router'
+import { Link, Navigate, useNavigate } from 'react-router'
 import { paths, routes } from '@/app/paths'
-import { getInvitationAcceptErrorMessage, INVALID_INVITATION_MESSAGE } from '@/api/errors'
+import { getInvitationAcceptErrorMessage } from '@/api/errors'
 import { FullScreenStatus } from '@/components/FullScreenStatus'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { useCurrentUser } from '@/features/auth/hooks'
 import { LogoutButton } from '@/features/auth/components/LogoutButton'
+import { useTokenFromUrl } from '@/features/auth/useTokenFromUrl'
 import type { AceptarInvitacionResponse } from '../apiTypes'
 import { useAcceptInvitation } from '../hooks'
 
 /** Key of the history state that carries the token once it is out of the URL. */
 const TOKEN_STATE_KEY = 'invitationToken'
-
-function tokenFromState(state: unknown): string | null {
-  if (typeof state !== 'object' || state === null || !(TOKEN_STATE_KEY in state)) return null
-  const token = (state as Record<string, unknown>)[TOKEN_STATE_KEY]
-  return typeof token === 'string' && token !== '' ? token : null
-}
 
 function destinationOf(result: AceptarInvitacionResponse): { to: string; label: string } {
   if (result.tipo === 'PACIENTE_FAMILIAR' && result.pacienteId) {
@@ -43,25 +38,14 @@ function InvitationCard({ title, children }: { title: string; children: ReactNod
  * backend after an explicit confirmation. The backend alone decides whether the invitation is valid.
  */
 export function AcceptInvitationRoute() {
-  const location = useLocation()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const { token, isMovingFromUrl } = useTokenFromUrl(routes.acceptInvitation, TOKEN_STATE_KEY)
   const { data: user, isPending, isError, refetch } = useCurrentUser()
   const accept = useAcceptInvitation()
   // Guards against a double click landing twice before React re-renders the disabled button.
   const submitted = useRef(false)
 
-  const urlToken = searchParams.get('token')
-  const token = urlToken || tokenFromState(location.state)
-
-  // Take the token out of the address bar (and so out of history entries, referrers and screenshots).
-  useEffect(() => {
-    if (urlToken) {
-      navigate(routes.acceptInvitation, { replace: true, state: { [TOKEN_STATE_KEY]: urlToken } })
-    }
-  }, [urlToken, navigate])
-
-  if (urlToken) return <FullScreenStatus message="Cargando…" />
+  if (isMovingFromUrl) return <FullScreenStatus message="Cargando…" />
 
   if (isPending) return <FullScreenStatus message="Cargando…" />
   if (user === undefined && isError) {
@@ -96,8 +80,9 @@ export function AcceptInvitationRoute() {
   if (!token) {
     return (
       <InvitationCard title="Aceptar invitación">
+        {/* Not a backend answer: the token never arrived or was lost (e.g. an interrupted navigation). */}
         <p role="alert" className="text-sm text-muted-foreground">
-          {INVALID_INVITATION_MESSAGE}
+          No encontramos los datos de la invitación. Vuelve a abrir el enlace que recibiste por correo.
         </p>
         <Link to={paths.dashboard()} className={buttonVariants({ variant: 'outline', size: 'lg' })}>
           Ir al inicio
