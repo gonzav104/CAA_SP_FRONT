@@ -8,6 +8,8 @@ export const routes = {
   forgotPassword: '/olvide-password',
   // Built by the backend EmailServiceImpl: `${app.frontend-url}/restablecer-password?token=...`.
   resetPassword: '/restablecer-password',
+  // Built by the backend EmailServiceImpl: `${app.frontend-url}/recuperar-google?token=...`.
+  recoverGoogle: '/recuperar-google',
   dashboard: '/',
   patients: '/pacientes',
   patientSpace: '/pacientes/:pacienteId',

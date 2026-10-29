@@ -11,6 +11,7 @@ import { getLoginErrorMessage } from '../errors'
 import { useCurrentUser, useLogin } from '../hooks'
 import { getReturnTo, pendingFrom } from '../returnTo'
 import { AuthLayout, authLinkClassName } from './AuthLayout'
+import { GoogleLoginSection } from './GoogleLoginSection'
 
 const loginSchema = z.object({
   email: z.email('Ingresa un email válido'),
@@ -106,6 +107,10 @@ export function LoginPage() {
           {login.isPending ? 'Ingresando…' : 'Ingresar'}
         </Button>
       </form>
+
+      <GoogleLoginSection
+        onAuthenticated={() => navigate(destination.pathname, { replace: true, state: destination.state })}
+      />
 
       <div className="mt-6 flex flex-col gap-2 text-sm text-muted-foreground">
         <Link to={routes.forgotPassword} state={linkState} className={authLinkClassName}>

@@ -2,7 +2,18 @@ import { AxiosError } from 'axios'
 import type { InternalAxiosRequestConfig } from 'axios'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/api/client'
-import { fetchCurrentUser, login, logout, register, requestPasswordReset, resetPassword } from './authApi'
+import {
+  completeGoogleRecovery,
+  completeGoogleRegistration,
+  fetchCurrentUser,
+  googleLogin,
+  login,
+  logout,
+  register,
+  requestGoogleRecovery,
+  requestPasswordReset,
+  resetPassword,
+} from './authApi'
 import type { CurrentUser } from './types'
 
 const user: CurrentUser = {
@@ -77,5 +88,20 @@ describe('authApi', () => {
     await resetPassword({ token: 'tok', password: 'Segura#2026' })
     expect(post).toHaveBeenNthCalledWith(1, '/auth/olvide-password', { email: 'ana@example.com' })
     expect(post).toHaveBeenNthCalledWith(2, '/auth/restablecer-password', { token: 'tok', password: 'Segura#2026' })
+  })
+
+  it('Google endpoints send the ID token (and the recovery proofs) only in the body', async () => {
+    const data = { requiereRegistro: false, tipo: 'Bearer', email: null, nombre: null }
+    const post = vi.spyOn(api, 'post').mockResolvedValue({ data })
+    await expect(googleLogin('idt')).resolves.toBe(data)
+    await expect(completeGoogleRegistration('idt')).resolves.toBe(data)
+    await requestGoogleRecovery('idt')
+    await expect(completeGoogleRecovery({ idToken: 'idt', token: 'tok', password: 'Segura#2026' })).resolves.toBe(data)
+    expect(post.mock.calls).toEqual([
+      ['/auth/google', { idToken: 'idt' }],
+      ['/auth/google/completar-registro', { idToken: 'idt' }],
+      ['/auth/google/recuperacion/solicitar', { idToken: 'idt' }],
+      ['/auth/google/recuperacion/completar', { idToken: 'idt', token: 'tok', password: 'Segura#2026' }],
+    ])
   })
 })

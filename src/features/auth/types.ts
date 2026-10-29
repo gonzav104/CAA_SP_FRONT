@@ -28,3 +28,19 @@ export interface RestablecerPasswordRequest {
   token: string
   password: string
 }
+
+// Mirrors GoogleAuthResponseDTO. `requiereRegistro`: a verified Google identity with no account (email
+// and nombre come from Google, to confirm); otherwise the session cookie is already set.
+export interface GoogleAuthResponse {
+  requiereRegistro: boolean
+  tipo: string | null
+  email: string | null
+  nombre: string | null
+}
+
+// Mirrors GoogleRecuperacionCompletarDTO: both proofs (e-mail token + Google ID token) and a new password.
+export interface GoogleRecuperacionCompletarRequest {
+  idToken: string
+  token: string
+  password: string
+}

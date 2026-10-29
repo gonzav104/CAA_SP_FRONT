@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import { paths, routes } from '@/app/paths'
 import { ForgotPasswordPage } from '@/features/auth/components/ForgotPasswordPage'
 import { LoginPage } from '@/features/auth/components/LoginPage'
+import { RecoverGooglePage } from '@/features/auth/components/RecoverGooglePage'
 import { RegisterPage } from '@/features/auth/components/RegisterPage'
 import { ResetPasswordPage } from '@/features/auth/components/ResetPasswordPage'
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute'
@@ -25,6 +26,7 @@ const router = createBrowserRouter([
   { path: routes.register, element: <RegisterPage /> },
   { path: routes.forgotPassword, element: <ForgotPasswordPage /> },
   { path: routes.resetPassword, element: <ResetPasswordPage /> },
+  { path: routes.recoverGoogle, element: <RecoverGooglePage /> },
   // Public on purpose: it resolves the session itself so the token survives the login round trip.
   { path: routes.acceptInvitation, element: <AcceptInvitationRoute /> },
   {

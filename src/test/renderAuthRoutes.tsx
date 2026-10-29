@@ -6,6 +6,7 @@ import type { InitialEntry } from 'react-router'
 import { routes } from '@/app/paths'
 import { ForgotPasswordPage } from '@/features/auth/components/ForgotPasswordPage'
 import { LoginPage } from '@/features/auth/components/LoginPage'
+import { RecoverGooglePage } from '@/features/auth/components/RecoverGooglePage'
 import { RegisterPage } from '@/features/auth/components/RegisterPage'
 import { ResetPasswordPage } from '@/features/auth/components/ResetPasswordPage'
 import { AcceptInvitationRoute } from '@/features/invitations/components/AcceptInvitationRoute'
@@ -30,6 +31,7 @@ export function renderAuthRoutes(initialEntry: InitialEntry) {
           { path: routes.register, element: <RegisterPage /> },
           { path: routes.forgotPassword, element: <ForgotPasswordPage /> },
           { path: routes.resetPassword, element: <ResetPasswordPage /> },
+          { path: routes.recoverGoogle, element: <RecoverGooglePage /> },
           { path: routes.acceptInvitation, element: <AcceptInvitationRoute /> },
           { path: routes.dashboard, element: <p>Dashboard stub</p> },
           { path: '/pacientes/:pacienteId/cartillas', element: <p>Boards stub</p> },

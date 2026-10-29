@@ -31,7 +31,13 @@ export function getReturnTo(locationState: unknown): ReturnTo {
   return { pathname, state: 'state' in from ? from.state : undefined }
 }
 
-const AUTH_PATHS = new Set<string>([routes.login, routes.register, routes.forgotPassword, routes.resetPassword])
+const AUTH_PATHS = new Set<string>([
+  routes.login,
+  routes.register,
+  routes.forgotPassword,
+  routes.resetPassword,
+  routes.recoverGoogle,
+])
 
 /**
  * The `from` to hand over between auth screens (login ⇄ register ⇄ forgot password) so a pending

@@ -81,3 +81,52 @@ export function getPasswordResetErrorMessage(error: unknown): string {
       return UNEXPECTED_MESSAGE
   }
 }
+
+// Every Google failure is the same 401 on purpose (invalid or unverified ID token, an e-mail that already
+// has an account not linked to this Google identity, a conflicting subject): never guess which one.
+export function getGoogleLoginErrorMessage(error: unknown): string {
+  if (error instanceof SessionNotEstablishedError) {
+    return 'No se pudo iniciar la sesión. Verifica que el navegador permita cookies.'
+  }
+  if (isNetworkError(error)) return NETWORK_MESSAGE
+  switch (getErrorStatus(error)) {
+    case 401:
+      return 'No pudimos ingresar con esa cuenta de Google. Si ya tienes una cuenta con ese email, ingresa con tu contraseña o recupera el acceso con Google.'
+    case 429:
+      return TOO_MANY_MESSAGE
+    default:
+      return UNEXPECTED_MESSAGE
+  }
+}
+
+// POST /auth/google/recuperacion/solicitar: same 200 for eligible or not; 401 only for an invalid ID token.
+export function getGoogleRecoveryRequestErrorMessage(error: unknown): string {
+  if (isNetworkError(error)) return NETWORK_MESSAGE
+  switch (getErrorStatus(error)) {
+    case 401:
+      return 'No pudimos verificar esa cuenta de Google. Intenta nuevamente.'
+    case 429:
+      return TOO_MANY_MESSAGE
+    default:
+      return UNEXPECTED_MESSAGE
+  }
+}
+
+// POST /auth/google/recuperacion/completar: an invalid, used or expired link, a Google account that does
+// not match the one that asked for it, or reusing the current password are all the same 401.
+export function getGoogleRecoveryErrorMessage(error: unknown): string {
+  if (error instanceof SessionNotEstablishedError) {
+    return 'No se pudo iniciar la sesión. Verifica que el navegador permita cookies.'
+  }
+  if (isNetworkError(error)) return NETWORK_MESSAGE
+  switch (getErrorStatus(error)) {
+    case 401:
+      return 'No se pudo recuperar el acceso. El enlace puede no ser válido o haber expirado, la cuenta de Google debe ser la misma con la que lo solicitaste y la contraseña debe ser nueva.'
+    case 400:
+      return validationMessage(error, 'Revisa la nueva contraseña.')
+    case 429:
+      return TOO_MANY_MESSAGE
+    default:
+      return UNEXPECTED_MESSAGE
+  }
+}
