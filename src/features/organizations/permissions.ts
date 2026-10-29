@@ -1,7 +1,18 @@
 import type { OrganizacionResponse } from './apiTypes'
 
-// Creating a patient is not a per-patient capability: the backend requires the user to manage an
-// organization (OWNER/ADMIN) or to be a therapist in it. Without organizations there is nothing to create in.
-export function canCreatePatient(organizations: readonly OrganizacionResponse[] | null | undefined): boolean {
-  return !!organizations?.some((org) => org.miRolGestion === 'OWNER' || org.miRolGestion === 'ADMIN' || org.miEsTerapeuta)
+type MaybeOrganizations = readonly OrganizacionResponse[] | null | undefined
+
+// Mirrors AccesoServiceImpl.exigirAltaPaciente: a patient can be registered in an organization the
+// user manages (OWNER/ADMIN) or where they are a therapist. Creating is not a per-patient capability.
+export function canCreatePatientIn(organization: OrganizacionResponse): boolean {
+  return organization.miRolGestion === 'OWNER' || organization.miRolGestion === 'ADMIN' || organization.miEsTerapeuta
+}
+
+/** Organizations where the user may register a patient; empty while they load. */
+export function patientCreationOrganizations(organizations: MaybeOrganizations): OrganizacionResponse[] {
+  return organizations?.filter(canCreatePatientIn) ?? []
+}
+
+export function canCreatePatient(organizations: MaybeOrganizations): boolean {
+  return patientCreationOrganizations(organizations).length > 0
 }

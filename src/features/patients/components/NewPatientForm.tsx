@@ -4,6 +4,8 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import type { OrganizacionResponse } from '@/features/organizations/apiTypes'
+import { cn } from '@/lib/utils'
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10)
@@ -17,11 +19,15 @@ const newPatientSchema = z.object({
     .string()
     .min(1, 'La fecha de nacimiento es obligatoria.')
     .refine((value) => value < todayIso(), { message: 'La fecha de nacimiento debe ser en el pasado.' }),
+  // The organization the patient belongs to (part of the POST path, not of the body).
+  organizacionId: z.string().min(1, 'Selecciona la organización.'),
 })
 
 export type NewPatientFormValues = z.infer<typeof newPatientSchema>
 
 interface NewPatientFormProps {
+  /** Organizations where the user may register patients (at least one). With one, it is preselected. */
+  organizations: readonly OrganizacionResponse[]
   isPending: boolean
   /** Message of the last failed submit (server/network); field errors are shown separately. */
   error: string | null
@@ -30,14 +36,19 @@ interface NewPatientFormProps {
 }
 
 /** Inline card to register a new patient, in the same visual language as the rest of the shell. */
-export function NewPatientForm({ isPending, error, onSubmit, onCancel }: NewPatientFormProps) {
+export function NewPatientForm({ organizations, isPending, error, onSubmit, onCancel }: NewPatientFormProps) {
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<NewPatientFormValues>({
     resolver: zodResolver(newPatientSchema),
-    defaultValues: { nombre: '', apellido: '', fechaNacimiento: '' },
+    defaultValues: {
+      nombre: '',
+      apellido: '',
+      fechaNacimiento: '',
+      organizacionId: organizations.length === 1 ? organizations[0].id : '',
+    },
   })
 
   return (
@@ -47,6 +58,35 @@ export function NewPatientForm({ isPending, error, onSubmit, onCancel }: NewPati
       className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-background p-5"
     >
       <h3 className="font-medium text-foreground">Nuevo paciente</h3>
+      {organizations.length > 1 && (
+        <div className="flex flex-col gap-1.5 sm:max-w-sm">
+          <Label htmlFor="new-patient-organizacion">Organización</Label>
+          <select
+            id="new-patient-organizacion"
+            disabled={isPending}
+            aria-invalid={errors.organizacionId ? true : undefined}
+            aria-describedby={errors.organizacionId ? 'new-patient-organizacion-error' : undefined}
+            className={cn(
+              'h-10 w-full rounded-lg border border-input bg-transparent px-2.5 text-base outline-none md:text-sm',
+              'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50',
+              'aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20',
+            )}
+            {...register('organizacionId')}
+          >
+            <option value="">Selecciona una organización</option>
+            {organizations.map((organization) => (
+              <option key={organization.id} value={organization.id}>
+                {organization.nombre}
+              </option>
+            ))}
+          </select>
+          {errors.organizacionId && (
+            <p id="new-patient-organizacion-error" className="text-xs text-destructive">
+              {errors.organizacionId.message}
+            </p>
+          )}
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="new-patient-nombre">Nombre</Label>

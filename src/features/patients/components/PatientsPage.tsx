@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react'
 import { Plus, Search, Users, X } from 'lucide-react'
-import { useSearchParams } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
+import { paths } from '@/app/paths'
 import { getPatientCreateErrorMessage, getReadErrorMessage } from '@/api/errors'
 import { ErrorState } from '@/components/ErrorState'
 import { LoadingState } from '@/components/LoadingState'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useOrganizations } from '@/features/organizations/hooks'
-import { canCreatePatient } from '@/features/organizations/permissions'
+import { patientCreationOrganizations } from '@/features/organizations/permissions'
 import { PageLayout } from '@/layouts/PageLayout'
 import { useCreatePatient, usePatients } from '../hooks'
 import { filterPatients } from '../search'
@@ -17,7 +18,9 @@ import { PatientCard } from './PatientCard'
 
 export function PatientsPage() {
   const { data: organizations } = useOrganizations()
-  const canCreate = canCreatePatient(organizations)
+  const creationOrganizations = patientCreationOrganizations(organizations)
+  const canCreate = creationOrganizations.length > 0
+  const navigate = useNavigate()
   const { data: patients, isPending, isError, error, refetch } = usePatients()
   const createPatient = useCreatePatient()
   const [searchParams] = useSearchParams()
@@ -31,11 +34,11 @@ export function PatientsPage() {
   const emptyMessage =
     organizations && !canCreate ? 'Todavía no tenés pacientes vinculados.' : 'Todavía no tenés pacientes registrados.'
 
-  const handleCreate = async (values: NewPatientFormValues) => {
+  const handleCreate = async ({ organizacionId, ...request }: NewPatientFormValues) => {
     setCreateError(null)
     try {
-      await createPatient.mutateAsync(values)
-      setIsCreating(false)
+      const created = await createPatient.mutateAsync({ organizationId: organizacionId, request })
+      navigate(paths.boards(created.id))
     } catch (err) {
       setCreateError(getPatientCreateErrorMessage(err))
     }
@@ -90,8 +93,21 @@ export function PatientsPage() {
         )}
       </div>
 
-      {isCreating && (
+      {isCreating && organizations && !canCreate && (
+        <div role="status" className="flex flex-col items-start gap-3 rounded-2xl border border-border/60 bg-background p-5">
+          <p className="text-muted-foreground">
+            No perteneces a ninguna organización donde puedas registrar pacientes. Pide a quien administra tu
+            organización que te habilite como terapeuta.
+          </p>
+          <Button type="button" variant="outline" onClick={() => setIsCreating(false)}>
+            Cerrar
+          </Button>
+        </div>
+      )}
+
+      {isCreating && canCreate && (
         <NewPatientForm
+          organizations={creationOrganizations}
           isPending={createPatient.isPending}
           error={createError}
           onSubmit={(values) => void handleCreate(values)}

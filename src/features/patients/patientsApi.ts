@@ -11,8 +11,12 @@ export async function fetchPatient(id: string): Promise<PacienteResponse> {
   return response.data
 }
 
-export async function createPatient(request: PacienteRegistroRequest): Promise<PacienteResponse> {
-  const response = await api.post<PacienteResponse>('/api/pacientes', request)
+// Patients are registered inside an organization; the response already carries the creator's capabilities.
+export async function createPatient(organizationId: string, request: PacienteRegistroRequest): Promise<PacienteResponse> {
+  const response = await api.post<PacienteResponse>(
+    `/api/organizaciones/${encodeURIComponent(organizationId)}/pacientes`,
+    request,
+  )
   return response.data
 }
 

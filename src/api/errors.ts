@@ -125,7 +125,7 @@ export function getCartillaErrorMessage(
   return 'Ocurrió un error inesperado.'
 }
 
-// User-facing copy for a failed patient creation (POST /api/pacientes).
+// User-facing copy for a failed patient creation (POST /api/organizaciones/{id}/pacientes).
 export function getPatientCreateErrorMessage(error: unknown): string {
   if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
   const status = getErrorStatus(error)
@@ -135,7 +135,11 @@ export function getPatientCreateErrorMessage(error: unknown): string {
       ? `El servidor rechazó los datos: ${message}`
       : 'El servidor rechazó los datos.'
   }
-  if (status === 403) return 'Solo un terapeuta puede registrar un paciente.'
+  if (status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente.'
+  // Mirrors AccesoServiceImpl.exigirAltaPaciente: 404 without membership, 403 without OWNER/ADMIN nor therapist.
+  if (status === 403) return 'No tienes permiso para registrar pacientes en esta organización.'
+  if (status === 404) return 'La organización no existe o no tienes acceso a ella.'
+  if (status === 409) return 'No se pudo registrar el paciente por un conflicto con datos existentes.'
   return 'Ocurrió un error inesperado.'
 }
 
