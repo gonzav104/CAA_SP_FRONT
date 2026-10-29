@@ -21,6 +21,9 @@ qa/qa.sh up       # compila una COPIA del backend (rama BACKEND_REF, sin parches
 qa/qa.sh seed     # crea cuentas, organización, pacientes y contenido ficticios (usa la API real)
 qa/qa.sh status   # estado de base, API y frontend
 qa/qa.sh logs     # últimas líneas del log de la API
+qa/qa.sh mail-config    # guarda tu clave de Resend (se escribe sin eco) en qa/.work/mail.env
+qa/qa.sh api-restart    # reinicia SOLO la API de QA con correo real (api-restart inert vuelve al modo inerte)
+qa/qa.sh mail-clear     # borra la clave guardada
 qa/qa.sh down     # detiene todo (los datos quedan en el volumen)
 qa/qa.sh reset    # borra SOLO el contenedor y el volumen de QA (hay que volver a hacer up + seed)
 npm run qa:e2e    # suite Playwright contra este entorno (consume datos: reset + up + seed antes de repetirla)
@@ -73,13 +76,72 @@ El QA no envía correos reales, por eso `seed` deja enlaces con tokens conocidos
 9. **Registro y recuperación:** crear una cuenta, probar un email repetido y una contraseña débil; “Olvidé mi
    contraseña” responde igual exista o no el email.
 
+## Correo real con el sandbox de Resend
+
+Por defecto la API de QA corre **inerte**: clave de Resend de relleno, nada se entrega. `up` y `seed` **siempre**
+arrancan así (el seed registra usuarios `@qa.test` y, con correo real, intentaría enviarles bienvenidas), y el
+`seed` se niega a correr si la API está en modo real. El correo real es opt-in y solo afecta a la API de QA; no
+toca la base, el frontend, el backend ni nada fuera de `qa/`.
+
+**Limitación del sandbox:** el remitente `onboarding@resend.dev` solo entrega al **email de tu cuenta de Resend**.
+Para las pruebas de abajo usás esa única dirección (`TU_EMAIL`) como destinatario. Con un dominio verificado en
+Resend no habría límite (se configuraría `RESEND_FROM_EMAIL`/`QA_RESEND_FROM_EMAIL`).
+
+### Cómo cargar tu clave de forma segura
+
+La clave **nunca** se imprime, no va en ningún argumento de proceso (el arranque la pasa por un archivo temporal
+`600` que se borra en cuanto la API arranca) y vive solo en `qa/.work/` (ignorado por Git) o en tu shell.
+**No la pegues en el chat ni uses `!` dentro de Claude Code** (quedaría en la conversación): hacelo en tu terminal.
+
+```bash
+cd ~/proyectos/CAA_SP_FRONT
+qa/qa.sh mail-config      # pide la clave sin mostrarla y el remitente (Enter = onboarding@resend.dev)
+```
+
+Alternativa sin archivo (solo en esa terminal): `read -rsp "Resend: " QA_RESEND_API_KEY; echo; export QA_RESEND_API_KEY`.
+La variable de la shell tiene prioridad sobre el archivo. Para olvidar la clave: `qa/qa.sh mail-clear`.
+
+### Orden
+
+```bash
+qa/qa.sh up && qa/qa.sh seed     # inerte: datos ficticios sin enviar nada
+qa/qa.sh api-restart             # ahora sí, correo real (FRONTEND_URL = http://localhost:5174)
+qa/qa.sh status                  # "mail en la API: real"
+# ... pruebas ...
+qa/qa.sh api-restart inert       # al terminar, vuelve a inerte
+```
+
+Si la clave es de tipo *Sending access*, el log de arranque puede mostrar un ERROR del chequeo de Resend
+(`domains().list()` no está permitido para esa clave); no bloquea el envío. Con *Full access* debería avisar solo del
+uso del dominio sandbox. Si un correo no llega, la UI igual dice “enviada” (el backend nunca falla por el correo):
+mirá `qa/qa.sh logs 200` buscando `No se pudo enviar el email` y la pestaña *Emails* del panel de Resend.
+
+### Las tres pruebas (con `TU_EMAIL` = el email de tu cuenta de Resend)
+
+Contraseña de las cuentas `@qa.test`: `Qa#Clave2026`. Los enlaces de los correos apuntan a `http://localhost:5174`.
+
+1. **Invitación familiar.**
+   `owner@qa.test` → Pacientes → *Paciente Uno* → **Familia** → *Invitar familiar* → `TU_EMAIL`, permiso → *Enviar
+   invitación*. Debe aparecer en “Invitaciones pendientes” (no como vinculado). Abrí el correo
+   “Te invitaron a colaborar con un paciente” y su enlace: sin cuenta, *Crear cuenta* con `TU_EMAIL` (te llega
+   además la bienvenida) → iniciar sesión → **Aceptar invitación**. Esperado: “Ya tienes acceso al paciente.”, y
+   para `owner` la invitación pasa de pendiente a vinculada.
+2. **Invitación a la organización.**
+   Cerrá sesión; `owner@qa.test` → Inicio → *Centro Sol* → **Miembros** → *Invitar* → `TU_EMAIL`, rol *Miembro* →
+   *Enviar invitación*. Abrí el correo “Te invitaron a unirte a Centro Sol” y su enlace; entrá con `TU_EMAIL` →
+   **Aceptar invitación**. Esperado: “Ya formas parte de la organización.” y Centro Sol en “Tus espacios”.
+3. **Recuperación de contraseña.**
+   Cerrá sesión → *Olvidé mi contraseña* → `TU_EMAIL` (mensaje genérico). Abrí el correo de recuperación y su
+   enlace (vale 1 hora) → nueva contraseña y confirmación → “Contraseña restablecida” → iniciá sesión con la nueva.
+   Reabrir el mismo enlace debe dar “El enlace no es válido o ha expirado.” (es de un solo uso).
+
 ## Qué NO se puede probar acá (pendiente con servicios externos)
 
 - **Google (inicio de sesión y recuperación de identidad):** necesita un `GOOGLE_CLIENT_ID` real en el backend y
   `VITE_GOOGLE_CLIENT_ID` en el frontend, y el origen autorizado en Google Cloud. Sin ellos el botón se oculta.
   Lo cubren solo pruebas unitarias con mocks, no una prueba real contra Google.
-- **Correo real (Resend):** el QA usa una clave inerte, así que las invitaciones y los restablecimientos no se
-  entregan por email. El camino del enlace se prueba con tokens conocidos plantados en la base de QA.
+- **Correo real (Resend):** disponible de forma opt-in con el sandbox (ver la sección anterior). Sin eso, el QA usa
+  una clave inerte y el camino del enlace se prueba con tokens conocidos plantados en la base de QA.
 - **Cloudinary (subida de pictogramas propios):** credenciales inertes; la subida de imágenes no se prueba.
 
 ## Defecto del backend encontrado y corregido
