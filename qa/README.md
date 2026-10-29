@@ -17,7 +17,7 @@ Está aislado de cualquier base existente: usa su propio contenedor, volumen y p
 ## Comandos
 
 ```bash
-qa/qa.sh up       # compila una COPIA del backend (HEAD + qa/patches), levanta base, API y Vite
+qa/qa.sh up       # compila una COPIA del backend (rama BACKEND_REF, sin parches), levanta base, API y Vite
 qa/qa.sh seed     # crea cuentas, organización, pacientes y contenido ficticios (usa la API real)
 qa/qa.sh status   # estado de base, API y frontend
 qa/qa.sh logs     # últimas líneas del log de la API
@@ -27,7 +27,9 @@ npm run qa:e2e    # suite Playwright contra este entorno (consume datos: reset +
 ```
 
 El backend se exporta con `git archive` desde `../CAA_SP` (solo lectura) y se compila en `qa/.work/`
-(ignorado por Git). El repositorio del backend no se modifica.
+(ignorado por Git). La revisión se elige con `BACKEND_REF` (por defecto `fix/invitaciones-enum-postgres`, que
+contiene la corrección de las invitaciones; cuando se integre, usar `BACKEND_REF=main`). No se aplica ningún
+parche: se prueba el backend tal como está comiteado.
 
 ## Cuentas (contraseña de todas: `Qa#Clave2026`)
 
@@ -81,11 +83,10 @@ El QA no envía correos reales, por eso `seed` deja enlaces con tokens conocidos
   entregan por email. El camino del enlace se prueba con tokens conocidos plantados en la base de QA.
 - **Cloudinary (subida de pictogramas propios):** credenciales inertes; la subida de imágenes no se prueba.
 
-## Defecto del backend encontrado (parche solo en la copia de QA)
+## Defecto del backend encontrado y corregido
 
-`POST /api/invitaciones/aceptar` (y la revocación de invitaciones) responde **500** contra una base creada con
-`bootstrap.sql`: los `UPDATE` de `InvitacionRepository.aceptarSiVigente` y `revocarSiPendiente` usan literales de
-enum en HQL, que Hibernate emite como `cast(... as estadoinvitacion)`, un tipo inexistente (el enum de PostgreSQL
-es `estado_invitacion`). El parche `qa/patches/0001-invitaciones-enum-cast-en-update.patch` pasa los estados como
-parámetros y se aplica **solo a la copia compilada para QA**. Hasta aplicarlo en `../CAA_SP`, ningún invitado
-puede aceptar una invitación ni revocarse una.
+`POST /api/invitaciones/aceptar` y la revocación de invitaciones respondían **500** sobre PostgreSQL real: los
+`UPDATE` condicionales de `InvitacionRepository` usaban literales de enum en HQL, que Hibernate emite como
+`cast(... as estadoinvitacion)` (el tipo real es `estado_invitacion`; H2 lo ocultaba). Se corrigió en el backend
+(rama `fix/invitaciones-enum-postgres`, con un test de regresión contra PostgreSQL 15 real). Este entorno ya
+prueba esa versión y la suite `npm run qa:e2e` pasa sin ningún parche.

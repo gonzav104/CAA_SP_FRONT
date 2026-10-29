@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Isolated QA environment: its own PostgreSQL 15 container + volume, its own copy of the backend build and
+# Isolated QA environment: its own PostgreSQL 15 container + volume, its own build of the backend revision and
 # its own ports. It never reads the backend .env, never connects to caa_db / caa_sp_db_data_final and never
 # runs docker prune. Usage: qa/qa.sh {up|down|reset|status|seed|logs|front}
 set -euo pipefail
@@ -7,6 +7,9 @@ set -euo pipefail
 QA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONT_DIR="$(dirname "$QA_DIR")"
 BACKEND_REPO="${BACKEND_REPO:-$FRONT_DIR/../CAA_SP}"
+# Backend revision to test. It carries the invitation fix (fix/invitaciones-enum-postgres) until that branch
+# is merged; after the merge, set it back to "main" (or export BACKEND_REF=main).
+BACKEND_REF="${BACKEND_REF:-fix/invitaciones-enum-postgres}"
 WORK="$QA_DIR/.work"            # gitignored: backend copy, jar, logs, generated secrets
 
 # Names and ports are fixed on purpose: every destructive command below acts on exactly these.
@@ -70,19 +73,14 @@ db_up() {
 }
 
 backend_build() {
-  # Exports the committed HEAD of the backend (read-only on that repo) and builds it in the QA work dir,
+  # Exports the committed BACKEND_REF of the backend (read-only on that repo) and builds it in the QA work dir,
   # so a jar already running elsewhere is never overwritten.
-  # qa/patches/*.patch are demonstrated backend incompatibilities, applied ONLY to this QA copy.
-  local head patches key
-  head="$(git -C "$BACKEND_REPO" rev-parse --short HEAD)"
-  patches="$(cat "$QA_DIR"/patches/*.patch 2>/dev/null | sha256sum | cut -c1-8)"
-  key="$head-$patches"
+  # The QA copy is the committed BACKEND_REF exactly as it is: no patches are applied.
+  local key
+  key="$(git -C "$BACKEND_REPO" rev-parse --short "$BACKEND_REF")"
   if [[ ! -f "$WORK/backend/.built-$key" ]]; then
     rm -rf "$WORK/backend"; mkdir -p "$WORK/backend"
-    git -C "$BACKEND_REPO" archive HEAD | tar -x -C "$WORK/backend"
-    for patch in "$QA_DIR"/patches/*.patch; do
-      [[ -f "$patch" ]] && patch -p1 -d "$WORK/backend" < "$patch" >/dev/null
-    done
+    git -C "$BACKEND_REPO" archive "$BACKEND_REF" | tar -x -C "$WORK/backend"
     (cd "$WORK/backend" && sh ./mvnw -q -DskipTests package) >"$WORK/build.log" 2>&1 || { tail -20 "$WORK/build.log"; exit 1; }
     touch "$WORK/backend/.built-$key"
   fi
