@@ -109,7 +109,7 @@ export function getCartillaErrorMessage(
   }
   if (status === 403) {
     return operation === 'primary'
-      ? 'Solo el terapeuta responsable del paciente puede cambiar la cartilla principal.'
+      ? 'Solo el equipo clínico del paciente puede cambiar la cartilla principal.'
       : 'No tienes permiso para hacer este cambio.'
   }
   if (status === 404) {
@@ -144,7 +144,7 @@ export function getPatientCreateErrorMessage(error: unknown): string {
 }
 
 // User-facing copy for a failed patient update (PUT /api/pacientes/{id}). Mirrors
-// PacienteServiceImpl.actualizarPaciente: ownership failure is a plain 404, not a 403.
+// PacienteServiceImpl.actualizarPaciente: missing EDITAR_CONTENIDO is a plain 404, not a 403.
 export function getPatientUpdateErrorMessage(error: unknown): string {
   if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
   const status = getErrorStatus(error)
@@ -154,20 +154,20 @@ export function getPatientUpdateErrorMessage(error: unknown): string {
       ? `El servidor rechazó los datos: ${message}`
       : 'El servidor rechazó los datos.'
   }
-  if (status === 404) return 'No eres el terapeuta responsable de este paciente, o ya no existe.'
+  if (status === 404) return 'El paciente ya no existe o no tienes permiso para editar sus datos.'
   return 'Ocurrió un error inesperado.'
 }
 
-// User-facing copy for a failed patient delete (DELETE /api/pacientes/{id}). Same ownership rule as update.
+// User-facing copy for a failed patient delete (DELETE /api/pacientes/{id}). Needs ADMINISTRAR; a plain 404 otherwise.
 export function getPatientDeleteErrorMessage(error: unknown): string {
   if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
   const status = getErrorStatus(error)
-  if (status === 404) return 'No eres el terapeuta responsable de este paciente, o ya no existe.'
+  if (status === 404) return 'El paciente ya no existe o no tienes permiso para eliminarlo.'
   return 'Ocurrió un error inesperado.'
 }
 
 // User-facing copy for a failed session write (POST/PUT /sesiones). Mirrors SesionServiceImpl:
-// ownership failure is a plain 404, not a 403 — sessions are therapist-only, a familiar never reaches this.
+// missing GESTION_CLINICA is a plain 404, not a 403 — sessions are clinical-team only.
 export function getSessionWriteErrorMessage(error: unknown): string {
   if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
   const status = getErrorStatus(error)
@@ -189,17 +189,22 @@ export function getSessionDeleteErrorMessage(error: unknown): string {
   return 'Ocurrió un error inesperado.'
 }
 
-// User-facing copy for a failed collaborator link (POST /colaboradores). Mirrors ColaboradorServiceImpl:
-// a 404 deliberately covers both "ese email no existe como familiar" and "no eres el terapeuta
-// responsable" (the backend never distinguishes them, by design).
-export function getCollaboratorLinkErrorMessage(error: unknown): string {
+// User-facing copy for a failed family invitation (POST /colaboradores, 202 on success). Mirrors
+// InvitacionServiceImpl.crearFamiliar: the invited email needs no account (no enumeration), missing
+// GESTION_CLINICA is a plain 404, and 409 only means the email already is a linked family member.
+export function getCollaboratorInviteErrorMessage(error: unknown): string {
   if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
   const status = getErrorStatus(error)
-  if (status === 400) return 'El servidor rechazó los datos.'
-  if (status === 404) {
-    return 'No se encontró una cuenta de familiar con ese email, o no eres el terapeuta responsable de este paciente.'
+  if (status === 400) {
+    const message = getApiErrorBody(error)?.message.trim()
+    return message && message.length <= MAX_ECHOED_MESSAGE_LENGTH
+      ? `El servidor rechazó los datos: ${message}`
+      : 'El servidor rechazó los datos.'
   }
-  if (status === 409) return 'Ese colaborador ya está vinculado a este paciente.'
+  if (status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente.'
+  if (status === 403) return 'No tienes permiso para invitar familiares a este paciente.'
+  if (status === 404) return 'El paciente ya no existe o no tienes permiso para administrar su familia.'
+  if (status === 409) return 'Esa persona ya es un familiar vinculado de este paciente.'
   return 'Ocurrió un error inesperado.'
 }
 
@@ -207,13 +212,24 @@ export function getCollaboratorLinkErrorMessage(error: unknown): string {
 export function getCollaboratorWriteErrorMessage(error: unknown): string {
   if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
   const status = getErrorStatus(error)
-  if (status === 404) return 'El vínculo ya no existe o no eres el terapeuta responsable de este paciente.'
+  if (status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente.'
+  if (status === 404) return 'El vínculo ya no existe o no tienes permiso para administrar la familia de este paciente.'
+  return 'Ocurrió un error inesperado.'
+}
+
+// User-facing copy for a failed invitation revoke (DELETE /invitaciones/{id}). Revoking is idempotent
+// in the backend, so a 404 means the invitation is gone or the user lacks GESTION_CLINICA.
+export function getInvitationRevokeErrorMessage(error: unknown): string {
+  if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
+  const status = getErrorStatus(error)
+  if (status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente.'
+  if (status === 404) return 'La invitación ya no existe o no tienes permiso para revocarla.'
   return 'Ocurrió un error inesperado.'
 }
 
 // User-facing copy for a failed custom pictogram write (POST/PUT /pictogramas-custom). Mirrors
 // CloudinaryServiceImpl.validarArchivo (image type/size via IllegalArgumentException -> 400) and
-// PacienteServiceImpl.verificarEdicionParaUsuario (404 for ownership, same ambiguity as elsewhere).
+// missing EDITAR_CONTENIDO (plain 404, same ambiguity as elsewhere).
 export function getCustomPictogramWriteErrorMessage(error: unknown): string {
   if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
   const status = getErrorStatus(error)
@@ -228,7 +244,7 @@ export function getCustomPictogramWriteErrorMessage(error: unknown): string {
 }
 
 // User-facing copy for a failed custom pictogram delete. Mirrors eliminarPictograma: blocked (400)
-// when it is still used by at least one item, or a plain 404 when not the responsible therapist.
+// when it is still used by at least one item, or a plain 404 without GESTION_CLINICA.
 export function getCustomPictogramDeleteErrorMessage(error: unknown): string {
   if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
   const status = getErrorStatus(error)

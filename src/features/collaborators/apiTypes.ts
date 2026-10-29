@@ -16,6 +16,23 @@ export interface ColaboradorRegistroRequest {
   permiso: PermisoColaborador
 }
 
+export type TipoInvitacion = 'ORGANIZACION' | 'PACIENTE_FAMILIAR'
+export type EstadoInvitacion = 'PENDIENTE' | 'ACEPTADA' | 'REVOCADA' | 'EXPIRADA'
+
+// Mirrors InvitacionResponseDTO. Same shape whether the invited email has an account or not
+// (no enumeration). Family invitations carry `permisoPropuesto`; the organization fields are null.
+export interface InvitacionResponse {
+  id: string
+  tipo: TipoInvitacion
+  email: string
+  rolGestionPropuesto: string | null
+  esTerapeutaPropuesto: boolean | null
+  permisoPropuesto: PermisoColaborador | null
+  estado: EstadoInvitacion
+  /** ISO local datetime. */
+  expiraEn: string | null
+}
+
 // Mirrors ColaboradorActualizacionDTO.
 export interface ColaboradorActualizacionRequest {
   permiso: PermisoColaborador

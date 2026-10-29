@@ -465,7 +465,7 @@ describe('BoardsPage cartilla CRUD', () => {
     })
 
     it.each([
-      [403, 'Solo el terapeuta responsable del paciente puede cambiar la cartilla principal.'],
+      [403, 'Solo el equipo clínico del paciente puede cambiar la cartilla principal.'],
       [404, 'La cartilla ya no existe o no tienes acceso.'],
     ])('shows a red alert for a %i', async (status, message) => {
       const fake = setupApi()

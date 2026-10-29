@@ -208,7 +208,7 @@ describe('getCartillaErrorMessage', () => {
 
   it('maps 403 by operation', () => {
     expect(getCartillaErrorMessage(httpError(403), 'request', 'primary')).toBe(
-      'Solo el terapeuta responsable del paciente puede cambiar la cartilla principal.',
+      'Solo el equipo clínico del paciente puede cambiar la cartilla principal.',
     )
     for (const operation of ['create', 'rename', 'delete'] as const) {
       expect(getCartillaErrorMessage(httpError(403), 'request', operation)).toBe(
