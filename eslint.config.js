@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // .claude holds agent worktrees (a second copy of the app); qa/.work holds the QA backend copy and logs.
+  globalIgnores(['dist', '.claude', 'qa/.work']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

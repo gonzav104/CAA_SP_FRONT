@@ -1,0 +1,41 @@
+--- a/src/main/java/com/caa/api/repositories/InvitacionRepository.java
++++ b/src/main/java/com/caa/api/repositories/InvitacionRepository.java
+@@ -33,21 +33,31 @@
+      * si devuelve 1 — nunca confía en una lectura previa seguida de un update separado, que
+      * dejaría una ventana de carrera para un accept doble.
+      */
++    default int aceptarSiVigente(UUID id, Usuario usuario, LocalDateTime ahora) {
++        return transicionarAceptada(id, usuario, ahora, EstadoInvitacion.ACEPTADA, EstadoInvitacion.PENDIENTE);
++    }
++
++    // Los estados viajan como parámetros: un literal de enum en un UPDATE HQL se emite como
++    // cast(... as estadoinvitacion), un tipo que no existe (el enum de PostgreSQL es estado_invitacion).
+     @Modifying
+     @Transactional
+-    @Query("UPDATE Invitacion i SET i.estado = com.caa.api.models.EstadoInvitacion.ACEPTADA, "
+-            + "i.aceptadaPor = :usuario, i.resueltaEn = :ahora "
+-            + "WHERE i.id = :id AND i.estado = com.caa.api.models.EstadoInvitacion.PENDIENTE AND i.expiraEn > :ahora")
+-    int aceptarSiVigente(@Param("id") UUID id, @Param("usuario") Usuario usuario, @Param("ahora") LocalDateTime ahora);
++    @Query("UPDATE Invitacion i SET i.estado = :nuevo, i.aceptadaPor = :usuario, i.resueltaEn = :ahora "
++            + "WHERE i.id = :id AND i.estado = :actual AND i.expiraEn > :ahora")
++    int transicionarAceptada(@Param("id") UUID id, @Param("usuario") Usuario usuario, @Param("ahora") LocalDateTime ahora,
++                             @Param("nuevo") EstadoInvitacion nuevo, @Param("actual") EstadoInvitacion actual);
+ 
+     /**
+      * Revocación condicional: solo transiciona PENDIENTE -&gt; REVOCADA. Igual que
+      * {@link #aceptarSiVigente}, evita la carrera de leer-y-guardar contra un accept concurrente
+      * (0 filas si ya está resuelta) y no toca {@code aceptadaPor}.
+      */
++    default int revocarSiPendiente(UUID id, LocalDateTime ahora) {
++        return transicionarRevocada(id, ahora, EstadoInvitacion.REVOCADA, EstadoInvitacion.PENDIENTE);
++    }
++
+     @Modifying
+     @Transactional
+-    @Query("UPDATE Invitacion i SET i.estado = com.caa.api.models.EstadoInvitacion.REVOCADA, i.resueltaEn = :ahora "
+-            + "WHERE i.id = :id AND i.estado = com.caa.api.models.EstadoInvitacion.PENDIENTE")
+-    int revocarSiPendiente(@Param("id") UUID id, @Param("ahora") LocalDateTime ahora);
++    @Query("UPDATE Invitacion i SET i.estado = :nuevo, i.resueltaEn = :ahora WHERE i.id = :id AND i.estado = :actual")
++    int transicionarRevocada(@Param("id") UUID id, @Param("ahora") LocalDateTime ahora,
++                             @Param("nuevo") EstadoInvitacion nuevo, @Param("actual") EstadoInvitacion actual);
+ }
