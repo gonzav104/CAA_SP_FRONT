@@ -10,9 +10,11 @@ import { DeleteBoardConfirmation } from './DeleteBoardConfirmation'
 interface BoardRowProps {
   patientId: string
   board: BoardSummary
-  /** Creator: may rename, delete and open the Editor. */
+  /** May rename and open the Editor. */
   canEdit: boolean
-  /** Responsible therapist and the cartilla is not the principal yet. */
+  /** May delete the cartilla (clinical team). */
+  canDelete: boolean
+  /** Clinical team and the cartilla is not the principal yet. */
   canSetPrimary: boolean
   /** The inline editor open on THIS row, if any. */
   mode: 'view' | 'rename' | 'delete'
@@ -36,6 +38,7 @@ export function BoardRow({
   patientId,
   board,
   canEdit,
+  canDelete,
   canSetPrimary,
   mode,
   actionsDisabled,
@@ -108,7 +111,7 @@ export function BoardRow({
               <Star aria-hidden="true" />
             </Button>
           )}
-          {canEdit && (
+          {canDelete && (
             <Button
               variant="ghost"
               size="icon-lg"

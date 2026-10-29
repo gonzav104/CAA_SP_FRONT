@@ -89,7 +89,7 @@ describe('CustomPictogramsPage', () => {
 
   it('hides the delete action for a family collaborator with limited edition', async () => {
     vi.mocked(fetchCurrentUser).mockResolvedValue(familyMember)
-    vi.mocked(fetchPatient).mockResolvedValue({ ...therapistPatientsResponse[0], miPermiso: 'EDICION_LIMITADA' })
+    vi.mocked(fetchPatient).mockResolvedValue({ ...therapistPatientsResponse[0], miPermiso: 'EDICION_LIMITADA', capacidades: ['EDITAR_CONTENIDO'] })
     renderApp(url)
     const card = (await screen.findByText('Mochila')).closest('li')
     if (!card) throw new Error('card not found')
@@ -99,7 +99,7 @@ describe('CustomPictogramsPage', () => {
 
   it('hides every edit action for a read-only family collaborator', async () => {
     vi.mocked(fetchCurrentUser).mockResolvedValue(familyMember)
-    vi.mocked(fetchPatient).mockResolvedValue({ ...therapistPatientsResponse[0], miPermiso: 'LECTURA' })
+    vi.mocked(fetchPatient).mockResolvedValue({ ...therapistPatientsResponse[0], miPermiso: 'LECTURA', capacidades: [] })
     renderApp(url)
     await screen.findByText('Mochila')
     expect(screen.queryByRole('button', { name: 'Subir pictograma' })).not.toBeInTheDocument()

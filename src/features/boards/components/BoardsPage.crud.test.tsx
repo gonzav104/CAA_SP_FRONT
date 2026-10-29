@@ -165,6 +165,7 @@ function gate() {
 const familyPatient = (miPermiso: 'LECTURA' | 'EDICION_LIMITADA'): PacienteResponse => ({
   ...therapistPatientsResponse[0],
   miPermiso,
+  capacidades: miPermiso === 'EDICION_LIMITADA' ? ['EDITAR_CONTENIDO'] : [],
 })
 
 async function openList() {
@@ -210,7 +211,7 @@ describe('BoardsPage cartilla CRUD', () => {
       expect(fake.patch).not.toHaveBeenCalled()
     })
 
-    it('lets a familiar with EDICION_LIMITADA create, and the new cartilla is theirs to edit but not to mark', async () => {
+    it('lets a familiar with EDICION_LIMITADA create and rename, but not delete nor mark as principal', async () => {
       const fake = setupApi({ user: familyMember, patient: familyPatient('EDICION_LIMITADA') })
       const user = userEvent.setup()
       await openList()
@@ -223,7 +224,7 @@ describe('BoardsPage cartilla CRUD', () => {
       expect(fake.post).toHaveBeenCalledExactlyOnceWith(listPath, { nombre: 'De Rosa' })
       const row = rowOf('De Rosa')
       expect(within(row).getByRole('button', { name: 'Renombrar De Rosa' })).toBeInTheDocument()
-      expect(within(row).getByRole('button', { name: 'Eliminar De Rosa' })).toBeInTheDocument()
+      expect(within(row).queryByRole('button', { name: 'Eliminar De Rosa' })).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: /como principal/ })).not.toBeInTheDocument()
     })
 
@@ -378,11 +379,11 @@ describe('BoardsPage cartilla CRUD', () => {
       expect(screen.queryByRole('textbox', { name: 'Nombre de la cartilla' })).not.toBeInTheDocument()
     })
 
-    it('is not offered for a cartilla created by someone else', async () => {
+    it('is offered whoever created the cartilla, as access comes from the patient', async () => {
       setupApi()
       await openList()
 
-      expect(screen.queryByRole('button', { name: 'Renombrar Escuela' })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Renombrar Escuela' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Renombrar Casa' })).toBeInTheDocument()
     })
   })
@@ -480,7 +481,7 @@ describe('BoardsPage cartilla CRUD', () => {
       expect(fake.put).toHaveBeenCalledOnce()
     })
 
-    it('is offered only to the responsible therapist', async () => {
+    it('is offered only to the clinical team', async () => {
       setupApi({ user: familyMember, patient: familyPatient('EDICION_LIMITADA') })
       await openList()
 
@@ -613,11 +614,11 @@ describe('BoardsPage cartilla CRUD', () => {
       expect(fake.del).toHaveBeenCalledExactlyOnceWith(boardPath('c-4'))
     })
 
-    it('is offered only to the creator', async () => {
+    it('is offered to the clinical team whoever created the cartilla', async () => {
       setupApi()
       await openList()
 
-      expect(screen.queryByRole('button', { name: 'Eliminar Escuela' })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Eliminar Escuela' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Eliminar Casa' })).toBeInTheDocument()
     })
   })

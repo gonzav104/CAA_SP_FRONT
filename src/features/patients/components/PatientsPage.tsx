@@ -6,17 +6,18 @@ import { ErrorState } from '@/components/ErrorState'
 import { LoadingState } from '@/components/LoadingState'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useCurrentUser } from '@/features/auth/hooks'
+import { useOrganizations } from '@/features/organizations/hooks'
+import { canCreatePatient } from '@/features/organizations/permissions'
 import { PageLayout } from '@/layouts/PageLayout'
 import { useCreatePatient, usePatients } from '../hooks'
-import { canCreatePatient } from '../permissions'
 import { filterPatients } from '../search'
 import { NewPatientForm } from './NewPatientForm'
 import type { NewPatientFormValues } from './NewPatientForm'
 import { PatientCard } from './PatientCard'
 
 export function PatientsPage() {
-  const { data: user } = useCurrentUser()
+  const { data: organizations } = useOrganizations()
+  const canCreate = canCreatePatient(organizations)
   const { data: patients, isPending, isError, error, refetch } = usePatients()
   const createPatient = useCreatePatient()
   const [searchParams] = useSearchParams()
@@ -28,7 +29,7 @@ export function PatientsPage() {
   const filtered = useMemo(() => (patients ? filterPatients(patients, query) : []), [patients, query])
   const isSearching = query.trim() !== ''
   const emptyMessage =
-    user?.rol === 'FAMILIAR' ? 'Todavía no tenés pacientes vinculados.' : 'Todavía no tenés pacientes registrados.'
+    organizations && !canCreate ? 'Todavía no tenés pacientes vinculados.' : 'Todavía no tenés pacientes registrados.'
 
   const handleCreate = async (values: NewPatientFormValues) => {
     setCreateError(null)
@@ -47,7 +48,7 @@ export function PatientsPage() {
           <h1 className="text-2xl font-semibold text-foreground">Pacientes</h1>
           <p className="text-muted-foreground">Directorio completo de pacientes.</p>
         </div>
-        {canCreatePatient(user) && !isCreating && (
+        {canCreate && !isCreating && (
           <Button
             type="button"
             size="lg"

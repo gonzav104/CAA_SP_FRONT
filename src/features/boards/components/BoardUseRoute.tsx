@@ -3,7 +3,6 @@ import { paths } from '@/app/paths'
 import { getReadErrorMessage } from '@/api/errors'
 import { FullScreenStatus } from '@/components/FullScreenStatus'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { useCurrentUser } from '@/features/auth/hooks'
 import { CommunicationPage } from '@/features/communication/components/CommunicationPage'
 import { usePatient } from '@/features/patients/hooks'
 import { useBoardDetail } from '../hooks'
@@ -20,7 +19,6 @@ function BoardUseRouteContent({ patientId, boardId }: { patientId: string; board
   const navigate = useNavigate()
   const patient = usePatient(patientId)
   const board = useBoardDetail(patientId, boardId)
-  const { data: user } = useCurrentUser()
 
   const error = board.isError ? board.error : patient.isError ? patient.error : null
   if (error) {
@@ -50,7 +48,7 @@ function BoardUseRouteContent({ patientId, boardId }: { patientId: string; board
 
   if (!patient.data || !board.data) return <FullScreenStatus message="Cargando cartilla…" />
 
-  const exitTo = canEditBoard(user, board.data.creatorId)
+  const exitTo = canEditBoard(patient.data)
     ? paths.boardEditor(patientId, boardId)
     : paths.boards(patientId)
 

@@ -1,11 +1,8 @@
 // Field names mirror the backend DTOs: UsuarioResponseDTO, LoginRequestDTO, AuthResponseDTO.
-export type UserRole = 'TERAPEUTA' | 'FAMILIAR'
-
 export interface CurrentUser {
   id: string
   email: string
   nombre: string
-  rol: UserRole
   creadoEn: string
 }
 

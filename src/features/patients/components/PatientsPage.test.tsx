@@ -4,21 +4,27 @@ import { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchCurrentUser } from '@/features/auth/authApi'
 import type { CurrentUser } from '@/features/auth/types'
+import { fetchOrganizations } from '@/features/organizations/organizationsApi'
+import type { OrganizacionResponse } from '@/features/organizations/apiTypes'
+import { therapistMemberOrganization } from '@/features/organizations/testing/fixtures'
 import { renderApp } from '@/test/renderApp'
 import { createPatient, fetchPatients } from '../patientsApi'
 import { familyMember, familyPatientsResponse, therapist, therapistPatientsResponse } from '../testing/fixtures'
 
 vi.mock('@/features/auth/authApi')
+vi.mock('@/features/organizations/organizationsApi')
 vi.mock('../patientsApi')
 
-function setup(user: CurrentUser) {
+function setup(user: CurrentUser, organizations: OrganizacionResponse[] = [therapistMemberOrganization]) {
   vi.mocked(fetchCurrentUser).mockResolvedValue(user)
+  vi.mocked(fetchOrganizations).mockResolvedValue(organizations)
 }
 
 describe('PatientsPage', () => {
   beforeEach(() => {
     vi.mocked(fetchPatients).mockReset()
     vi.mocked(fetchCurrentUser).mockReset()
+    vi.mocked(fetchOrganizations).mockReset()
     vi.mocked(createPatient).mockReset()
   })
 
@@ -37,7 +43,7 @@ describe('PatientsPage', () => {
   })
 
   it('shows the family empty copy', async () => {
-    setup(familyMember)
+    setup(familyMember, [])
     vi.mocked(fetchPatients).mockResolvedValue([])
     renderApp('/pacientes')
     expect(await screen.findByText('Todavía no tenés pacientes vinculados.')).toBeInTheDocument()
@@ -71,7 +77,7 @@ describe('PatientsPage', () => {
   })
 
   it('shows collaborator badges', async () => {
-    setup(familyMember)
+    setup(familyMember, [])
     vi.mocked(fetchPatients).mockResolvedValue(familyPatientsResponse)
     renderApp('/pacientes')
     expect(await screen.findByText('Solo lectura')).toBeInTheDocument()
@@ -113,7 +119,7 @@ describe('PatientsPage', () => {
   })
 
   it('does not offer "Nuevo paciente" to a family collaborator', async () => {
-    setup(familyMember)
+    setup(familyMember, [])
     vi.mocked(fetchPatients).mockResolvedValue([])
     renderApp('/pacientes')
     await screen.findByText('Todavía no tenés pacientes vinculados.')
@@ -131,6 +137,8 @@ describe('PatientsPage', () => {
       creadoEn: '2026-01-01T00:00:00',
       miPermiso: null,
       gridSize: null,
+      organizacionId: 'org-1',
+      capacidades: ['EDITAR_CONTENIDO', 'GESTION_CLINICA'],
     })
     renderApp('/pacientes')
 

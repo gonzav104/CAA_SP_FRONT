@@ -45,7 +45,7 @@ describe('PatientWorkspaceLayout', () => {
 
   it('hides Sesiones and Familia from a family collaborator, but keeps Pictogramas', async () => {
     vi.mocked(fetchCurrentUser).mockResolvedValue(familyMember)
-    vi.mocked(fetchPatient).mockResolvedValue({ ...therapistPatientsResponse[0], miPermiso: 'LECTURA' })
+    vi.mocked(fetchPatient).mockResolvedValue({ ...therapistPatientsResponse[0], miPermiso: 'LECTURA', capacidades: [] })
     renderApp(url)
     const nav = await screen.findByRole('navigation', { name: 'Secciones del paciente' })
     expect(within(nav).queryByRole('link', { name: 'Sesiones' })).not.toBeInTheDocument()
@@ -61,12 +61,12 @@ describe('PatientWorkspaceLayout', () => {
     )
   })
 
-  it('hides edit/delete actions from a family collaborator', async () => {
+  it('lets a family collaborator with EDICION_LIMITADA edit the patient data, but not delete the patient', async () => {
     vi.mocked(fetchCurrentUser).mockResolvedValue(familyMember)
-    vi.mocked(fetchPatient).mockResolvedValue({ ...therapistPatientsResponse[0], miPermiso: 'EDICION_LIMITADA' })
+    vi.mocked(fetchPatient).mockResolvedValue({ ...therapistPatientsResponse[0], miPermiso: 'EDICION_LIMITADA', capacidades: ['EDITAR_CONTENIDO'] })
     renderApp(url)
     await screen.findByRole('heading', { name: 'Tomás Pérez' })
-    expect(screen.queryByRole('button', { name: 'Editar datos del paciente' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Editar datos del paciente' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Eliminar paciente' })).not.toBeInTheDocument()
   })
 
@@ -89,6 +89,11 @@ describe('PatientWorkspaceLayout', () => {
 
   it('deletes the patient after confirmation and returns to the directory', async () => {
     vi.mocked(deletePatient).mockResolvedValue(undefined)
+    // Deleting needs ADMINISTRAR (OWNER/ADMIN of the organization), not just the clinical team.
+    vi.mocked(fetchPatient).mockResolvedValue({
+      ...therapistPatientsResponse[0],
+      capacidades: ['EDITAR_CONTENIDO', 'GESTION_CLINICA', 'ADMINISTRAR'],
+    })
     renderApp(url)
     await screen.findByRole('heading', { name: 'Tomás Pérez' })
 

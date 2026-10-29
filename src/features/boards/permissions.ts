@@ -1,27 +1,18 @@
-import type { CurrentUser } from '@/features/auth/types'
-import { isResponsibleTherapist } from '@/features/patients/permissions'
+import { hasCapability } from '@/features/patients/permissions'
 import type { Patient } from '@/features/patients/types'
 import type { BoardSummary } from './types'
 
-export { isResponsibleTherapist }
+type MaybePatient = Patient | null | undefined
 
-// Mirrors the backend ownership check used for item edits: only the board's creator may edit.
-// Renaming, deleting and opening the Editor are creator-only too (being the responsible therapist is not enough).
-export function canEditBoard(user: CurrentUser | null | undefined, creatorId: string): boolean {
-  return !!user && user.id === creatorId
-}
+// Access comes from the patient, never from who created the cartilla.
+/** Creating, renaming and opening the Editor of a cartilla. */
+export const canCreateBoard = (patient: MaybePatient) => hasCapability(patient, 'EDITAR_CONTENIDO')
+export const canEditBoard = canCreateBoard
 
-/** Creating a cartilla: the responsible therapist or a family collaborator with limited edition. */
-export function canCreateBoard(user: CurrentUser | null | undefined, patient: Patient | null | undefined): boolean {
-  if (!user || !patient) return false
-  return isResponsibleTherapist(user, patient) || patient.collaboratorPermission === 'EDICION_LIMITADA'
-}
+/** Deleting a cartilla is clinical-team only. */
+export const canDeleteBoard = (patient: MaybePatient) => hasCapability(patient, 'GESTION_CLINICA')
 
-/** Marking a cartilla as principal: the responsible therapist, for any creator, unless it already is the principal. */
-export function canSetPrimaryBoard(
-  user: CurrentUser | null | undefined,
-  patient: Patient | null | undefined,
-  board: Pick<BoardSummary, 'isPrimary'>,
-): boolean {
-  return isResponsibleTherapist(user, patient) && !board.isPrimary
+/** Marking a cartilla as principal: clinical team only, and not when it already is the principal. */
+export function canSetPrimaryBoard(patient: MaybePatient, board: Pick<BoardSummary, 'isPrimary'>): boolean {
+  return hasCapability(patient, 'GESTION_CLINICA') && !board.isPrimary
 }

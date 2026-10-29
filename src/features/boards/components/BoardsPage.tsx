@@ -6,13 +6,12 @@ import { getCartillaErrorMessage, getErrorStatus, getReadErrorMessage } from '@/
 import { ErrorState } from '@/components/ErrorState'
 import { LoadingState } from '@/components/LoadingState'
 import { Button } from '@/components/ui/button'
-import { useCurrentUser } from '@/features/auth/hooks'
 import { usePatient } from '@/features/patients/hooks'
 import type { Patient } from '@/features/patients/types'
 import { CartillaOperationError } from '../cartillaOperations'
 import type { CartillaOperation } from '../cartillaOperations'
 import { useBoards } from '../hooks'
-import { canCreateBoard, canEditBoard, canSetPrimaryBoard } from '../permissions'
+import { canCreateBoard, canDeleteBoard, canEditBoard, canSetPrimaryBoard } from '../permissions'
 import { useBoardListOperations } from '../useBoardListOperations'
 import { BoardNameForm } from './BoardNameForm'
 import { BoardRow } from './BoardRow'
@@ -38,7 +37,6 @@ interface BoardsContentProps {
 }
 
 function BoardsContent({ patientId, patient }: BoardsContentProps) {
-  const { data: user } = useCurrentUser()
   const { data: boards, isError, error, refetch } = useBoards(patientId)
   const operations = useBoardListOperations(patientId)
   const [searchParams] = useSearchParams()
@@ -141,7 +139,7 @@ function BoardsContent({ patientId, patient }: BoardsContentProps) {
   }
 
   const retry = () => void refetch()
-  const canCreate = canCreateBoard(user, patient)
+  const canCreate = canCreateBoard(patient)
   const isCreating = editor?.kind === 'create'
   // A reload notice already says the list is stale (and offers the retry): never show two alerts for it.
   const showListError = isError && !notice?.retry
@@ -204,8 +202,9 @@ function BoardsContent({ patientId, patient }: BoardsContentProps) {
                   key={board.id}
                   patientId={patientId}
                   board={board}
-                  canEdit={canEditBoard(user, board.creatorId)}
-                  canSetPrimary={canSetPrimaryBoard(user, patient, board)}
+                  canEdit={canEditBoard(patient)}
+                  canDelete={canDeleteBoard(patient)}
+                  canSetPrimary={canSetPrimaryBoard(patient, board)}
                   mode={mode}
                   actionsDisabled={isAnyPending}
                   isEditorPending={mode === 'rename' ? operations.rename.isPending : operations.remove.isPending}

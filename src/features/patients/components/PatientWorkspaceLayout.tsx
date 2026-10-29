@@ -6,7 +6,6 @@ import { getPatientDeleteErrorMessage, getPatientUpdateErrorMessage, getReadErro
 import { ErrorState } from '@/components/ErrorState'
 import { LoadingState } from '@/components/LoadingState'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { useCurrentUser } from '@/features/auth/hooks'
 import { useBoards } from '@/features/boards/hooks'
 import { PageLayout } from '@/layouts/PageLayout'
 import { initialOf } from '@/lib/utils'
@@ -148,7 +147,6 @@ export function PatientWorkspaceLayout() {
 
 function PatientWorkspaceLayoutContent({ patientId }: { patientId: string }) {
   const navigate = useNavigate()
-  const { data: user } = useCurrentUser()
   const patient = usePatient(patientId)
   // Same cache entry the Cartillas tab reads (boardKeys.list): a shared GET, not a second request.
   const boards = useBoards(patientId)
@@ -181,13 +179,13 @@ function PatientWorkspaceLayoutContent({ patientId }: { patientId: string }) {
 
   const data = patient.data
   const gridSize = patient.data.gridSize
-  const canEdit = canEditPatientData(user, data)
-  const canDelete = canDeletePatient(user, data)
+  const canEdit = canEditPatientData(data)
+  const canDelete = canDeletePatient(data)
 
   const sections: PatientSection[] = [
     { label: 'Cartillas', to: paths.boards(patientId), icon: LayoutGrid },
-    ...(canAccessSessions(user, data) ? [{ label: 'Sesiones', to: paths.sessions(patientId), icon: CalendarDays }] : []),
-    ...(canAccessCollaborators(user, data) ? [{ label: 'Familia', to: paths.collaborators(patientId), icon: Users }] : []),
+    ...(canAccessSessions(data) ? [{ label: 'Sesiones', to: paths.sessions(patientId), icon: CalendarDays }] : []),
+    ...(canAccessCollaborators(data) ? [{ label: 'Familia', to: paths.collaborators(patientId), icon: Users }] : []),
     { label: 'Pictogramas', to: paths.customPictograms(patientId), icon: Image },
   ]
 
