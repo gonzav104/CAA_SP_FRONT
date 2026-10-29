@@ -9,6 +9,7 @@ import { CollaboratorsPage } from '@/features/collaborators/components/Collabora
 import { CustomPictogramsPage } from '@/features/customPictograms/components/CustomPictogramsPage'
 import { DashboardPage } from '@/features/dashboard/components/DashboardPage'
 import { OrganizationMembersPage } from '@/features/organizations/components/OrganizationMembersPage'
+import { PatientTherapistsPage } from '@/features/therapists/components/PatientTherapistsPage'
 import { PatientWorkspaceLayout } from '@/features/patients/components/PatientWorkspaceLayout'
 import { PatientsPage } from '@/features/patients/components/PatientsPage'
 import { EditSessionPage } from '@/features/sessions/components/EditSessionPage'
@@ -50,6 +51,7 @@ export function renderApp(initialPath: string) {
               { path: 'sesiones/:sesionId', element: <SessionDetailPage /> },
               { path: 'sesiones/:sesionId/editar', element: <EditSessionPage /> },
               { path: 'familia', element: <CollaboratorsPage /> },
+              { path: 'equipo', element: <PatientTherapistsPage /> },
               { path: 'pictogramas', element: <CustomPictogramsPage /> },
             ],
           },

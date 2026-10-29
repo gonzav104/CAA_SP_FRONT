@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CalendarDays, Image, LayoutGrid, Pencil, Play, Trash2, Users } from 'lucide-react'
+import { CalendarDays, Image, LayoutGrid, Pencil, Play, Stethoscope, Trash2, Users } from 'lucide-react'
 import { Link, Navigate, Outlet, useNavigate, useParams } from 'react-router'
 import { paths } from '@/app/paths'
 import { getPatientDeleteErrorMessage, getPatientUpdateErrorMessage, getReadErrorMessage } from '@/api/errors'
@@ -12,7 +12,13 @@ import { initialOf } from '@/lib/utils'
 import { ageFrom } from '../age'
 import { formatBirthDate } from '../format'
 import { useDeletePatient, usePatient, useUpdatePatient } from '../hooks'
-import { canAccessCollaborators, canAccessSessions, canDeletePatient, canEditPatientData } from '../permissions'
+import {
+  canAccessCollaborators,
+  canAccessSessions,
+  canDeletePatient,
+  canEditPatientData,
+  canViewTherapists,
+} from '../permissions'
 import type { Patient } from '../types'
 import { DeletePatientConfirmation } from './DeletePatientConfirmation'
 import { EditPatientForm } from './EditPatientForm'
@@ -186,6 +192,7 @@ function PatientWorkspaceLayoutContent({ patientId }: { patientId: string }) {
     { label: 'Cartillas', to: paths.boards(patientId), icon: LayoutGrid },
     ...(canAccessSessions(data) ? [{ label: 'Sesiones', to: paths.sessions(patientId), icon: CalendarDays }] : []),
     ...(canAccessCollaborators(data) ? [{ label: 'Familia', to: paths.collaborators(patientId), icon: Users }] : []),
+    ...(canViewTherapists(data) ? [{ label: 'Equipo', to: paths.therapists(patientId), icon: Stethoscope }] : []),
     { label: 'Pictogramas', to: paths.customPictograms(patientId), icon: Image },
   ]
 

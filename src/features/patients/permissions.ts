@@ -10,6 +10,10 @@ export function hasCapability(patient: Patient | null | undefined, capability: C
 export const canEditPatientData = (patient: Patient | null | undefined) => hasCapability(patient, 'EDITAR_CONTENIDO')
 export const canDeletePatient = (patient: Patient | null | undefined) => hasCapability(patient, 'ADMINISTRAR')
 
+// The Equipo section: seeing the assigned therapists is clinical-team only; assigning needs ADMINISTRAR.
+export const canViewTherapists = (patient: Patient | null | undefined) => hasCapability(patient, 'GESTION_CLINICA')
+export const canManageTherapists = (patient: Patient | null | undefined) => hasCapability(patient, 'ADMINISTRAR')
+
 // Sessions and the family section are clinical-team only: a linked family member gets a 404 there.
 export const canAccessSessions = (patient: Patient | null | undefined) => hasCapability(patient, 'GESTION_CLINICA')
 export const canAccessCollaborators = (patient: Patient | null | undefined) =>

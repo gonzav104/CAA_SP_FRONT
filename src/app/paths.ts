@@ -20,6 +20,7 @@ export const routes = {
   sessionDetail: '/pacientes/:pacienteId/sesiones/:sesionId',
   sessionEdit: '/pacientes/:pacienteId/sesiones/:sesionId/editar',
   collaborators: '/pacientes/:pacienteId/familia',
+  therapists: '/pacientes/:pacienteId/equipo',
   customPictograms: '/pacientes/:pacienteId/pictogramas',
   boardEditor: '/pacientes/:pacienteId/cartillas/:cartillaId/editor',
   boardUse: '/pacientes/:pacienteId/cartillas/:cartillaId/uso',
@@ -40,6 +41,7 @@ export const paths = {
   sessionEdit: (patientId: string, sessionId: string) =>
     `/pacientes/${encodeURIComponent(patientId)}/sesiones/${encodeURIComponent(sessionId)}/editar`,
   collaborators: (patientId: string) => `/pacientes/${encodeURIComponent(patientId)}/familia`,
+  therapists: (patientId: string) => `/pacientes/${encodeURIComponent(patientId)}/equipo`,
   customPictograms: (patientId: string) => `/pacientes/${encodeURIComponent(patientId)}/pictogramas`,
   boardEditor: (patientId: string, boardId: string) =>
     `/pacientes/${encodeURIComponent(patientId)}/cartillas/${encodeURIComponent(boardId)}/editor`,

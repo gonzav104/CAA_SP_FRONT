@@ -298,6 +298,18 @@ export function getOrganizationInviteErrorMessage(error: unknown): string {
   return 'Ocurrió un error inesperado.'
 }
 
+// User-facing copy for a failed therapist assignment change (POST/DELETE /api/pacientes/{id}/terapeutas).
+// Mirrors PacienteTerapeutaServiceImpl: 404 without ADMINISTRAR or when the user is not a member of the
+// patient's organization, 409 when the member has no clinical capacity.
+export function getTherapistAssignmentErrorMessage(error: unknown): string {
+  if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
+  const status = getErrorStatus(error)
+  if (status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente.'
+  if (status === 404) return 'No tienes permiso para cambiar el equipo de este paciente, o esa persona ya no es miembro del espacio.'
+  if (status === 409) return 'Esa persona ya no tiene el rol de terapeuta en el espacio.'
+  return 'Ocurrió un error inesperado.'
+}
+
 export const INVALID_INVITATION_MESSAGE = 'El enlace no es válido o ha expirado.'
 
 // User-facing copy for a failed invitation acceptance (POST /api/invitaciones/aceptar). The backend
