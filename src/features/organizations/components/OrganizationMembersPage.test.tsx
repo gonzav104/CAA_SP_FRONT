@@ -178,6 +178,31 @@ describe('OrganizationMembersPage', () => {
     expect(await within(carlaRow).findByRole('alert')).toHaveTextContent(message)
   })
 
+  it('a refusal after being demoted elsewhere refreshes the role and hides the stale actions', async () => {
+    setup(ownerOrganization)
+    vi.mocked(removeMember).mockRejectedValue(httpError(403))
+    renderApp(url)
+    const carlaRow = await rowOf('Carla')
+    await userEvent.click(within(carlaRow).getByRole('button', { name: 'Quitar del espacio' }))
+    // Meanwhile the OWNER role was lost: the refetch reports a plain member.
+    vi.mocked(fetchOrganizations).mockResolvedValue([{ ...ownerOrganization, miRolGestion: 'MIEMBRO' }])
+    await userEvent.click(within(carlaRow).getByRole('button', { name: 'Confirmar' }))
+
+    await vi.waitFor(() => expect(screen.queryByRole('button', { name: 'Quitar del espacio' })).not.toBeInTheDocument())
+    expect(screen.queryByLabelText(/Rol de gestión de/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Invitar' })).not.toBeInTheDocument()
+  })
+
+  it('a refusal because the membership is gone ends on the no-access state', async () => {
+    setup(ownerOrganization)
+    vi.mocked(changeMemberRole).mockRejectedValue(httpError(404))
+    renderApp(url)
+    const carlaRow = await rowOf('Carla')
+    vi.mocked(fetchOrganizations).mockResolvedValue([])
+    await userEvent.selectOptions(within(carlaRow).getByLabelText('Rol de gestión de Carla'), 'ADMIN')
+    expect(await screen.findByText('No tenés acceso a este espacio.')).toBeInTheDocument()
+  })
+
   it('leaving the space goes back to the dashboard', async () => {
     setup({ ...adminOrganization, id: ORG }, [
       { ...ana, usuarioId: 'u-owner', nombre: 'Olga' },

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { getErrorStatus } from '@/api/errors'
 import { patientKeys } from '@/features/patients/hooks'
 import type { TerapeutaAsignadoResponse } from './apiTypes'
 import { assignTherapist, fetchAssignedTherapists, unassignTherapist } from './therapistsApi'
@@ -23,6 +24,10 @@ export function useAssignTherapist(patientId: string) {
   return useMutation<TerapeutaAsignadoResponse, Error, string>({
     mutationFn: (userId) => assignTherapist(patientId, userId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: patientKeys.all }),
+    // 404: ADMINISTRAR (or the patient) is gone; refetch the patient so its capabilities hide the controls.
+    onError: (error) => {
+      if (getErrorStatus(error) === 404) void queryClient.invalidateQueries({ queryKey: patientKeys.all })
+    },
   })
 }
 
@@ -31,5 +36,9 @@ export function useUnassignTherapist(patientId: string) {
   return useMutation<void, Error, string>({
     mutationFn: (userId) => unassignTherapist(patientId, userId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: patientKeys.all }),
+    // 404: ADMINISTRAR (or the patient) is gone; refetch the patient so its capabilities hide the controls.
+    onError: (error) => {
+      if (getErrorStatus(error) === 404) void queryClient.invalidateQueries({ queryKey: patientKeys.all })
+    },
   })
 }

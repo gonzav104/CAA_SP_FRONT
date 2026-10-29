@@ -126,6 +126,15 @@ describe('PatientTherapistsPage', () => {
     expect(fetchAssignedTherapists).not.toHaveBeenCalled()
   })
 
+  it('a 404 because ADMINISTRAR was lost refreshes the patient and hides the controls', async () => {
+    vi.mocked(assignTherapist).mockRejectedValue(httpError(404))
+    renderApp(url)
+    await userEvent.selectOptions(await screen.findByLabelText('Asignar terapeuta'), 'u-carla')
+    vi.mocked(fetchPatient).mockResolvedValue(asAssignedTherapist)
+    await userEvent.click(screen.getByRole('button', { name: 'Asignar' }))
+    await vi.waitFor(() => expect(screen.queryByLabelText('Asignar terapeuta')).not.toBeInTheDocument())
+  })
+
   it('losing ADMINISTRAR after a refetch hides the assignment controls', async () => {
     renderApp(url)
     expect(await screen.findByLabelText('Asignar terapeuta')).toBeInTheDocument()

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { getErrorStatus } from '@/api/errors'
 import type { InvitacionResponse } from '@/features/collaborators/apiTypes'
 import { patientKeys } from '@/features/patients/hooks'
 import type { InvitacionOrganizacionRequest, MiembroResponse, OrganizacionResponse, RolGestionAsignable } from './apiTypes'
@@ -66,11 +67,23 @@ function invalidateMembership(queryClient: ReturnType<typeof useQueryClient>, or
   void queryClient.invalidateQueries({ queryKey: patientKeys.all })
 }
 
+/**
+ * A 403/404 on a membership or invitation write means the caller's own role or membership changed
+ * elsewhere (demoted, removed): refetch what decides the visible actions instead of keeping stale ones.
+ */
+function refreshOnRefusal(queryClient: ReturnType<typeof useQueryClient>, organizationId: string) {
+  return (error: Error) => {
+    const status = getErrorStatus(error)
+    if (status === 403 || status === 404) invalidateMembership(queryClient, organizationId)
+  }
+}
+
 export function useChangeMemberRole(organizationId: string) {
   const queryClient = useQueryClient()
   return useMutation<MiembroResponse, Error, { userId: string; rolGestion: RolGestionAsignable }>({
     mutationFn: ({ userId, rolGestion }) => changeMemberRole(organizationId, userId, rolGestion),
     onSuccess: () => invalidateMembership(queryClient, organizationId),
+    onError: refreshOnRefusal(queryClient, organizationId),
   })
 }
 
@@ -79,6 +92,7 @@ export function useChangeMemberTherapist(organizationId: string) {
   return useMutation<MiembroResponse, Error, { userId: string; esTerapeuta: boolean }>({
     mutationFn: ({ userId, esTerapeuta }) => changeMemberTherapist(organizationId, userId, esTerapeuta),
     onSuccess: () => invalidateMembership(queryClient, organizationId),
+    onError: refreshOnRefusal(queryClient, organizationId),
   })
 }
 
@@ -87,6 +101,7 @@ export function useRemoveMember(organizationId: string) {
   return useMutation<void, Error, string>({
     mutationFn: (userId) => removeMember(organizationId, userId),
     onSuccess: () => invalidateMembership(queryClient, organizationId),
+    onError: refreshOnRefusal(queryClient, organizationId),
   })
 }
 
@@ -96,6 +111,7 @@ export function useInviteToOrganization(organizationId: string) {
     mutationFn: (request) => inviteToOrganization(organizationId, request),
     // Only the pending invitations change: nobody becomes a member until accepting.
     onSuccess: () => queryClient.invalidateQueries({ queryKey: organizationKeys.invitations(organizationId) }),
+    onError: refreshOnRefusal(queryClient, organizationId),
   })
 }
 
@@ -104,5 +120,6 @@ export function useRevokeOrganizationInvitation(organizationId: string) {
   return useMutation<void, Error, string>({
     mutationFn: (invitationId) => revokeOrganizationInvitation(organizationId, invitationId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: organizationKeys.invitations(organizationId) }),
+    onError: refreshOnRefusal(queryClient, organizationId),
   })
 }
