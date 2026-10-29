@@ -20,8 +20,6 @@ export const organizationKeys = {
   invitations: (organizationId: string) => ['organizations', organizationId, 'invitations'] as const,
 }
 
-const STALE_TIME = 30_000
-
 export function useOrganizations() {
   return useQuery<OrganizacionResponse[]>({
     queryKey: organizationKeys.all,
@@ -39,11 +37,13 @@ export function useCreateOrganization() {
   })
 }
 
+// Members and pending invitations change from outside this screen (an invitee accepts from the e-mail,
+// another manager edits the team): always stale, so every mount and window focus refetches them.
 export function useMembers(organizationId: string, enabled = true) {
   return useQuery<MiembroResponse[]>({
     queryKey: organizationKeys.members(organizationId),
     queryFn: () => fetchMembers(organizationId),
-    staleTime: STALE_TIME,
+    staleTime: 0,
     enabled,
   })
 }
@@ -52,7 +52,7 @@ export function useOrganizationInvitations(organizationId: string, enabled: bool
   return useQuery<InvitacionResponse[]>({
     queryKey: organizationKeys.invitations(organizationId),
     queryFn: () => fetchOrganizationInvitations(organizationId),
-    staleTime: STALE_TIME,
+    staleTime: 0,
     enabled,
   })
 }
@@ -75,6 +75,18 @@ function refreshOnRefusal(queryClient: ReturnType<typeof useQueryClient>, organi
   return (error: Error) => {
     const status = getErrorStatus(error)
     if (status === 403 || status === 404) invalidateMembership(queryClient, organizationId)
+  }
+}
+
+/** A 409 on invite/resend means the person already is a member (e.g. the invitation was just accepted). */
+function refreshOnInviteRefusal(queryClient: ReturnType<typeof useQueryClient>, organizationId: string) {
+  const refreshMembership = refreshOnRefusal(queryClient, organizationId)
+  return (error: Error) => {
+    if (getErrorStatus(error) === 409) {
+      void queryClient.invalidateQueries({ queryKey: organizationKeys.invitations(organizationId) })
+      void queryClient.invalidateQueries({ queryKey: organizationKeys.members(organizationId) })
+    }
+    refreshMembership(error)
   }
 }
 
@@ -111,7 +123,7 @@ export function useInviteToOrganization(organizationId: string) {
     mutationFn: (request) => inviteToOrganization(organizationId, request),
     // Only the pending invitations change: nobody becomes a member until accepting.
     onSuccess: () => queryClient.invalidateQueries({ queryKey: organizationKeys.invitations(organizationId) }),
-    onError: refreshOnRefusal(queryClient, organizationId),
+    onError: refreshOnInviteRefusal(queryClient, organizationId),
   })
 }
 

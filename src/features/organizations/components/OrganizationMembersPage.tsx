@@ -44,6 +44,16 @@ export function OrganizationMembersPage() {
       </PageLayout>
     )
   }
+  if (organizations.isError) {
+    return (
+      <PageLayout title="Miembros" backLink={{ to: paths.dashboard(), label: 'Volver al inicio' }}>
+        <ErrorState
+          message={getReadErrorMessage(organizations.error, 'No se pudieron cargar tus espacios.')}
+          onRetry={() => void organizations.refetch()}
+        />
+      </PageLayout>
+    )
+  }
   // Only a current membership opens this page; an old link of a lost membership never does.
   const organization = organizations.data?.find((org) => org.id === organizacionId)
   if (!organization) {

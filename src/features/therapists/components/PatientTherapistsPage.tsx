@@ -39,7 +39,7 @@ function TherapistsContent({ patient }: { patient: Patient }) {
   const assigned = useAssignedTherapists(patient.id, true)
   // Candidates come from the patient's own organization only: the backend refuses anyone else.
   const members = useMembers(patient.organizationId, canManage)
-  const assign = useAssignTherapist(patient.id)
+  const assign = useAssignTherapist(patient.id, patient.organizationId)
   const unassign = useUnassignTherapist(patient.id)
 
   const [selected, setSelected] = useState('')

@@ -104,6 +104,19 @@ describe('PatientTherapistsPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
   })
 
+  it('a 409 (the member lost the therapist role) refreshes the candidates', async () => {
+    vi.mocked(assignTherapist).mockRejectedValue(httpError(409))
+    renderApp(url)
+    await userEvent.selectOptions(await screen.findByLabelText('Asignar terapeuta'), 'u-carla')
+    vi.mocked(fetchMembers).mockResolvedValue(members.map((m) => (m.usuarioId === 'u-carla' ? { ...m, esTerapeuta: false } : m)))
+    await userEvent.click(screen.getByRole('button', { name: 'Asignar' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Esa persona ya no tiene el rol de terapeuta en el espacio.')
+    await vi.waitFor(() =>
+      expect(screen.getByText(/No hay más terapeutas del espacio para asignar/)).toBeInTheDocument(),
+    )
+  })
+
   it('an assigned therapist (GESTION_CLINICA without ADMINISTRAR) sees the team but cannot change it', async () => {
     vi.mocked(fetchPatient).mockResolvedValue(asAssignedTherapist)
     renderApp(url)

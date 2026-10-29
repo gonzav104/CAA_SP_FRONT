@@ -1,4 +1,5 @@
-import { screen, within } from '@testing-library/react'
+import { focusManager } from '@tanstack/react-query'
+import { act, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError } from 'axios'
 import type { InternalAxiosRequestConfig } from 'axios'
@@ -55,9 +56,10 @@ const pendingInvitation: InvitacionResponse = {
   expiraEn: '2999-01-01T00:00:00',
 }
 
-function httpError(status: number): AxiosError {
+function httpError(status: number, message?: string): AxiosError {
   const config = { headers: {} } as InternalAxiosRequestConfig
-  return new AxiosError('failed', 'ERR_BAD_REQUEST', config, null, { status, statusText: '', headers: {}, config, data: {} })
+  const data = message ? { timestamp: '2026-01-01T00:00:00', status, error: 'Bad Request', message } : {}
+  return new AxiosError('failed', 'ERR_BAD_REQUEST', config, null, { status, statusText: '', headers: {}, config, data })
 }
 
 function setup(myOrganization: OrganizacionResponse, members: MiembroResponse[] = [ana, bruno, carla]) {
@@ -242,6 +244,47 @@ describe('OrganizationMembersPage', () => {
       expect(fetchMembers).toHaveBeenCalledOnce()
     })
 
+    it('refetches members and pending invitations when the window regains focus (an invitee accepted)', async () => {
+      setup(ownerOrganization)
+      vi.mocked(fetchOrganizationInvitations).mockResolvedValue([pendingInvitation])
+      renderApp(url)
+      await screen.findByRole('list', { name: 'Invitaciones pendientes' })
+
+      vi.mocked(fetchOrganizationInvitations).mockResolvedValue([])
+      vi.mocked(fetchMembers).mockResolvedValue([ana, bruno, carla, member({ usuarioId: 'u-dani', nombre: 'Dani', email: 'dani@example.com' })])
+      act(() => {
+        focusManager.setFocused(false)
+        focusManager.setFocused(true)
+      })
+
+      await vi.waitFor(() => expect(screen.getByText('Dani', { selector: 'span.font-medium' })).toBeInTheDocument())
+      await vi.waitFor(() => expect(screen.queryByRole('list', { name: 'Invitaciones pendientes' })).not.toBeInTheDocument())
+      act(() => focusManager.setFocused(undefined))
+    })
+
+    it('a 409 on resend (already a member) refreshes members and invitations', async () => {
+      setup(ownerOrganization)
+      vi.mocked(fetchOrganizationInvitations).mockResolvedValue([pendingInvitation])
+      vi.mocked(inviteToOrganization).mockRejectedValue(httpError(409))
+      renderApp(url)
+      await userEvent.click(await screen.findByRole('button', { name: 'Reenviar invitación a dani@example.com' }))
+
+      vi.mocked(fetchOrganizationInvitations).mockResolvedValue([])
+      expect(await screen.findByRole('alert')).toHaveTextContent('Esa persona ya es miembro del espacio.')
+      await vi.waitFor(() => expect(fetchMembers).toHaveBeenCalledTimes(2))
+      await vi.waitFor(() => expect(fetchOrganizationInvitations).toHaveBeenCalledTimes(2))
+    })
+
+    it('shows the backend validation message on a 400', async () => {
+      setup(ownerOrganization)
+      vi.mocked(inviteToOrganization).mockRejectedValue(httpError(400, 'El email no es válido'))
+      renderApp(url)
+      await userEvent.click(await screen.findByRole('button', { name: 'Invitar' }))
+      await userEvent.type(screen.getByLabelText('Email'), 'dani@example.com')
+      await userEvent.click(screen.getByRole('button', { name: 'Enviar invitación' }))
+      expect(await screen.findByRole('alert')).toHaveTextContent('El servidor rechazó los datos: El email no es válido')
+    })
+
     it('ADMIN can only propose MIEMBRO', async () => {
       setup({ ...adminOrganization, id: ORG })
       renderApp(url)
@@ -282,6 +325,30 @@ describe('OrganizationMembersPage', () => {
       expect(await screen.findByRole('alert')).toHaveTextContent(message)
       expect(screen.getByLabelText('Email')).toHaveValue('carla@example.com')
     })
+  })
+
+  it('a self-leave failure keeps the user on the page with the error', async () => {
+    setup({ ...adminOrganization, id: ORG }, [
+      { ...ana, usuarioId: 'u-owner', nombre: 'Olga' },
+      { ...bruno, usuarioId: therapist.id, nombre: 'Ana' },
+    ])
+    vi.mocked(removeMember).mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'))
+    renderApp(url)
+    const anaRow = await rowOf('Ana')
+    await userEvent.click(within(anaRow).getByRole('button', { name: 'Salir del espacio' }))
+    await userEvent.click(within(anaRow).getByRole('button', { name: 'Confirmar' }))
+    expect(await within(anaRow).findByRole('alert')).toHaveTextContent('No se pudo conectar con el servidor.')
+    expect(screen.getByTestId('location')).toHaveTextContent(url)
+  })
+
+  it('a load error of the memberships offers a retry instead of claiming there is no access', async () => {
+    vi.mocked(fetchOrganizations).mockRejectedValueOnce(httpError(500)).mockResolvedValue([ownerOrganization])
+    vi.mocked(fetchMembers).mockResolvedValue([ana])
+    renderApp(url)
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ocurrió un error inesperado.')
+    expect(screen.queryByText('No tenés acceso a este espacio.')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
+    expect(await rowOf('Ana')).toBeInTheDocument()
   })
 
   it('does not open a space the user no longer belongs to', async () => {
