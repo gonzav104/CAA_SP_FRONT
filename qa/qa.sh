@@ -7,9 +7,8 @@ set -euo pipefail
 QA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONT_DIR="$(dirname "$QA_DIR")"
 BACKEND_REPO="${BACKEND_REPO:-$FRONT_DIR/../CAA_SP}"
-# Backend revision to test. It carries the invitation fix (fix/invitaciones-enum-postgres) until that branch
-# is merged; after the merge, set it back to "main" (or export BACKEND_REF=main).
-BACKEND_REF="${BACKEND_REF:-fix/invitaciones-enum-postgres}"
+# Backend revision to test: the committed ref, built as is (no patches). Export BACKEND_REF to try another one.
+BACKEND_REF="${BACKEND_REF:-main}"
 WORK="$QA_DIR/.work"            # gitignored: backend copy, jar, logs, generated secrets
 
 # Names and ports are fixed on purpose: every destructive command below acts on exactly these.

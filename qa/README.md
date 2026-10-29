@@ -27,9 +27,8 @@ npm run qa:e2e    # suite Playwright contra este entorno (consume datos: reset +
 ```
 
 El backend se exporta con `git archive` desde `../CAA_SP` (solo lectura) y se compila en `qa/.work/`
-(ignorado por Git). La revisión se elige con `BACKEND_REF` (por defecto `fix/invitaciones-enum-postgres`, que
-contiene la corrección de las invitaciones; cuando se integre, usar `BACKEND_REF=main`). No se aplica ningún
-parche: se prueba el backend tal como está comiteado.
+(ignorado por Git). La revisión se elige con `BACKEND_REF` (por defecto `main`, que ya incluye la corrección de las invitaciones).
+No se aplica ningún parche: se prueba el backend tal como está comiteado.
 
 ## Cuentas (contraseña de todas: `Qa#Clave2026`)
 
@@ -88,5 +87,5 @@ El QA no envía correos reales, por eso `seed` deja enlaces con tokens conocidos
 `POST /api/invitaciones/aceptar` y la revocación de invitaciones respondían **500** sobre PostgreSQL real: los
 `UPDATE` condicionales de `InvitacionRepository` usaban literales de enum en HQL, que Hibernate emite como
 `cast(... as estadoinvitacion)` (el tipo real es `estado_invitacion`; H2 lo ocultaba). Se corrigió en el backend
-(rama `fix/invitaciones-enum-postgres`, con un test de regresión contra PostgreSQL 15 real). Este entorno ya
-prueba esa versión y la suite `npm run qa:e2e` pasa sin ningún parche.
+(PR #4, ya en `main`, con un test de regresión contra PostgreSQL 15 real). Este entorno prueba `main` y la
+suite `npm run qa:e2e` pasa sin ningún parche.
