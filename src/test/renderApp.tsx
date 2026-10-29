@@ -8,6 +8,7 @@ import { BoardsPage } from '@/features/boards/components/BoardsPage'
 import { CollaboratorsPage } from '@/features/collaborators/components/CollaboratorsPage'
 import { CustomPictogramsPage } from '@/features/customPictograms/components/CustomPictogramsPage'
 import { DashboardPage } from '@/features/dashboard/components/DashboardPage'
+import { OrganizationMembersPage } from '@/features/organizations/components/OrganizationMembersPage'
 import { PatientWorkspaceLayout } from '@/features/patients/components/PatientWorkspaceLayout'
 import { PatientsPage } from '@/features/patients/components/PatientsPage'
 import { EditSessionPage } from '@/features/sessions/components/EditSessionPage'
@@ -37,6 +38,7 @@ export function renderApp(initialPath: string) {
           { path: routes.login, element: <p>Login stub</p> },
           { path: routes.dashboard, element: <DashboardPage /> },
           { path: routes.patients, element: <PatientsPage /> },
+          { path: routes.organizationMembers, element: <OrganizationMembersPage /> },
           {
             path: routes.patientSpace,
             element: <PatientWorkspaceLayout />,

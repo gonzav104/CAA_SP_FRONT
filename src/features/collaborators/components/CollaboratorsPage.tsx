@@ -13,6 +13,7 @@ import { LoadingState } from '@/components/LoadingState'
 import { Button } from '@/components/ui/button'
 import { ListNotice } from '@/features/boards/components/ListNotice'
 import { usePatient } from '@/features/patients/hooks'
+import { PERMISSION_LABELS } from '@/features/patients/format'
 import { canAccessCollaborators } from '@/features/patients/permissions'
 import type { ColaboradorRegistroRequest, PermisoColaborador } from '../apiTypes'
 import {
@@ -211,6 +212,7 @@ function CollaboratorsPageContent({ patientId }: { patientId: string }) {
               <InvitationRow
                 key={invitation.id}
                 invitation={invitation}
+                description={`Invitación pendiente · ${PERMISSION_LABELS[invitation.permission]}`}
                 actionsDisabled={invitationActionsDisabled}
                 error={invitationErrorTarget?.id === invitation.id ? invitationErrorTarget.message : null}
                 onResend={() =>

@@ -13,3 +13,24 @@ export interface OrganizacionResponse {
 export interface OrganizacionRegistroRequest {
   nombre: string
 }
+
+// Mirrors MiembroResponseDTO.
+export interface MiembroResponse {
+  usuarioId: string
+  nombre: string
+  email: string
+  rolGestion: RolGestion
+  esTerapeuta: boolean
+  /** ISO local datetime. */
+  unidoEn: string
+}
+
+/** Roles an invitation or a role change may propose: OWNER is never accepted by the backend. */
+export type RolGestionAsignable = Exclude<RolGestion, 'OWNER'>
+
+// Mirrors InvitacionOrganizacionRegistroDTO: two independent fields, never a single "rol".
+export interface InvitacionOrganizacionRequest {
+  email: string
+  rolGestion: RolGestionAsignable
+  esTerapeuta: boolean
+}

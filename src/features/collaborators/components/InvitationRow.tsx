@@ -1,10 +1,12 @@
 import { Button } from '@/components/ui/button'
-import { formatBirthDate, PERMISSION_LABELS } from '@/features/patients/format'
+import { formatBirthDate } from '@/features/patients/format'
 import { isInvitationExpired } from '../mappers'
 import type { FamilyInvitation } from '../types'
 
 interface InvitationRowProps {
-  invitation: FamilyInvitation
+  invitation: Pick<FamilyInvitation, 'id' | 'email' | 'status' | 'expiresAt'>
+  /** What the invitation proposes, e.g. "Invitación pendiente · Solo lectura". */
+  description: string
   /** True while any invitation operation is pending: both actions are disabled. */
   actionsDisabled: boolean
   error: string | null
@@ -12,17 +14,16 @@ interface InvitationRowProps {
   onRevoke: () => void
 }
 
-/** One family invitation not accepted yet: who, which permission it proposes, and until when it is valid. */
-export function InvitationRow({ invitation, actionsDisabled, error, onResend, onRevoke }: InvitationRowProps) {
+/** One invitation not accepted yet: who, what it proposes, and until when it is valid. */
+export function InvitationRow({ invitation, description, actionsDisabled, error, onResend, onRevoke }: InvitationRowProps) {
   const expired = isInvitationExpired(invitation)
-  const permission = PERMISSION_LABELS[invitation.permission]
 
   return (
     <li className="flex flex-col gap-3 rounded-2xl border border-dashed border-border bg-background p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-0.5">
           <span className="font-medium text-foreground">{invitation.email}</span>
-          <span className="text-sm text-muted-foreground">{`Invitación pendiente · ${permission}`}</span>
+          <span className="text-sm text-muted-foreground">{description}</span>
           {expired ? (
             <span className="text-sm text-amber-900">Invitación vencida</span>
           ) : (

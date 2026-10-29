@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Plus, Search, Users, X } from 'lucide-react'
-import { useNavigate, useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { paths } from '@/app/paths'
 import { getPatientCreateErrorMessage, getReadErrorMessage } from '@/api/errors'
 import { ErrorState } from '@/components/ErrorState'
@@ -76,6 +76,14 @@ export function PatientsPage() {
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold text-foreground">Pacientes</h1>
           <p className="text-muted-foreground">{spaceTitle}</p>
+          {space.kind === 'organization' && (
+            <Link
+              to={paths.organizationMembers(space.organization.id)}
+              className="self-start text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Miembros del espacio
+            </Link>
+          )}
         </div>
         {canCreate && !isCreating && (
           <Button

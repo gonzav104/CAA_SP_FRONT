@@ -13,6 +13,7 @@ import { CollaboratorsPage } from '@/features/collaborators/components/Collabora
 import { CustomPictogramsPage } from '@/features/customPictograms/components/CustomPictogramsPage'
 import { DashboardPage } from '@/features/dashboard/components/DashboardPage'
 import { AcceptInvitationRoute } from '@/features/invitations/components/AcceptInvitationRoute'
+import { OrganizationMembersPage } from '@/features/organizations/components/OrganizationMembersPage'
 import { PatientWorkspaceLayout } from '@/features/patients/components/PatientWorkspaceLayout'
 import { PatientsPage } from '@/features/patients/components/PatientsPage'
 import { EditSessionPage } from '@/features/sessions/components/EditSessionPage'
@@ -34,6 +35,7 @@ const router = createBrowserRouter([
     children: [
       { path: routes.dashboard, element: <DashboardPage /> },
       { path: routes.patients, element: <PatientsPage /> },
+      { path: routes.organizationMembers, element: <OrganizationMembersPage /> },
       {
         path: routes.patientSpace,
         element: <PatientWorkspaceLayout />,

@@ -267,6 +267,37 @@ export function getOrganizationCreateErrorMessage(error: unknown): string {
   return 'Ocurrió un error inesperado.'
 }
 
+// User-facing copy for a failed member change (PUT .../miembros/{id}/rol-gestion|terapeuta, DELETE
+// .../miembros/{id}). Mirrors OrganizacionServiceImpl: 403 when the caller's role does not allow it,
+// 404 when the member (or the caller's membership) is gone, 409 when the target is the OWNER.
+export function getMemberWriteErrorMessage(error: unknown): string {
+  if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
+  const status = getErrorStatus(error)
+  if (status === 400) return 'El servidor rechazó el cambio.'
+  if (status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente.'
+  if (status === 403) return 'No tienes permiso para hacer este cambio en el espacio.'
+  if (status === 404) return 'Esa persona ya no pertenece al espacio, o ya no tienes acceso a él.'
+  if (status === 409) return 'El propietario debe transferir la propiedad antes de salir o ser quitado del espacio.'
+  return 'Ocurrió un error inesperado.'
+}
+
+// User-facing copy for a failed organization invitation (POST /api/organizaciones/{id}/invitaciones).
+export function getOrganizationInviteErrorMessage(error: unknown): string {
+  if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
+  const status = getErrorStatus(error)
+  if (status === 400) {
+    const message = getApiErrorBody(error)?.message.trim()
+    return message && message.length <= MAX_ECHOED_MESSAGE_LENGTH
+      ? `El servidor rechazó los datos: ${message}`
+      : 'El servidor rechazó los datos.'
+  }
+  if (status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente.'
+  if (status === 403) return 'No tienes permiso para invitar con ese rol.'
+  if (status === 404) return 'El espacio ya no existe o no tienes acceso a él.'
+  if (status === 409) return 'Esa persona ya es miembro del espacio.'
+  return 'Ocurrió un error inesperado.'
+}
+
 export const INVALID_INVITATION_MESSAGE = 'El enlace no es válido o ha expirado.'
 
 // User-facing copy for a failed invitation acceptance (POST /api/invitaciones/aceptar). The backend

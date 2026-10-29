@@ -58,7 +58,7 @@ describe('SpacesSection (dashboard onboarding)', () => {
     vi.mocked(fetchPatients).mockResolvedValue(therapistPatientsResponse)
     renderApp('/')
     const section = await screen.findByRole('region', { name: 'Tus espacios' })
-    const entry = within(section).getByRole('link', { name: /Centro Sol/ })
+    const entry = within(section).getByRole('link', { name: /^Centro Sol/ })
     expect(entry).toHaveAttribute('href', '/pacientes?espacio=org-1')
     expect(entry).toHaveTextContent('Propietario · Terapeuta')
     expect(within(section).getByRole('button', { name: 'Nuevo espacio' })).toBeInTheDocument()
@@ -70,7 +70,8 @@ describe('SpacesSection (dashboard onboarding)', () => {
     vi.mocked(fetchOrganizations).mockResolvedValue([ownerOrganization, adminOrganization, plainMemberOrganization])
     renderApp('/')
     const section = await screen.findByRole('region', { name: 'Tus espacios' })
-    const links = within(section).getAllByRole('link')
+    const links = within(section).getAllByRole('link').filter((link) => !link.getAttribute('href')?.startsWith('/espacios/'))
+    expect(within(section).getByRole('link', { name: 'Miembros de Centro Sol' })).toHaveAttribute('href', '/espacios/org-1/miembros')
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
       '/pacientes?espacio=org-1',
       '/pacientes?espacio=org-2',
@@ -95,7 +96,7 @@ describe('SpacesSection (dashboard onboarding)', () => {
     vi.mocked(fetchPatients).mockResolvedValue([...therapistPatientsResponse, ...familyPatientsResponse])
     renderApp('/')
     const section = await screen.findByRole('region', { name: 'Tus espacios' })
-    expect(within(section).getByRole('link', { name: /Centro Sol/ })).toBeInTheDocument()
+    expect(within(section).getByRole('link', { name: /^Centro Sol/ })).toBeInTheDocument()
     expect(within(section).getByRole('link', { name: /Pacientes compartidos/ })).toBeInTheDocument()
   })
 
@@ -104,6 +105,6 @@ describe('SpacesSection (dashboard onboarding)', () => {
     renderApp('/')
     expect(await screen.findByText('No se pudieron cargar tus espacios.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
-    expect(await screen.findByRole('link', { name: /Centro Sol/ })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: /^Centro Sol/ })).toBeInTheDocument()
   })
 })

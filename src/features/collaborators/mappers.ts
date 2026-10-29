@@ -31,7 +31,10 @@ export function toFamilyInvitations(dtos: InvitacionResponse[]): FamilyInvitatio
 }
 
 /** The backend only lists PENDIENTE invitations, but one can still be past its expiration date. */
-export function isInvitationExpired(invitation: FamilyInvitation, now: Date = new Date()): boolean {
+export function isInvitationExpired(
+  invitation: Pick<FamilyInvitation, 'status' | 'expiresAt'>,
+  now: Date = new Date(),
+): boolean {
   if (invitation.status === 'EXPIRADA') return true
   return invitation.expiresAt !== null && new Date(invitation.expiresAt) <= now
 }

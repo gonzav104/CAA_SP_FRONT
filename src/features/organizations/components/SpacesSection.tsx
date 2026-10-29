@@ -95,13 +95,20 @@ export function SpacesSection() {
       {isCreating && <CreateOrganizationForm onCancel={() => setIsCreating(false)} />}
       <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {memberships.map((organization) => (
-          <li key={organization.id}>
+          <li key={organization.id} className="flex flex-col gap-1">
             <SpaceLink
               to={paths.patientsInSpace(organization.id)}
               icon={Building2}
               title={organization.nombre}
               description={membershipLabel(organization)}
             />
+            <Link
+              to={paths.organizationMembers(organization.id)}
+              aria-label={`Miembros de ${organization.nombre}`}
+              className="self-start rounded-sm px-1 text-sm text-muted-foreground underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              Miembros
+            </Link>
           </li>
         ))}
         {shared.length > 0 && (

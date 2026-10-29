@@ -12,6 +12,7 @@ export const routes = {
   recoverGoogle: '/recuperar-google',
   dashboard: '/',
   patients: '/pacientes',
+  organizationMembers: '/espacios/:organizacionId/miembros',
   patientSpace: '/pacientes/:pacienteId',
   boards: '/pacientes/:pacienteId/cartillas',
   sessions: '/pacientes/:pacienteId/sesiones',
@@ -27,6 +28,7 @@ export const routes = {
 export const paths = {
   dashboard: () => routes.dashboard,
   patients: () => routes.patients,
+  organizationMembers: (organizationId: string) => `/espacios/${encodeURIComponent(organizationId)}/miembros`,
   /** Patients of one space: an organization id, or `compartidos` for family-shared patients. */
   patientsInSpace: (spaceId: string) => `${routes.patients}?espacio=${encodeURIComponent(spaceId)}`,
   patientSpace: (patientId: string) => `/pacientes/${encodeURIComponent(patientId)}`,
