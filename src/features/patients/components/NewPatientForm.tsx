@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { FieldError } from '@/components/FieldError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -37,15 +38,6 @@ interface NewPatientFormProps {
   error: string | null
   onSubmit: (values: NewPatientFormValues) => void
   onCancel: () => void
-}
-
-function FieldError({ id, message }: { id: string; message: string | undefined }) {
-  if (!message) return null
-  return (
-    <p id={id} className="text-sm text-destructive">
-      {message}
-    </p>
-  )
 }
 
 const LEGEND_CLASS = 'text-sm font-semibold text-foreground'

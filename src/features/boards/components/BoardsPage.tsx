@@ -5,6 +5,7 @@ import { paths } from '@/app/paths'
 import { getCartillaErrorMessage, getErrorStatus, getReadErrorMessage } from '@/api/errors'
 import { EmptyPanel } from '@/components/EmptyPanel'
 import { ErrorState } from '@/components/ErrorState'
+import { RowsSkeleton } from '@/components/RowsSkeleton'
 import { Button } from '@/components/ui/button'
 import { usePatient } from '@/features/patients/hooks'
 import type { Patient } from '@/features/patients/types'
@@ -25,21 +26,6 @@ const RELOAD_NOTICE: Notice = {
   tone: 'error',
   message: getCartillaErrorMessage(null, 'reload', 'create'),
   retry: true,
-}
-
-function BoardsSkeleton({ message }: { message: string }) {
-  return (
-    <>
-      <p role="status" className="sr-only">
-        {message}
-      </p>
-      <div aria-hidden="true" className="flex flex-col gap-3">
-        {[0, 1].map((key) => (
-          <div key={key} className="h-[4.5rem] animate-pulse rounded-xl border border-border bg-background" />
-        ))}
-      </div>
-    </>
-  )
 }
 
 function describeFailure(error: unknown): { stage: 'request' | 'reload'; cause: unknown } {
@@ -151,7 +137,7 @@ function BoardsContent({ patientId, patient }: BoardsContentProps) {
         />
       )
     }
-    return <BoardsSkeleton message="Cargando cartillas…" />
+    return <RowsSkeleton message="Cargando cartillas…" />
   }
 
   const retry = () => void refetch()
@@ -282,7 +268,7 @@ function BoardsPageContent({ patientId }: { patientId: string }) {
       />
     )
   }
-  if (!patient.data) return <BoardsSkeleton message="Cargando paciente…" />
+  if (!patient.data) return <RowsSkeleton message="Cargando paciente…" />
 
   return <BoardsContent patientId={patientId} patient={patient.data} />
 }

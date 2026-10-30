@@ -4,3 +4,12 @@ export const BRAND_TITLE_CLASS =
 
 /** Section title inside those surfaces. */
 export const BRAND_SECTION_TITLE_CLASS = 'font-display text-lg font-bold tracking-[-0.01em] text-foreground'
+
+/** Action buttons of forms and confirmations: comfortable to touch on phones, compact from `sm:`. */
+export const BRAND_ACTION_CLASS = 'h-11 flex-1 sm:h-10 sm:flex-none'
+
+/** Column of a form's footer: the primary action on top on phones, on the right from `sm:`. */
+export const BRAND_FORM_ACTIONS_CLASS = 'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end'
+
+/** Panel inside those surfaces. */
+export const BRAND_PANEL_CLASS = 'rounded-xl border border-border bg-background'
