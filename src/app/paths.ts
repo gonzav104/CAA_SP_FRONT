@@ -2,8 +2,17 @@
 // so no component hardcodes a URL.
 export const routes = {
   login: '/login',
+  // Built by the backend EmailServiceImpl: `${app.frontend-url}/invitaciones/aceptar?token=...`.
+  acceptInvitation: '/invitaciones/aceptar',
+  register: '/registro',
+  forgotPassword: '/olvide-password',
+  // Built by the backend EmailServiceImpl: `${app.frontend-url}/restablecer-password?token=...`.
+  resetPassword: '/restablecer-password',
+  // Built by the backend EmailServiceImpl: `${app.frontend-url}/recuperar-google?token=...`.
+  recoverGoogle: '/recuperar-google',
   dashboard: '/',
   patients: '/pacientes',
+  organizationMembers: '/espacios/:organizacionId/miembros',
   patientSpace: '/pacientes/:pacienteId',
   boards: '/pacientes/:pacienteId/cartillas',
   sessions: '/pacientes/:pacienteId/sesiones',
@@ -11,6 +20,7 @@ export const routes = {
   sessionDetail: '/pacientes/:pacienteId/sesiones/:sesionId',
   sessionEdit: '/pacientes/:pacienteId/sesiones/:sesionId/editar',
   collaborators: '/pacientes/:pacienteId/familia',
+  therapists: '/pacientes/:pacienteId/equipo',
   customPictograms: '/pacientes/:pacienteId/pictogramas',
   boardEditor: '/pacientes/:pacienteId/cartillas/:cartillaId/editor',
   boardUse: '/pacientes/:pacienteId/cartillas/:cartillaId/uso',
@@ -19,6 +29,9 @@ export const routes = {
 export const paths = {
   dashboard: () => routes.dashboard,
   patients: () => routes.patients,
+  organizationMembers: (organizationId: string) => `/espacios/${encodeURIComponent(organizationId)}/miembros`,
+  /** Patients of one space: an organization id, or `compartidos` for family-shared patients. */
+  patientsInSpace: (spaceId: string) => `${routes.patients}?espacio=${encodeURIComponent(spaceId)}`,
   patientSpace: (patientId: string) => `/pacientes/${encodeURIComponent(patientId)}`,
   boards: (patientId: string) => `/pacientes/${encodeURIComponent(patientId)}/cartillas`,
   sessions: (patientId: string) => `/pacientes/${encodeURIComponent(patientId)}/sesiones`,
@@ -28,6 +41,7 @@ export const paths = {
   sessionEdit: (patientId: string, sessionId: string) =>
     `/pacientes/${encodeURIComponent(patientId)}/sesiones/${encodeURIComponent(sessionId)}/editar`,
   collaborators: (patientId: string) => `/pacientes/${encodeURIComponent(patientId)}/familia`,
+  therapists: (patientId: string) => `/pacientes/${encodeURIComponent(patientId)}/equipo`,
   customPictograms: (patientId: string) => `/pacientes/${encodeURIComponent(patientId)}/pictogramas`,
   boardEditor: (patientId: string, boardId: string) =>
     `/pacientes/${encodeURIComponent(patientId)}/cartillas/${encodeURIComponent(boardId)}/editor`,

@@ -1,6 +1,10 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import { paths, routes } from '@/app/paths'
+import { ForgotPasswordPage } from '@/features/auth/components/ForgotPasswordPage'
 import { LoginPage } from '@/features/auth/components/LoginPage'
+import { RecoverGooglePage } from '@/features/auth/components/RecoverGooglePage'
+import { RegisterPage } from '@/features/auth/components/RegisterPage'
+import { ResetPasswordPage } from '@/features/auth/components/ResetPasswordPage'
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute'
 import { BoardEditorRoute } from '@/features/boards/components/BoardEditorRoute'
 import { BoardUseRoute } from '@/features/boards/components/BoardUseRoute'
@@ -8,6 +12,9 @@ import { BoardsPage } from '@/features/boards/components/BoardsPage'
 import { CollaboratorsPage } from '@/features/collaborators/components/CollaboratorsPage'
 import { CustomPictogramsPage } from '@/features/customPictograms/components/CustomPictogramsPage'
 import { DashboardPage } from '@/features/dashboard/components/DashboardPage'
+import { AcceptInvitationRoute } from '@/features/invitations/components/AcceptInvitationRoute'
+import { OrganizationMembersPage } from '@/features/organizations/components/OrganizationMembersPage'
+import { PatientTherapistsPage } from '@/features/therapists/components/PatientTherapistsPage'
 import { PatientWorkspaceLayout } from '@/features/patients/components/PatientWorkspaceLayout'
 import { PatientsPage } from '@/features/patients/components/PatientsPage'
 import { EditSessionPage } from '@/features/sessions/components/EditSessionPage'
@@ -18,11 +25,18 @@ import { SessionsListPage } from '@/features/sessions/components/SessionsListPag
 // A data router is required by `useBlocker` (unsaved-changes guard of the board editor).
 const router = createBrowserRouter([
   { path: routes.login, element: <LoginPage /> },
+  { path: routes.register, element: <RegisterPage /> },
+  { path: routes.forgotPassword, element: <ForgotPasswordPage /> },
+  { path: routes.resetPassword, element: <ResetPasswordPage /> },
+  { path: routes.recoverGoogle, element: <RecoverGooglePage /> },
+  // Public on purpose: it resolves the session itself so the token survives the login round trip.
+  { path: routes.acceptInvitation, element: <AcceptInvitationRoute /> },
   {
     element: <ProtectedRoute />,
     children: [
       { path: routes.dashboard, element: <DashboardPage /> },
       { path: routes.patients, element: <PatientsPage /> },
+      { path: routes.organizationMembers, element: <OrganizationMembersPage /> },
       {
         path: routes.patientSpace,
         element: <PatientWorkspaceLayout />,
@@ -34,6 +48,7 @@ const router = createBrowserRouter([
           { path: 'sesiones/:sesionId', element: <SessionDetailPage /> },
           { path: 'sesiones/:sesionId/editar', element: <EditSessionPage /> },
           { path: 'familia', element: <CollaboratorsPage /> },
+          { path: 'equipo', element: <PatientTherapistsPage /> },
           { path: 'pictogramas', element: <CustomPictogramsPage /> },
         ],
       },

@@ -1,19 +1,24 @@
 import { useState } from 'react'
-import { CalendarDays, Image, LayoutGrid, Pencil, Play, Trash2, Users } from 'lucide-react'
+import { CalendarDays, Image, LayoutGrid, Pencil, Play, Stethoscope, Trash2, Users } from 'lucide-react'
 import { Link, Navigate, Outlet, useNavigate, useParams } from 'react-router'
 import { paths } from '@/app/paths'
 import { getPatientDeleteErrorMessage, getPatientUpdateErrorMessage, getReadErrorMessage } from '@/api/errors'
 import { ErrorState } from '@/components/ErrorState'
 import { LoadingState } from '@/components/LoadingState'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { useCurrentUser } from '@/features/auth/hooks'
 import { useBoards } from '@/features/boards/hooks'
 import { PageLayout } from '@/layouts/PageLayout'
 import { initialOf } from '@/lib/utils'
 import { ageFrom } from '../age'
 import { formatBirthDate } from '../format'
 import { useDeletePatient, usePatient, useUpdatePatient } from '../hooks'
-import { canAccessCollaborators, canAccessSessions, canDeletePatient, canEditPatientData } from '../permissions'
+import {
+  canAccessCollaborators,
+  canAccessSessions,
+  canDeletePatient,
+  canEditPatientData,
+  canViewTherapists,
+} from '../permissions'
 import type { Patient } from '../types'
 import { DeletePatientConfirmation } from './DeletePatientConfirmation'
 import { EditPatientForm } from './EditPatientForm'
@@ -148,7 +153,6 @@ export function PatientWorkspaceLayout() {
 
 function PatientWorkspaceLayoutContent({ patientId }: { patientId: string }) {
   const navigate = useNavigate()
-  const { data: user } = useCurrentUser()
   const patient = usePatient(patientId)
   // Same cache entry the Cartillas tab reads (boardKeys.list): a shared GET, not a second request.
   const boards = useBoards(patientId)
@@ -181,13 +185,14 @@ function PatientWorkspaceLayoutContent({ patientId }: { patientId: string }) {
 
   const data = patient.data
   const gridSize = patient.data.gridSize
-  const canEdit = canEditPatientData(user, data)
-  const canDelete = canDeletePatient(user, data)
+  const canEdit = canEditPatientData(data)
+  const canDelete = canDeletePatient(data)
 
   const sections: PatientSection[] = [
     { label: 'Cartillas', to: paths.boards(patientId), icon: LayoutGrid },
-    ...(canAccessSessions(user, data) ? [{ label: 'Sesiones', to: paths.sessions(patientId), icon: CalendarDays }] : []),
-    ...(canAccessCollaborators(user, data) ? [{ label: 'Familia', to: paths.collaborators(patientId), icon: Users }] : []),
+    ...(canAccessSessions(data) ? [{ label: 'Sesiones', to: paths.sessions(patientId), icon: CalendarDays }] : []),
+    ...(canAccessCollaborators(data) ? [{ label: 'Familia', to: paths.collaborators(patientId), icon: Users }] : []),
+    ...(canViewTherapists(data) ? [{ label: 'Equipo', to: paths.therapists(patientId), icon: Stethoscope }] : []),
     { label: 'Pictogramas', to: paths.customPictograms(patientId), icon: Image },
   ]
 

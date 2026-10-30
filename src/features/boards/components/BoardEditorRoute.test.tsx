@@ -11,7 +11,11 @@ import { boardDetailResponse, BOARD_ID, PATIENT_ID } from '../testing/fixtures'
 const url = `/pacientes/${PATIENT_ID}/cartillas/${BOARD_ID}/editor`
 
 // Only `get` is implemented; the editor tests here never click Save, so every mutating verb must stay uncalled.
-function mockApi(user: CurrentUser, detail: () => Promise<unknown> = () => Promise.resolve(boardDetailResponse)) {
+function mockApi(
+  user: CurrentUser,
+  detail: () => Promise<unknown> = () => Promise.resolve(boardDetailResponse),
+  patient: unknown = therapistPatientsResponse[0],
+) {
   const mutations = {
     post: vi.spyOn(api, 'post'),
     put: vi.spyOn(api, 'put'),
@@ -20,7 +24,7 @@ function mockApi(user: CurrentUser, detail: () => Promise<unknown> = () => Promi
   }
   vi.spyOn(api, 'get').mockImplementation(async (requestUrl: string) => {
     if (requestUrl === '/api/usuarios/me') return { data: user }
-    if (requestUrl === `/api/pacientes/${PATIENT_ID}`) return { data: therapistPatientsResponse[0] }
+    if (requestUrl === `/api/pacientes/${PATIENT_ID}`) return { data: patient }
     if (requestUrl === '/api/pictogramas-globales') return { data: [] }
     if (requestUrl === `/api/pacientes/${PATIENT_ID}/cartillas/${BOARD_ID}`) return { data: await detail() }
     throw new Error(`Unexpected GET ${requestUrl}`)
@@ -93,8 +97,15 @@ describe('BoardEditorRoute', () => {
     expect(await screen.findByRole('radio', { name: 'hambre', checked: true })).toBeInTheDocument()
   })
 
-  it('shows the no-permission page for a non-creator', async () => {
-    mockApi(familyMember)
+  it('opens the editor for a user with EDITAR_CONTENIDO on the patient, even if they did not create the cartilla', async () => {
+    mockApi(familyMember, undefined, { ...therapistPatientsResponse[0], miPermiso: 'EDICION_LIMITADA', capacidades: ['EDITAR_CONTENIDO'] })
+    renderApp(url)
+    expect(await screen.findByRole('heading', { name: 'Tomás Pérez' })).toBeInTheDocument()
+    expect(screen.queryByText('No tienes permiso para editar esta cartilla.')).not.toBeInTheDocument()
+  })
+
+  it('shows the no-permission page when the patient grants no EDITAR_CONTENIDO', async () => {
+    mockApi(familyMember, undefined, { ...therapistPatientsResponse[0], miPermiso: 'LECTURA', capacidades: [] })
     renderApp(url)
     expect(await screen.findByText('No tienes permiso para editar esta cartilla.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Abrir en Modo Uso' })).toHaveAttribute(

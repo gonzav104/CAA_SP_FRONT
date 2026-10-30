@@ -29,3 +29,6 @@ dist-ssr
 !.env.example
 .atl/
 odd/
+
+# QA environment working files (backend copy, jar, logs, throw-away secrets)
+qa/.work/

@@ -31,11 +31,23 @@ export function usePatient(id: string) {
   })
 }
 
-/** Creates a patient, then refetches the directory so the new one shows up from the server truth. */
+export interface CreatePatientVariables {
+  organizationId: string
+  request: PacienteRegistroRequest
+}
+
+/**
+ * Registers a patient in an organization. The response seeds the patient's detail (capabilities
+ * included) and the directory is refetched so it shows up from the server truth.
+ */
 export function useCreatePatient() {
   const queryClient = useQueryClient()
-  return useMutation<Patient, Error, PacienteRegistroRequest>({
-    mutationFn: async (request) => toPatient(await createPatient(request)),
+  return useMutation<Patient, Error, CreatePatientVariables>({
+    mutationFn: async ({ organizationId, request }) => {
+      const created = await createPatient(organizationId, request)
+      queryClient.setQueryData(patientKeys.detail(created.id), created)
+      return toPatient(created)
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: patientKeys.list() })
     },

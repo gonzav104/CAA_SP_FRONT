@@ -3,21 +3,27 @@ import { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchCurrentUser } from '@/features/auth/authApi'
 import type { CurrentUser } from '@/features/auth/types'
+import { fetchOrganizations } from '@/features/organizations/organizationsApi'
+import type { OrganizacionResponse } from '@/features/organizations/apiTypes'
+import { therapistMemberOrganization } from '@/features/organizations/testing/fixtures'
 import { fetchPatients } from '@/features/patients/patientsApi'
 import { familyMember, therapist, therapistPatientsResponse } from '@/features/patients/testing/fixtures'
 import { renderApp } from '@/test/renderApp'
 
 vi.mock('@/features/auth/authApi')
+vi.mock('@/features/organizations/organizationsApi')
 vi.mock('@/features/patients/patientsApi')
 
-function setup(user: CurrentUser) {
+function setup(user: CurrentUser, organizations: OrganizacionResponse[] = [therapistMemberOrganization]) {
   vi.mocked(fetchCurrentUser).mockResolvedValue(user)
+  vi.mocked(fetchOrganizations).mockResolvedValue(organizations)
 }
 
 describe('DashboardPage', () => {
   beforeEach(() => {
     vi.mocked(fetchPatients).mockReset()
     vi.mocked(fetchCurrentUser).mockReset()
+    vi.mocked(fetchOrganizations).mockReset()
   })
 
   it('greets the current user by name', async () => {
@@ -53,7 +59,7 @@ describe('DashboardPage', () => {
   })
 
   it('shows the right noun for a family collaborator', async () => {
-    setup(familyMember)
+    setup(familyMember, [])
     vi.mocked(fetchPatients).mockResolvedValue([therapistPatientsResponse[0]])
     renderApp('/')
     expect(await screen.findByText('1')).toBeInTheDocument()
@@ -77,7 +83,7 @@ describe('DashboardPage', () => {
   })
 
   it('does not offer "Nuevo paciente" to a family collaborator', async () => {
-    setup(familyMember)
+    setup(familyMember, [])
     vi.mocked(fetchPatients).mockResolvedValue([])
     renderApp('/')
     await screen.findByText('Gestionar pacientes')
@@ -102,12 +108,12 @@ describe('DashboardPage', () => {
     expect(within(nav).getByRole('link', { name: 'Pacientes' })).not.toHaveAttribute('aria-current')
   })
 
-  it('keeps the session identity, role and logout control in the sidebar', async () => {
+  it('keeps the session identity, email and logout control in the sidebar', async () => {
     setup(therapist)
     vi.mocked(fetchPatients).mockResolvedValue([])
     renderApp('/')
     expect(await screen.findByText('Ana')).toBeInTheDocument()
-    expect(screen.getByText('Terapeuta')).toBeInTheDocument()
+    expect(screen.getByText('ana@example.com')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument()
   })
 

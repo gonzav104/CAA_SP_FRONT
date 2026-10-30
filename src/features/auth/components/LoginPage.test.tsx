@@ -15,7 +15,6 @@ const user: CurrentUser = {
   id: '3f0c8a52-6a53-4b86-9f7e-0b5b3c3f2f10',
   email: 'ana@example.com',
   nombre: 'Ana',
-  rol: 'TERAPEUTA',
   creadoEn: '2026-01-01T10:00:00',
 }
 

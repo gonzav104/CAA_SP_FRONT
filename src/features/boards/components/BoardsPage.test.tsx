@@ -48,12 +48,12 @@ describe('BoardsPage', () => {
     expect(within(rows[2]).queryByText('Principal', { selector: 'span.rounded-full' })).not.toBeInTheDocument()
   })
 
-  it('shows Editar only for boards created by the user and Solo lectura otherwise', async () => {
+  it('shows Editar on every cartilla when the patient is editable, whoever created it', async () => {
     renderApp(url)
     const rows = await screen.findAllByRole('listitem')
     const escuela = rows[3]
-    expect(within(escuela).queryByRole('link', { name: 'Editar' })).not.toBeInTheDocument()
-    expect(within(escuela).getByText('Solo lectura')).toBeInTheDocument()
+    expect(within(escuela).getByRole('link', { name: 'Editar' })).toHaveAttribute('href', `${url}/c-3/editor`)
+    expect(within(escuela).queryByText('Solo lectura')).not.toBeInTheDocument()
     expect(within(escuela).getByRole('link', { name: 'Modo Uso' })).toHaveAttribute('href', `${url}/c-3/uso`)
     expect(within(rows[0]).getByRole('link', { name: 'Editar' })).toHaveAttribute('href', `${url}/c-1/editor`)
     expect(within(rows[0]).queryByText('Solo lectura')).not.toBeInTheDocument()
@@ -87,7 +87,7 @@ describe('BoardsPage', () => {
 
   it('shows the empty state without a create button for a read-only familiar', async () => {
     vi.mocked(fetchCurrentUser).mockResolvedValue(familyMember)
-    vi.mocked(fetchPatient).mockResolvedValue({ ...therapistPatientsResponse[0], miPermiso: 'LECTURA' })
+    vi.mocked(fetchPatient).mockResolvedValue({ ...therapistPatientsResponse[0], miPermiso: 'LECTURA', capacidades: [] })
     vi.mocked(fetchBoards).mockResolvedValue([])
     renderApp(url)
     expect(await screen.findByText('Este paciente todavía no tiene cartillas.')).toBeInTheDocument()

@@ -3,7 +3,6 @@ import { paths } from '@/app/paths'
 import { getReadErrorMessage } from '@/api/errors'
 import { FullScreenStatus } from '@/components/FullScreenStatus'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { useCurrentUser } from '@/features/auth/hooks'
 import { usePatient } from '@/features/patients/hooks'
 import { useBoardDetail } from '../hooks'
 import { canEditBoard } from '../permissions'
@@ -19,7 +18,6 @@ export function BoardEditorRoute() {
 function BoardEditorRouteContent({ patientId, boardId }: { patientId: string; boardId: string }) {
   const patient = usePatient(patientId)
   const board = useBoardDetail(patientId, boardId)
-  const { data: user } = useCurrentUser()
 
   // A failed background reload keeps the data it had: never replace a live editor (and its draft) with an error screen.
   const boardError = board.isError && !board.data ? board.error : null
@@ -52,7 +50,7 @@ function BoardEditorRouteContent({ patientId, boardId }: { patientId: string; bo
 
   if (!patient.data || !board.data) return <FullScreenStatus message="Cargando cartilla…" />
 
-  if (!canEditBoard(user, board.data.creatorId)) {
+  if (!canEditBoard(patient.data)) {
     return <NoEditPermission patientId={patientId} boardId={boardId} />
   }
 

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '@/api/client'
-import { fetchPatient, fetchPatients } from './patientsApi'
+import { createPatient, fetchPatient, fetchPatients } from './patientsApi'
 import { therapistPatientsResponse } from './testing/fixtures'
 
 function spyMutations() {
@@ -31,5 +31,12 @@ describe('patientsApi', () => {
     await fetchPatient('a/b')
     expect(get).toHaveBeenCalledExactlyOnceWith('/api/pacientes/a%2Fb')
     mutations.forEach((spy) => expect(spy).not.toHaveBeenCalled())
+  })
+
+  it('createPatient issues POST under the encoded organization, never POST /api/pacientes', async () => {
+    const request = { nombre: 'Noa', apellido: 'Díaz', fechaNacimiento: '2019-01-01' }
+    const post = vi.spyOn(api, 'post').mockResolvedValue({ data: therapistPatientsResponse[0] })
+    await expect(createPatient('org 1', request)).resolves.toBe(therapistPatientsResponse[0])
+    expect(post).toHaveBeenCalledExactlyOnceWith('/api/organizaciones/org%201/pacientes', request)
   })
 })

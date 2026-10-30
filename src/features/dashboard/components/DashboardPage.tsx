@@ -4,7 +4,9 @@ import { paths } from '@/app/paths'
 import { PictogramGridMark } from '@/components/PictogramGridMark'
 import { useCurrentUser } from '@/features/auth/hooks'
 import { usePatients } from '@/features/patients/hooks'
-import { canCreatePatient } from '@/features/patients/permissions'
+import { SpacesSection } from '@/features/organizations/components/SpacesSection'
+import { useOrganizations } from '@/features/organizations/hooks'
+import { canCreatePatient } from '@/features/organizations/permissions'
 import { PageLayout } from '@/layouts/PageLayout'
 import { greetingFor } from '../greeting'
 
@@ -82,7 +84,10 @@ function ActionTile({
 export function DashboardPage() {
   const { data: user } = useCurrentUser()
   const { data: patients, isPending, isError } = usePatients()
-  const isFamily = user?.rol === 'FAMILIAR'
+  const { data: organizations } = useOrganizations()
+  const canCreate = canCreatePatient(organizations)
+  // Without anything to manage, the patients are the ones linked to the user as family.
+  const isFamily = !!organizations && !canCreate
 
   const greeting = user ? `${greetingFor(new Date())}, ${user.nombre}` : 'Bienvenido'
   const count = patientCountCopy(patients?.length, isPending, isError, isFamily)
@@ -101,7 +106,7 @@ export function DashboardPage() {
         <h2 className="font-semibold text-foreground">Resumen</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatTile icon={Users} value={count.value} description={count.description} />
-          {canCreatePatient(user) && (
+          {canCreate && (
             <ActionTile
               icon={UserPlus}
               title="Nuevo paciente"
@@ -112,6 +117,8 @@ export function DashboardPage() {
           <ActionTile icon={Users} title="Gestionar pacientes" description="Ver el directorio completo" to={paths.patients()} />
         </div>
       </section>
+
+      <SpacesSection />
     </PageLayout>
   )
 }

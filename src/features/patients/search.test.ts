@@ -9,7 +9,9 @@ function patient(firstName: string, lastName: string): Patient {
     lastName,
     fullName: `${firstName} ${lastName}`,
     birthDate: '2020-01-01',
+    organizationId: 'org-1',
     collaboratorPermission: null,
+    capabilities: [],
     gridSize: null,
   }
 }

@@ -24,8 +24,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Configuración', to: null, icon: Settings },
 ]
 
-const ROLE_LABELS = { TERAPEUTA: 'Terapeuta', FAMILIAR: 'Familiar' } as const
-
 const REAL_ITEMS = NAV_ITEMS.filter((item): item is NavItem & { to: string } => item.to !== null)
 const PLANNED_ITEMS = NAV_ITEMS.filter((item) => item.to === null)
 
@@ -111,7 +109,7 @@ export function Sidebar() {
             </span>
             <span className="hidden min-w-0 flex-col lg:flex">
               <span className="truncate text-sm font-medium text-sidebar-foreground">{user.nombre}</span>
-              <span className="text-xs text-sidebar-foreground/60">{ROLE_LABELS[user.rol]}</span>
+              <span className="text-xs text-sidebar-foreground/60">{user.email}</span>
             </span>
           </div>
         )}

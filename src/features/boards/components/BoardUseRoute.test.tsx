@@ -120,6 +120,7 @@ describe('BoardUseRoute', () => {
 
   it('exits to the boards list for a user who cannot edit', async () => {
     vi.mocked(fetchCurrentUser).mockResolvedValue(familyMember)
+    vi.mocked(fetchPatient).mockResolvedValue({ ...therapistPatientsResponse[0], miPermiso: 'LECTURA', capacidades: [] })
     renderApp(url)
     await holdExit(`/pacientes/${PATIENT_ID}/cartillas`)
   })

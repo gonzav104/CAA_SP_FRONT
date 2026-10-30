@@ -5,7 +5,6 @@ export const therapist: CurrentUser = {
   id: '3f0c8a52-6a53-4b86-9f7e-0b5b3c3f2f10',
   email: 'ana@example.com',
   nombre: 'Ana',
-  rol: 'TERAPEUTA',
   creadoEn: '2026-01-01T10:00:00',
 }
 
@@ -13,7 +12,6 @@ export const familyMember: CurrentUser = {
   id: '9a1d2c77-1b0e-4c5a-8f3e-2d6b7a4c9e01',
   email: 'rosa@example.com',
   nombre: 'Rosa',
-  rol: 'FAMILIAR',
   creadoEn: '2026-01-02T10:00:00',
 }
 
@@ -27,6 +25,8 @@ export const therapistPatientsResponse: PacienteResponse[] = [
     creadoEn: '2026-02-01T09:00:00',
     miPermiso: null,
     gridSize: 6,
+    organizacionId: 'org-1',
+    capacidades: ['EDITAR_CONTENIDO', 'GESTION_CLINICA'],
   },
   {
     id: 'p-1',
@@ -36,6 +36,8 @@ export const therapistPatientsResponse: PacienteResponse[] = [
     creadoEn: '2026-02-02T09:00:00',
     miPermiso: null,
     gridSize: null,
+    organizacionId: 'org-1',
+    capacidades: ['EDITAR_CONTENIDO', 'GESTION_CLINICA'],
   },
   {
     id: 'p-2',
@@ -45,6 +47,8 @@ export const therapistPatientsResponse: PacienteResponse[] = [
     creadoEn: '2026-02-03T09:00:00',
     miPermiso: null,
     gridSize: 9,
+    organizacionId: 'org-1',
+    capacidades: ['EDITAR_CONTENIDO', 'GESTION_CLINICA'],
   },
 ]
 
@@ -57,6 +61,8 @@ export const familyPatientsResponse: PacienteResponse[] = [
     creadoEn: '2026-02-01T09:00:00',
     miPermiso: 'LECTURA',
     gridSize: 6,
+    organizacionId: 'org-1',
+    capacidades: [],
   },
   {
     id: 'p-11',
@@ -66,5 +72,7 @@ export const familyPatientsResponse: PacienteResponse[] = [
     creadoEn: '2026-02-01T10:00:00',
     miPermiso: 'EDICION_LIMITADA',
     gridSize: null,
+    organizacionId: 'org-1',
+    capacidades: ['EDITAR_CONTENIDO'],
   },
 ]

@@ -21,7 +21,10 @@ interface LinkCollaboratorFormProps {
   onCancel: () => void
 }
 
-/** Inline form to link a family collaborator by the real ColaboradorRegistroDTO contract. */
+/**
+ * Inline form to invite a family member by the real ColaboradorRegistroDTO contract. The backend
+ * answers with an invitation: nobody is linked until the invited person accepts it.
+ */
 export function LinkCollaboratorForm({ isPending, error, onSubmit, onCancel }: LinkCollaboratorFormProps) {
   const {
     register,
@@ -38,7 +41,7 @@ export function LinkCollaboratorForm({ isPending, error, onSubmit, onCancel }: L
       onSubmit={handleSubmit(onSubmit)}
       className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-background p-5"
     >
-      <h3 className="font-medium text-foreground">Vincular familiar</h3>
+      <h3 className="font-medium text-foreground">Invitar familiar</h3>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="collaborator-email">Email del familiar</Label>
@@ -52,9 +55,13 @@ export function LinkCollaboratorForm({ isPending, error, onSubmit, onCancel }: L
             className="h-10"
             {...register('email')}
           />
-          {errors.email && (
+          {errors.email ? (
             <p id="collaborator-email-error" className="text-xs text-destructive">
               {errors.email.message}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Le enviaremos una invitación por correo. No necesita tener una cuenta todavía.
             </p>
           )}
         </div>
@@ -80,7 +87,7 @@ export function LinkCollaboratorForm({ isPending, error, onSubmit, onCancel }: L
 
       <div className="flex gap-2">
         <Button type="submit" disabled={isPending} aria-busy={isPending || undefined}>
-          {isPending ? 'Vinculando…' : 'Vincular familiar'}
+          {isPending ? 'Enviando…' : 'Enviar invitación'}
         </Button>
         <Button type="button" variant="outline" disabled={isPending} onClick={onCancel}>
           Cancelar

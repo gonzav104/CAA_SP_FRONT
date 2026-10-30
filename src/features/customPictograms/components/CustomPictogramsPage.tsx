@@ -10,7 +10,6 @@ import {
 import { ErrorState } from '@/components/ErrorState'
 import { LoadingState } from '@/components/LoadingState'
 import { Button } from '@/components/ui/button'
-import { useCurrentUser } from '@/features/auth/hooks'
 import { usePatient } from '@/features/patients/hooks'
 import { useCreateCustomPictogram, useCustomPictograms, useDeleteCustomPictogram, useUpdateCustomPictogram } from '../hooks'
 import { canDeleteCustomPictogram, canEditCustomPictograms } from '../permissions'
@@ -27,7 +26,6 @@ export function CustomPictogramsPage() {
 }
 
 function CustomPictogramsPageContent({ patientId }: { patientId: string }) {
-  const { data: user } = useCurrentUser()
   // Same cache entry the workspace header reads: one shared GET, not a second request.
   const patient = usePatient(patientId)
   const { data: pictograms, isPending, isError, error, refetch } = useCustomPictograms(patientId)
@@ -89,8 +87,8 @@ function CustomPictogramsPageContent({ patientId }: { patientId: string }) {
     )
   }
 
-  const canEdit = canEditCustomPictograms(user, patient.data)
-  const canDelete = canDeleteCustomPictogram(user, patient.data)
+  const canEdit = canEditCustomPictograms(patient.data)
+  const canDelete = canDeleteCustomPictogram(patient.data)
   const isCreating = editor?.kind === 'create'
 
   return (
