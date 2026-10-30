@@ -15,8 +15,8 @@ import { GoogleLoginSection } from './GoogleLoginSection'
 import { PasswordInput } from './PasswordInput'
 
 const loginSchema = z.object({
-  email: z.email('Ingresá un email válido'),
-  password: z.string().min(1, 'Ingresá tu contraseña'),
+  email: z.email('Ingresá un email válido.'),
+  password: z.string().min(1, 'Ingresá tu contraseña.'),
 })
 
 type LoginFormValues = z.infer<typeof loginSchema>

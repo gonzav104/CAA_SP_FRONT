@@ -53,7 +53,7 @@ export function DashboardPage() {
               to={paths.patients()}
               className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), actionClass, 'bg-background')}
             >
-              Gestionar pacientes
+              {isFamily ? 'Ver pacientes' : 'Gestionar pacientes'}
             </Link>
           )}
           {canCreate && (

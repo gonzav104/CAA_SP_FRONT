@@ -84,7 +84,7 @@ describe('SpacesSection (dashboard onboarding)', () => {
   it('takes a family-only user to the shared patients, without asking for an organization', async () => {
     vi.mocked(fetchPatients).mockResolvedValue(familyPatientsResponse)
     renderApp('/')
-    const section = await screen.findByRole('region', { name: 'Tus espacios' })
+    const section = await screen.findByRole('region', { name: 'Pacientes compartidos' })
     const shared = within(section).getByRole('link', { name: /Pacientes compartidos/ })
     expect(shared).toHaveAttribute('href', '/pacientes?espacio=compartidos')
     expect(shared).toHaveTextContent('2 pacientes como familiar')
@@ -123,7 +123,7 @@ describe('SpacesSection (dashboard onboarding)', () => {
     expect(await screen.findByText('No se pudieron cargar tus pacientes.')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Creá tu espacio de trabajo' })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
-    const section = await screen.findByRole('region', { name: 'Tus espacios' })
+    const section = await screen.findByRole('region', { name: 'Pacientes compartidos' })
     expect(await within(section).findByRole('link', { name: /Pacientes compartidos/ })).toBeInTheDocument()
   })
 

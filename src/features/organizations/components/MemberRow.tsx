@@ -9,6 +9,8 @@ import { ROL_GESTION_LABELS } from '../spaces'
 import { MemberBadges } from './MemberBadges'
 
 const ROW_ACTION_CLASS = 'h-11 flex-1 lg:h-10 lg:flex-none'
+// Same width for either label, so the role selectors of all the rows line up.
+const THERAPIST_ACTION_CLASS = cn(ROW_ACTION_CLASS, 'lg:w-48')
 
 type PendingConfirmation = 'remove' | 'stop-therapist' | null
 
@@ -82,11 +84,11 @@ export function MemberRow({
           )}
           {canChangeTherapist &&
             (member.esTerapeuta ? (
-              <Button type="button" variant="outline" size="lg" className={ROW_ACTION_CLASS} disabled={isPending} onClick={() => setConfirming('stop-therapist')}>
+              <Button type="button" variant="outline" size="lg" className={THERAPIST_ACTION_CLASS} disabled={isPending} onClick={() => setConfirming('stop-therapist')}>
                 Quitar rol de terapeuta
               </Button>
             ) : (
-              <Button type="button" variant="outline" size="lg" className={ROW_ACTION_CLASS} disabled={isPending} onClick={() => onChangeTherapist(true)}>
+              <Button type="button" variant="outline" size="lg" className={THERAPIST_ACTION_CLASS} disabled={isPending} onClick={() => onChangeTherapist(true)}>
                 Habilitar como terapeuta
               </Button>
             ))}

@@ -80,7 +80,7 @@ describe('ResetPasswordPage', () => {
 
   async function fillPasswords(password = STRONG, confirmation = password) {
     await userEvent.type(await screen.findByLabelText('Nueva contraseña'), password)
-    await userEvent.type(screen.getByLabelText('Repite la nueva contraseña'), confirmation)
+    await userEvent.type(screen.getByLabelText('Repetí la nueva contraseña'), confirmation)
     await userEvent.click(screen.getByRole('button', { name: 'Guardar contraseña' }))
   }
 

@@ -65,8 +65,8 @@ describe('LoginPage', () => {
   it('shows validation errors on empty submit and does not call login', async () => {
     renderLogin()
     await userEvent.click(await screen.findByRole('button', { name: 'Ingresar' }))
-    expect(await screen.findByText('Ingresá un email válido')).toBeInTheDocument()
-    expect(screen.getByText('Ingresá tu contraseña')).toBeInTheDocument()
+    expect(await screen.findByText('Ingresá un email válido.')).toBeInTheDocument()
+    expect(screen.getByText('Ingresá tu contraseña.')).toBeInTheDocument()
     expect(login).not.toHaveBeenCalled()
   })
 

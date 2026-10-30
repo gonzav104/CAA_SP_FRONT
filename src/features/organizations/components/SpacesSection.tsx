@@ -166,10 +166,10 @@ export function SpacesSection() {
     <section aria-labelledby="spaces-title" className="flex flex-col gap-4 pt-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="spaces-title" className={BRAND_SECTION_TITLE_CLASS}>
-          Tus espacios
+          {memberships.length > 0 ? 'Tus espacios' : 'Pacientes compartidos'}
         </h2>
         {!isCreating && (
-          <Button type="button" variant="outline" size="sm" className="bg-background" onClick={() => setIsCreating(true)}>
+          <Button type="button" variant="outline" size="lg" className="h-10 bg-background" onClick={() => setIsCreating(true)}>
             <Plus aria-hidden="true" />
             Nuevo espacio
           </Button>

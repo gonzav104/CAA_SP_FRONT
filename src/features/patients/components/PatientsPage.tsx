@@ -204,7 +204,7 @@ export function PatientsPage() {
                   role="searchbox"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Buscar paciente por nombre o apellido"
+                  placeholder="Nombre o apellido"
                   aria-label="Buscar paciente por nombre o apellido"
                   className="h-11 bg-background pr-10 pl-9"
                 />

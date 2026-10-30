@@ -111,7 +111,7 @@ describe('restablecer contraseña', () => {
     expect(password).toHaveAttribute('type', 'text')
     expect(password).toHaveValue('Nueva#2026')
 
-    await userEvent.type(screen.getByLabelText('Repite la nueva contraseña'), 'Nueva#2026')
+    await userEvent.type(screen.getByLabelText('Repetí la nueva contraseña'), 'Nueva#2026')
     await userEvent.click(screen.getByRole('button', { name: 'Guardar contraseña' }))
     expect(resetPassword).toHaveBeenCalledExactlyOnceWith({ token: 'tok-123', password: 'Nueva#2026' })
   })
@@ -127,7 +127,7 @@ describe('recuperación Google', () => {
     await userEvent.click(screen.getAllByRole('button', { name: 'Mostrar contraseña' })[0])
     expect(password).toHaveValue('debil')
 
-    await userEvent.type(screen.getByLabelText('Repite la nueva contraseña'), 'debil')
+    await userEvent.type(screen.getByLabelText('Repetí la nueva contraseña'), 'debil')
     await userEvent.click(screen.getByRole('button', { name: 'Google (simulado)' }))
     expect(await screen.findByText(/La contraseña debe tener al menos 8 caracteres/)).toBeInTheDocument()
     expect(completeGoogleRecovery).not.toHaveBeenCalled()

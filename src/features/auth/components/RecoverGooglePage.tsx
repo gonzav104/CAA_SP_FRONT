@@ -101,7 +101,7 @@ function RequestRecovery() {
 const completeSchema = z
   .object({
     password: strongPassword,
-    confirmacion: z.string().min(1, 'Repite la nueva contraseña.'),
+    confirmacion: z.string().min(1, 'Repetí la nueva contraseña.'),
   })
   .refine((values) => values.password === values.confirmacion, {
     message: 'Las contraseñas no coinciden.',
@@ -162,7 +162,7 @@ function CompleteRecovery({ token }: { token: string }) {
         />
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="google-recovery-confirmacion">Repite la nueva contraseña</Label>
+          <Label htmlFor="google-recovery-confirmacion">Repetí la nueva contraseña</Label>
           <PasswordInput
             id="google-recovery-confirmacion"
             autoComplete="new-password"

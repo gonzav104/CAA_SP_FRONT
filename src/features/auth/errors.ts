@@ -123,7 +123,7 @@ export function getGoogleRecoveryErrorMessage(error: unknown): string {
     case 401:
       // The backend answers every cause with the same 401 on purpose, so the UI lists what to check. While the
       // link is still valid a rejection does not consume it: a different password can be tried again.
-      return 'No se pudo recuperar el acceso. Verificá que la nueva contraseña sea distinta de la actual, que uses la misma cuenta de Google con la que pediste el enlace y que el enlace no esté vencido ni usado. Si el enlace sigue vigente, puedes intentarlo de nuevo con otra contraseña.'
+      return 'No se pudo recuperar el acceso. Verificá que la nueva contraseña sea distinta de la actual, que uses la misma cuenta de Google con la que pediste el enlace y que el enlace no esté vencido ni usado. Si el enlace sigue vigente, podés intentarlo de nuevo con otra contraseña.'
     case 400:
       return validationMessage(error, 'Revisá la nueva contraseña.')
     case 429:

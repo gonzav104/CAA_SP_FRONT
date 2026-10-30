@@ -209,6 +209,11 @@
     outline-offset: -2px;
 }
 
+/* The transparent border of the base button leaves the primary 2px smaller than its neighbours. */
+.caa-brand .bg-primary.bg-clip-padding {
+    border-color: var(--primary);
+}
+
 .caa-brand ::selection {
     background: #CFDCFF;
     color: #0F1B3D;

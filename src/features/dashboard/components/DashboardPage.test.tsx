@@ -86,8 +86,16 @@ describe('DashboardPage', () => {
     setup(familyMember, [])
     vi.mocked(fetchPatients).mockResolvedValue([therapistPatientsResponse[0]])
     renderApp('/')
-    await screen.findByText('Gestionar pacientes')
+    await screen.findByRole('link', { name: 'Ver pacientes' })
     expect(screen.queryByRole('link', { name: /Nuevo paciente/ })).not.toBeInTheDocument()
+  })
+
+  it('a family member sees the patients, nothing to manage', async () => {
+    setup(familyMember, [])
+    vi.mocked(fetchPatients).mockResolvedValue([therapistPatientsResponse[0]])
+    renderApp('/')
+    expect(await screen.findByRole('link', { name: 'Ver pacientes' })).toHaveAttribute('href', '/pacientes')
+    expect(screen.queryByRole('link', { name: 'Gestionar pacientes' })).not.toBeInTheDocument()
   })
 
   it('leaves only the onboarding to a user with no spaces and no patients', async () => {

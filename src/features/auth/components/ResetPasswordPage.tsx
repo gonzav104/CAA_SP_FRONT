@@ -17,7 +17,7 @@ import { PasswordInput } from './PasswordInput'
 const resetPasswordSchema = z
   .object({
     password: strongPassword,
-    confirmacion: z.string().min(1, 'Repite la nueva contraseña.'),
+    confirmacion: z.string().min(1, 'Repetí la nueva contraseña.'),
   })
   .refine((values) => values.password === values.confirmacion, {
     message: 'Las contraseñas no coinciden.',
@@ -90,7 +90,7 @@ export function ResetPasswordPage() {
         />
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="reset-confirmacion">Repite la nueva contraseña</Label>
+          <Label htmlFor="reset-confirmacion">Repetí la nueva contraseña</Label>
           <PasswordInput
             id="reset-confirmacion"
             autoComplete="new-password"

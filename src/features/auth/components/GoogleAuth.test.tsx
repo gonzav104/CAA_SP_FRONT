@@ -205,7 +205,7 @@ describe('Google identity recovery', () => {
 
   async function fillPasswords(password = STRONG, confirmation = password) {
     await userEvent.type(await screen.findByLabelText('Nueva contraseña'), password)
-    await userEvent.type(screen.getByLabelText('Repite la nueva contraseña'), confirmation)
+    await userEvent.type(screen.getByLabelText('Repetí la nueva contraseña'), confirmation)
   }
 
   it('completes with both proofs (e-mail token + Google ID token) and a new password, then logs in', async () => {
@@ -288,9 +288,9 @@ describe('Google identity recovery', () => {
 
     const OTHER = 'Otra#Clave2027'
     await userEvent.clear(screen.getByLabelText('Nueva contraseña', { exact: true }))
-    await userEvent.clear(screen.getByLabelText('Repite la nueva contraseña'))
+    await userEvent.clear(screen.getByLabelText('Repetí la nueva contraseña'))
     await userEvent.type(screen.getByLabelText('Nueva contraseña', { exact: true }), OTHER)
-    await userEvent.type(screen.getByLabelText('Repite la nueva contraseña'), OTHER)
+    await userEvent.type(screen.getByLabelText('Repetí la nueva contraseña'), OTHER)
     vi.mocked(fetchCurrentUser).mockResolvedValue(user)
     await userEvent.click(screen.getByRole('button', { name: 'Google (simulado)' }))
 
