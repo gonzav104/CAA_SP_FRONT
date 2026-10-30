@@ -100,6 +100,33 @@ describe('SpacesSection (dashboard onboarding)', () => {
     expect(within(section).getByRole('link', { name: /Pacientes compartidos/ })).toBeInTheDocument()
   })
 
+  it('shows each organization with the patients the user sees there, apart from the shared ones', async () => {
+    vi.mocked(fetchOrganizations).mockResolvedValue([ownerOrganization])
+    vi.mocked(fetchPatients).mockResolvedValue([...therapistPatientsResponse, ...familyPatientsResponse])
+    renderApp('/')
+    const section = await screen.findByRole('region', { name: 'Tus espacios' })
+    const card = within(section).getByRole('link', { name: /^Centro Sol/ }).closest('li')!
+    expect(card).toHaveTextContent(/\d+ pacientes?/)
+    expect(within(section).getByRole('link', { name: /Pacientes compartidos/ }).closest('li')).toBeNull()
+  })
+
+  it('announces the loading state instead of an empty space', async () => {
+    vi.mocked(fetchPatients).mockReturnValue(new Promise(() => {}))
+    renderApp('/')
+    expect(await screen.findByText('Cargando espacios…')).toHaveAttribute('role', 'status')
+    expect(screen.queryByRole('heading', { name: 'Creá tu espacio de trabajo' })).not.toBeInTheDocument()
+  })
+
+  it('never offers onboarding when the patients could not be loaded, and retries them', async () => {
+    vi.mocked(fetchPatients).mockRejectedValueOnce(new Error('500')).mockResolvedValue(familyPatientsResponse)
+    renderApp('/')
+    expect(await screen.findByText('No se pudieron cargar tus pacientes.')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Creá tu espacio de trabajo' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
+    const section = await screen.findByRole('region', { name: 'Tus espacios' })
+    expect(await within(section).findByRole('link', { name: /Pacientes compartidos/ })).toBeInTheDocument()
+  })
+
   it('offers a retry when the memberships cannot be loaded', async () => {
     vi.mocked(fetchOrganizations).mockRejectedValueOnce(new Error('500')).mockResolvedValue([ownerOrganization])
     renderApp('/')

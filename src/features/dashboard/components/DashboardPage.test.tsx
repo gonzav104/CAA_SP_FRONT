@@ -55,7 +55,7 @@ describe('DashboardPage', () => {
     vi.mocked(fetchPatients).mockResolvedValue(therapistPatientsResponse)
     renderApp('/')
     expect(await screen.findByText('3')).toBeInTheDocument()
-    expect(screen.getByText('Pacientes a tu cargo')).toBeInTheDocument()
+    expect(screen.getByText('pacientes a tu cargo')).toBeInTheDocument()
   })
 
   it('shows the right noun for a family collaborator', async () => {
@@ -63,7 +63,7 @@ describe('DashboardPage', () => {
     vi.mocked(fetchPatients).mockResolvedValue([therapistPatientsResponse[0]])
     renderApp('/')
     expect(await screen.findByText('1')).toBeInTheDocument()
-    expect(screen.getByText('Paciente vinculado')).toBeInTheDocument()
+    expect(screen.getByText('paciente vinculado')).toBeInTheDocument()
   })
 
   it('shows a plain fallback for the count on error, without a blocking alert', async () => {
