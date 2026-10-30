@@ -1,9 +1,9 @@
 import { useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
 import { Plus, Search, Users, X } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { paths } from '@/app/paths'
 import { getPatientCreateErrorMessage, getReadErrorMessage } from '@/api/errors'
+import { EmptyPanel } from '@/components/EmptyPanel'
 import { ErrorState } from '@/components/ErrorState'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,18 +21,6 @@ import type { NewPatientFormValues } from './NewPatientForm'
 import { PatientRow } from './PatientRow'
 
 const PANEL_CLASS = 'rounded-xl border border-border bg-background'
-
-function EmptyPanel({ children, action }: { children: ReactNode; action?: ReactNode }) {
-  return (
-    <div className={`${PANEL_CLASS} flex flex-col items-center gap-3 px-6 py-10 text-center`}>
-      <span aria-hidden="true" className="flex size-10 items-center justify-center rounded-full bg-caa-azul-suave text-caa-azul">
-        <Users className="size-5" />
-      </span>
-      <p className="max-w-md text-muted-foreground">{children}</p>
-      {action}
-    </div>
-  )
-}
 
 function ListSkeleton() {
   return (
@@ -265,6 +253,7 @@ export function PatientsPage() {
 
           {!isPending && !isError && patients && patients.length > 0 && inSpace.length === 0 && !isSearching && (
             <EmptyPanel
+              icon={Users}
               action={
                 canCreateHere && space.kind !== 'shared' ? (
                   <Button type="button" variant="outline" size="lg" className="h-10" onClick={startCreating}>
@@ -279,11 +268,12 @@ export function PatientsPage() {
           )}
 
           {!isPending && !isError && patients && patients.length === 0 && (
-            <EmptyPanel action={firstPatientAction}>{emptyMessage}</EmptyPanel>
+            <EmptyPanel icon={Users} action={firstPatientAction}>{emptyMessage}</EmptyPanel>
           )}
 
           {!isPending && !isError && inSpace.length > 0 && isSearching && filtered.length === 0 && (
             <EmptyPanel
+              icon={Search}
               action={
                 <Button type="button" variant="outline" size="lg" className="h-10" onClick={() => setQuery('')}>
                   Ver todos

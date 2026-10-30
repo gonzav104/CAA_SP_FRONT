@@ -6,13 +6,13 @@ import isotipo from '@/assets/brand/caa-sp-isotipo.svg'
 import { Button } from '@/components/ui/button'
 import { usePatients } from '@/features/patients/hooks'
 import type { Patient } from '@/features/patients/types'
+import { BRAND_SECTION_TITLE_CLASS } from '@/layouts/brand'
 import { initialOf } from '@/lib/utils'
 import type { OrganizacionResponse } from '../apiTypes'
 import { useOrganizations } from '../hooks'
 import { membershipLabel, patientsInSpace, SHARED_SPACE_ID, sharedPatients } from '../spaces'
 import { CreateOrganizationForm } from './CreateOrganizationForm'
 
-const SECTION_TITLE_CLASS = 'font-display text-lg font-bold tracking-[-0.01em] text-foreground'
 const CARD_CLASS =
   'group relative flex rounded-xl border border-border bg-background transition-[border-color,box-shadow] hover:border-caa-azul/50 hover:shadow-[0_4px_16px_-8px_rgba(15,27,61,0.25)]'
 // The whole card is the link (its ::after covers it); the focus ring follows that area.
@@ -26,7 +26,7 @@ function patientCountLabel(count: number): string {
 function Retry({ title, message, onRetry }: { title: string; message: string; onRetry: () => void }) {
   return (
     <section aria-label={title} className="flex flex-col gap-3">
-      <h2 className={SECTION_TITLE_CLASS}>{title}</h2>
+      <h2 className={BRAND_SECTION_TITLE_CLASS}>{title}</h2>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background p-5">
         <p role="alert" className="flex items-center gap-2 text-sm text-foreground">
           <TriangleAlert aria-hidden="true" className="size-4 shrink-0 text-destructive" />
@@ -43,7 +43,7 @@ function Retry({ title, message, onRetry }: { title: string; message: string; on
 function SpacesSkeleton() {
   return (
     <div className="flex flex-col gap-3">
-      <h2 className={SECTION_TITLE_CLASS}>Tus espacios</h2>
+      <h2 className={BRAND_SECTION_TITLE_CLASS}>Tus espacios</h2>
       <p role="status" className="sr-only">
         Cargando espacios…
       </p>
@@ -165,7 +165,7 @@ export function SpacesSection() {
   return (
     <section aria-labelledby="spaces-title" className="flex flex-col gap-4 pt-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="spaces-title" className={SECTION_TITLE_CLASS}>
+        <h2 id="spaces-title" className={BRAND_SECTION_TITLE_CLASS}>
           Tus espacios
         </h2>
         {!isCreating && (
