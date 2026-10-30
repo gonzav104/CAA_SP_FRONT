@@ -8,7 +8,7 @@ import type { OrganizacionResponse } from '@/features/organizations/apiTypes'
 import { adminOrganization, ownerOrganization, plainMemberOrganization } from '@/features/organizations/testing/fixtures'
 import { renderApp } from '@/test/renderApp'
 import type { Capability, PacienteResponse } from '../apiTypes'
-import { createPatient, fetchPatients } from '../patientsApi'
+import { createPatient, fetchPatient, fetchPatients } from '../patientsApi'
 import { familyPatientsResponse, therapist, therapistPatientsResponse } from '../testing/fixtures'
 
 vi.mock('@/features/auth/authApi')
@@ -146,6 +146,33 @@ describe('after registering', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Cerrar confirmación' }))
     expect(screen.queryByRole('region', { name: 'Noa Díaz ya está en tu espacio' })).not.toBeInTheDocument()
     expect(screen.getByTestId('location')).toHaveTextContent('/pacientes/p-new/cartillas')
+  })
+})
+
+describe('the confirmation is one shot', () => {
+  it('stays while moving between sections, and is gone when leaving the patient', async () => {
+    setup([ownerOrganization])
+    vi.mocked(createPatient).mockResolvedValue(created(['EDITAR_CONTENIDO', 'GESTION_CLINICA']))
+    renderApp('/pacientes?crear=1')
+    await screen.findByLabelText('Nombre')
+    await fillAndSubmit()
+    await screen.findByRole('heading', { name: 'Noa Díaz ya está en tu espacio' })
+
+    const nav = screen.getByRole('navigation', { name: 'Secciones del paciente' })
+    await userEvent.click(within(nav).getByRole('link', { name: 'Pictogramas' }))
+    expect(screen.getByRole('heading', { name: 'Noa Díaz ya está en tu espacio' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('link', { name: 'Volver a pacientes' }))
+    await screen.findByRole('heading', { level: 1, name: 'Pacientes' })
+    expect(screen.queryByRole('heading', { name: 'Noa Díaz ya está en tu espacio' })).not.toBeInTheDocument()
+  })
+
+  it('is not shown when the workspace opens by URL', async () => {
+    setup([ownerOrganization])
+    vi.mocked(fetchPatient).mockResolvedValue(created(['EDITAR_CONTENIDO']))
+    renderApp('/pacientes/p-new/cartillas')
+    await screen.findByRole('heading', { level: 1, name: 'Noa Díaz' })
+    expect(screen.queryByRole('heading', { name: 'Noa Díaz ya está en tu espacio' })).not.toBeInTheDocument()
   })
 })
 

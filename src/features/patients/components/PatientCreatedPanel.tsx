@@ -32,10 +32,10 @@ export function PatientCreatedPanel({ patient, onDismiss }: { patient: Patient; 
   return (
     <section
       aria-labelledby="patient-created-title"
-      className="caa-brand flex flex-col gap-4 rounded-xl border border-border bg-background p-5"
+      className="flex flex-col gap-4 rounded-xl bg-caa-cian-suave p-4 sm:p-5"
     >
       <div className="flex items-start gap-3">
-        <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-full bg-caa-cian-suave text-caa-cian-texto">
+        <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-full bg-background text-caa-cian-texto">
           <Check className="size-4" />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -47,13 +47,13 @@ export function PatientCreatedPanel({ patient, onDismiss }: { patient: Patient; 
           >
             {`${patient.fullName} ya está en tu espacio`}
           </h2>
-          {steps.length > 0 && <p className="text-sm text-muted-foreground">Cuando quieras, podés seguir por acá.</p>}
+          {steps.length > 0 && <p className="text-sm text-foreground">Cuando quieras, podés seguir por acá.</p>}
         </div>
         <button
           type="button"
           aria-label="Cerrar confirmación"
           onClick={onDismiss}
-          className="-mt-1 -mr-1 flex size-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground outline-none transition-colors hover:bg-caa-niebla hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="-mt-1 -mr-1 flex size-10 shrink-0 items-center justify-center rounded-lg text-foreground outline-none transition-colors hover:bg-background focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           <X aria-hidden="true" className="size-4" />
         </button>
@@ -64,7 +64,7 @@ export function PatientCreatedPanel({ patient, onDismiss }: { patient: Patient; 
             <li key={label}>
               <Link
                 to={to}
-                className="flex min-h-11 items-center gap-2.5 rounded-lg border border-border px-3 text-sm font-medium text-foreground outline-none transition-colors hover:border-caa-azul/50 hover:bg-caa-niebla focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="flex min-h-11 items-center gap-2.5 rounded-lg border border-transparent bg-background px-3 text-sm font-medium text-foreground outline-none transition-colors hover:border-caa-azul/50 focus-visible:ring-3 focus-visible:ring-ring/50"
               >
                 <Icon aria-hidden="true" className="size-4 shrink-0 text-caa-azul" />
                 {label}
