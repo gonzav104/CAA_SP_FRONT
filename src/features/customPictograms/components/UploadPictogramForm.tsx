@@ -26,7 +26,7 @@ export function UploadPictogramForm({ isPending, error, onSubmit, onCancel }: Up
       return
     }
     if (!file) {
-      setFieldError('Elige una imagen.')
+      setFieldError('Elegí una imagen.')
       return
     }
     const fileError = validateImageFile(file)
@@ -42,9 +42,9 @@ export function UploadPictogramForm({ isPending, error, onSubmit, onCancel }: Up
     <form
       noValidate
       onSubmit={handleSubmit}
-      className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-background p-5"
+      className="flex flex-col gap-4 rounded-xl border border-border bg-background p-5"
     >
-      <h3 className="font-medium text-foreground">Subir pictograma</h3>
+      <h3 className="font-semibold text-foreground">Subir pictograma</h3>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="pictogram-etiqueta">Etiqueta</Label>
@@ -54,7 +54,7 @@ export function UploadPictogramForm({ isPending, error, onSubmit, onCancel }: Up
             disabled={isPending}
             value={etiqueta}
             onChange={(event) => setEtiqueta(event.target.value)}
-            className="h-10"
+            className="h-11"
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -65,23 +65,23 @@ export function UploadPictogramForm({ isPending, error, onSubmit, onCancel }: Up
             accept={ACCEPT_ATTRIBUTE}
             disabled={isPending}
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-            className="h-10 cursor-pointer"
+            className="h-11 cursor-pointer py-2.5"
           />
         </div>
       </div>
 
       {(fieldError ?? error) && (
-        <p role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
+        <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {fieldError ?? error}
         </p>
       )}
 
-      <div className="flex gap-2">
-        <Button type="submit" disabled={isPending} aria-busy={isPending || undefined}>
-          {isPending ? 'Subiendo…' : 'Subir pictograma'}
-        </Button>
-        <Button type="button" variant="outline" disabled={isPending} onClick={onCancel}>
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button type="button" variant="outline" size="lg" className="h-11 sm:h-10" disabled={isPending} onClick={onCancel}>
           Cancelar
+        </Button>
+        <Button type="submit" size="lg" className="h-11 sm:h-10" disabled={isPending} aria-busy={isPending || undefined}>
+          {isPending ? 'Subiendo…' : 'Subir pictograma'}
         </Button>
       </div>
     </form>
