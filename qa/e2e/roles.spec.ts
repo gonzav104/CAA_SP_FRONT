@@ -27,13 +27,15 @@ test.describe('membership changes', () => {
     await login(page, accounts.owner)
     const list = await openMembers(page)
     const teresa = list.locator('li', { hasText: 'Teresa Terapeuta' })
+    // The badge, not the row: the options of the role selector always contain every role name.
+    const adminBadge = teresa.locator('span', { hasText: /^Administrador$/ })
     await teresa.getByLabel(/Rol de gestión de/).selectOption('ADMIN')
-    await expect(teresa).toContainText('Administrador')
+    await expect(adminBadge).toBeVisible()
     await page.reload()
-    await expect(list.locator('li', { hasText: 'Teresa Terapeuta' })).toContainText('Administrador')
+    await expect(adminBadge).toBeVisible()
 
-    await list.locator('li', { hasText: 'Teresa Terapeuta' }).getByLabel(/Rol de gestión de/).selectOption('MIEMBRO')
-    await expect(list.locator('li', { hasText: 'Teresa Terapeuta' })).not.toContainText('Administrador')
+    await teresa.getByLabel(/Rol de gestión de/).selectOption('MIEMBRO')
+    await expect(adminBadge).toHaveCount(0)
   })
 
   test('ADMIN changes the clinical capacity, asking confirmation to take it away', async ({ page }) => {
@@ -70,7 +72,7 @@ test.describe('membership changes', () => {
     await expect(list).not.toContainText(email)
 
     await page.getByRole('button', { name: `Revocar invitación a ${email}` }).click()
-    await expect(page.getByRole('list', { name: 'Invitaciones pendientes' })).not.toContainText(email)
+    await expect(page.getByRole('button', { name: `Revocar invitación a ${email}` })).toHaveCount(0)
   })
 
   test('OWNER removes a member, who loses the space even with an old link', async ({ page, browser }) => {

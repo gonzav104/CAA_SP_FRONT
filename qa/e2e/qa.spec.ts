@@ -364,7 +364,7 @@ test.describe('registration and password recovery', () => {
     await expect(page.getByLabel('Nueva contraseña', { exact: true })).toBeVisible()
     expect(page.url()).not.toContain('qa-token')
     await page.getByLabel('Nueva contraseña', { exact: true }).fill(NEW_PASSWORD)
-    await page.getByLabel('Repite la nueva contraseña').fill(NEW_PASSWORD)
+    await page.getByLabel('Repetí la nueva contraseña').fill(NEW_PASSWORD)
     await page.getByRole('button', { name: 'Guardar contraseña' }).click()
     await expect(page.getByRole('status')).toContainText('Tu contraseña fue restablecida correctamente.')
     await page.getByRole('link', { name: 'Ir a iniciar sesión' }).click()
@@ -376,7 +376,7 @@ test.describe('registration and password recovery', () => {
     // A used link is refused.
     await page.goto('/restablecer-password?token=qa-token-restablecer-password')
     await page.getByLabel('Nueva contraseña', { exact: true }).fill(NEW_PASSWORD)
-    await page.getByLabel('Repite la nueva contraseña').fill(NEW_PASSWORD)
+    await page.getByLabel('Repetí la nueva contraseña').fill(NEW_PASSWORD)
     await page.getByRole('button', { name: 'Guardar contraseña' }).click()
     await expect(page.getByRole('alert')).toContainText('El enlace no es válido o ha expirado.')
   })
