@@ -41,7 +41,7 @@ describe('SpacesSection (dashboard onboarding)', () => {
 
     // No roles nor flags: the backend decides OWNER and esTerapeuta.
     expect(createOrganization).toHaveBeenCalledExactlyOnceWith({ nombre: 'Centro Sol' })
-    expect(await screen.findByText('Centro Sol', { selector: 'p' })).toBeInTheDocument()
+    expect(await screen.findByText(/^Centro Sol/, { selector: 'p' })).toBeInTheDocument()
     expect(location()).toHaveTextContent('/pacientes')
     expect(fetchOrganizations).toHaveBeenCalledTimes(2)
   })

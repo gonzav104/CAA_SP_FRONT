@@ -171,7 +171,7 @@ describe('PatientsPage', () => {
     renderApp('/pacientes')
 
     await userEvent.click(await screen.findByRole('button', { name: 'Nuevo paciente' }))
-    expect(screen.queryByLabelText('Organización')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Espacio')).not.toBeInTheDocument()
     await fillNewPatient()
     await userEvent.click(screen.getByRole('button', { name: 'Crear paciente' }))
 
@@ -202,10 +202,10 @@ describe('PatientsPage', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Nuevo paciente' }))
     await fillNewPatient()
     await userEvent.click(screen.getByRole('button', { name: 'Crear paciente' }))
-    expect(await screen.findByText('Selecciona la organización.')).toBeInTheDocument()
+    expect(await screen.findByText('Selecciona el espacio.')).toBeInTheDocument()
     expect(createPatient).not.toHaveBeenCalled()
 
-    await userEvent.selectOptions(screen.getByLabelText('Organización'), adminOrganization.nombre)
+    await userEvent.selectOptions(screen.getByLabelText('Espacio'), adminOrganization.nombre)
     await userEvent.click(screen.getByRole('button', { name: 'Crear paciente' }))
 
     expect(createPatient).toHaveBeenCalledExactlyOnceWith(adminOrganization.id, expect.objectContaining({ nombre: 'Noa' }))
@@ -217,9 +217,9 @@ describe('PatientsPage', () => {
     vi.mocked(fetchPatients).mockResolvedValue([])
     renderApp('/pacientes')
     await userEvent.click(await screen.findByRole('button', { name: 'Nuevo paciente' }))
-    const options = within(screen.getByLabelText('Organización')).getAllByRole('option')
+    const options = within(screen.getByLabelText('Espacio')).getAllByRole('option')
     expect(options.map((option) => option.textContent)).toEqual([
-      'Selecciona una organización',
+      'Selecciona un espacio',
       ownerOrganization.nombre,
       adminOrganization.nombre,
     ])
@@ -261,6 +261,7 @@ describe('PatientsPage', () => {
     ['400', httpError(400, 'La fecha de nacimiento debe ser en el pasado'), 'El servidor rechazó los datos: La fecha de nacimiento debe ser en el pasado'],
     ['401', httpError(401), 'Tu sesión expiró. Inicia sesión nuevamente.'],
     ['403', httpError(403), 'No tienes permiso para registrar pacientes en esta organización.'],
+    ['404', httpError(404), 'La organización no existe o no tienes acceso a ella.'],
     ['409', httpError(409), 'No se pudo registrar el paciente por un conflicto con datos existentes.'],
     ['500', httpError(500), 'Ocurrió un error inesperado.'],
   ])('on a %s failure shows the error, keeps the typed values and does not navigate', async (_label, failure, message) => {
@@ -288,7 +289,7 @@ describe('PatientsPage', () => {
       renderApp('/pacientes?espacio=org-1')
 
       expect(await screen.findByText('Bruno Álvarez')).toBeInTheDocument()
-      expect(screen.getByText('Centro Sol', { selector: 'p' })).toBeInTheDocument()
+      expect(screen.getByText(/^Centro Sol/, { selector: 'p' })).toBeInTheDocument()
       expect(screen.queryByText('Lola Gómez')).not.toBeInTheDocument()
 
       await userEvent.selectOptions(screen.getByLabelText('Espacio'), 'Pacientes compartidos')
@@ -321,7 +322,7 @@ describe('PatientsPage', () => {
       vi.mocked(fetchPatients).mockResolvedValue([])
       renderApp('/pacientes?espacio=org-2')
       await userEvent.click(await screen.findByRole('button', { name: 'Nuevo paciente' }))
-      expect(screen.getByLabelText('Organización')).toHaveValue('org-2')
+      expect(screen.getByLabelText('Espacio')).toHaveValue('org-2')
     })
   })
 })
