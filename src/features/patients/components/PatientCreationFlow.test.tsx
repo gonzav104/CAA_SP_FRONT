@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchCurrentUser } from '@/features/auth/authApi'
@@ -115,7 +115,7 @@ describe('after registering', () => {
     await fillAndSubmit()
 
     const heading = await screen.findByRole('heading', { name: 'Noa Díaz ya está en tu espacio' })
-    expect(heading).toHaveFocus()
+    await waitFor(() => expect(heading).toHaveFocus())
     const panel = screen.getByRole('region', { name: 'Noa Díaz ya está en tu espacio' })
     const links = within(panel).getAllByRole('link')
     expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
