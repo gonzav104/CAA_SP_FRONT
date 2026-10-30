@@ -173,7 +173,7 @@
     --accent-foreground: #0F1B3D;
     --destructive: #C2362F;
     --border: #DDE3EE;
-    /* theme.css: #C9D2E3 (1.5:1). Darkened: a field's edge needs 3:1 (WCAG 2.2, 1.4.11). */
+    /* Approved accessible variant, see caa-sp-marca: a field's edge needs 3:1 (WCAG 2.2, 1.4.11). */
     --input: #7E8BA3;
     --ring: #2F5BEA;
     --radius: 0.625rem;

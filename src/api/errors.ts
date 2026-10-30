@@ -177,7 +177,7 @@ export function getSessionWriteErrorMessage(error: unknown): string {
       ? `El servidor rechazó los datos: ${message}`
       : 'El servidor rechazó los datos.'
   }
-  if (status === 404) return 'No tienes permiso para modificar sesiones de este paciente, o la sesión ya no existe.'
+  if (status === 404) return 'No tenés permiso para modificar sesiones de este paciente, o la sesión ya no existe.'
   return 'Ocurrió un error inesperado.'
 }
 
@@ -185,7 +185,7 @@ export function getSessionWriteErrorMessage(error: unknown): string {
 export function getSessionDeleteErrorMessage(error: unknown): string {
   if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
   const status = getErrorStatus(error)
-  if (status === 404) return 'La sesión ya no existe o no tienes permiso para eliminarla.'
+  if (status === 404) return 'La sesión ya no existe o no tenés permiso para eliminarla.'
   return 'Ocurrió un error inesperado.'
 }
 
@@ -201,9 +201,9 @@ export function getCollaboratorInviteErrorMessage(error: unknown): string {
       ? `El servidor rechazó los datos: ${message}`
       : 'El servidor rechazó los datos.'
   }
-  if (status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente.'
-  if (status === 403) return 'No tienes permiso para invitar familiares a este paciente.'
-  if (status === 404) return 'El paciente ya no existe o no tienes permiso para administrar su familia.'
+  if (status === 401) return 'Tu sesión expiró. Iniciá sesión nuevamente.'
+  if (status === 403) return 'No tenés permiso para invitar familiares a este paciente.'
+  if (status === 404) return 'El paciente ya no existe o no tenés permiso para administrar su familia.'
   if (status === 409) return 'Esa persona ya es un familiar vinculado de este paciente.'
   return 'Ocurrió un error inesperado.'
 }
@@ -212,8 +212,8 @@ export function getCollaboratorInviteErrorMessage(error: unknown): string {
 export function getCollaboratorWriteErrorMessage(error: unknown): string {
   if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
   const status = getErrorStatus(error)
-  if (status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente.'
-  if (status === 404) return 'El vínculo ya no existe o no tienes permiso para administrar la familia de este paciente.'
+  if (status === 401) return 'Tu sesión expiró. Iniciá sesión nuevamente.'
+  if (status === 404) return 'El vínculo ya no existe o no tenés permiso para administrar la familia de este paciente.'
   return 'Ocurrió un error inesperado.'
 }
 
@@ -222,8 +222,8 @@ export function getCollaboratorWriteErrorMessage(error: unknown): string {
 export function getInvitationRevokeErrorMessage(error: unknown): string {
   if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
   const status = getErrorStatus(error)
-  if (status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente.'
-  if (status === 404) return 'La invitación ya no existe o no tienes permiso para revocarla.'
+  if (status === 401) return 'Tu sesión expiró. Iniciá sesión nuevamente.'
+  if (status === 404) return 'La invitación ya no existe o no tenés permiso para revocarla.'
   return 'Ocurrió un error inesperado.'
 }
 
@@ -304,8 +304,8 @@ export function getOrganizationInviteErrorMessage(error: unknown): string {
 export function getTherapistAssignmentErrorMessage(error: unknown): string {
   if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
   const status = getErrorStatus(error)
-  if (status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente.'
-  if (status === 404) return 'No tienes permiso para cambiar el equipo de este paciente, o esa persona ya no es miembro del espacio.'
+  if (status === 401) return 'Tu sesión expiró. Iniciá sesión nuevamente.'
+  if (status === 404) return 'No tenés permiso para cambiar el equipo de este paciente, o esa persona ya no es miembro del espacio.'
   if (status === 409) return 'Esa persona ya no tiene el rol de terapeuta en el espacio.'
   return 'Ocurrió un error inesperado.'
 }

@@ -55,6 +55,7 @@ Recorridos reales de la aplicación:
 
 - Nombre: **CAA_SP**.
 - Identidad definitiva: **Propuesta A · “Grilla de diálogo”**. No se genera otro logotipo ni se cambia la marca.
+- Variante accesible aprobada: el borde de campos (`--input`) es `#7E8BA3` en lugar de `#C9D2E3`, para cumplir 3:1 (WCAG 2.2, 1.4.11). Documentada en el paquete de marca.
 - Paquete de marca: `caa-sp-marca` (`~/proyectos/caa-sp-marca`, idéntico a `caa-sp-marca.zip`): SVG del logotipo, isotipo e iconos; PNG de favicons e iconos; `theme.css` con los tokens de color y tipografía; `LEEME.md` con las reglas de uso (zona de respeto, tamaños mínimos, cian solo como acento gráfico y prohibiciones sobre el símbolo).
 
 ## Evidence on Hand
