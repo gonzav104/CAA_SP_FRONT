@@ -142,7 +142,7 @@ export function PatientsPage() {
       Registrar el primer paciente
     </Button>
   ) : organizations?.length === 0 ? (
-    <Link to={paths.dashboard()} className={buttonVariants({ variant: 'outline', size: 'lg', className: 'h-10' })}>
+    <Link to={paths.dashboard()} className={buttonVariants({ size: 'lg', className: 'h-10' })}>
       Crear un espacio desde el inicio
     </Link>
   ) : undefined
@@ -152,7 +152,7 @@ export function PatientsPage() {
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div className="flex min-w-0 flex-col gap-1">
           <h1 className={BRAND_TITLE_CLASS}>Pacientes</h1>
-          <p className="text-muted-foreground">{spaceTitle}</p>
+          {!showForm && <p className="text-muted-foreground">{spaceTitle}</p>}
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           {space.kind === 'organization' && (
