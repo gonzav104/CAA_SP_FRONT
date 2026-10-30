@@ -48,6 +48,7 @@ function SpaceNavLink({ to, label, isCurrent, leading }: { to: string; label: st
     <Link
       to={to}
       title={label}
+      data-focus-inset
       aria-current={isCurrent ? 'true' : undefined}
       className={cn(ROW_CLASS, INTERACTIVE_CLASS, isCurrent && CURRENT_CLASS)}
     >

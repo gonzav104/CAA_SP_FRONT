@@ -40,7 +40,7 @@ export function PatientSectionNav({ sections }: { sections: PatientSection[] }) 
       {sections.map((section) => {
         const Icon = section.icon
         return (
-          <NavLink key={section.to} to={section.to} className={sectionLinkClassName}>
+          <NavLink key={section.to} to={section.to} data-focus-inset className={sectionLinkClassName}>
             <Icon aria-hidden="true" className="size-4 shrink-0" />
             {section.label}
           </NavLink>

@@ -20,9 +20,10 @@ export function PatientRow({ patient, spaceName }: PatientRowProps) {
   return (
     <Link
       to={paths.boards(patient.id)}
-      aria-label={`Abrir espacio de comunicación de ${patient.fullName}`}
+      data-focus-inset
       className="group flex min-h-16 items-center gap-3 px-4 py-3 outline-none transition-colors hover:bg-caa-niebla focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset sm:px-5"
     >
+      <span className="sr-only">Abrir espacio de comunicación de </span>
       <span
         aria-hidden="true"
         className="flex size-10 shrink-0 items-center justify-center rounded-full bg-caa-azul-suave font-display font-bold text-caa-azul"

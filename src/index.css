@@ -198,6 +198,17 @@
     }
 }
 
+/* A solid indicator: the `ring-ring/50` of links is 2.2:1, and focus needs 3:1 (WCAG 2.2, 1.4.11). */
+.caa-brand :is(a, button):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+
+/* Inside a clipped or scrolling parent the indicator goes inwards, or it would be cut. */
+.caa-brand [data-focus-inset]:focus-visible {
+    outline-offset: -2px;
+}
+
 .caa-brand ::selection {
     background: #CFDCFF;
     color: #0F1B3D;
