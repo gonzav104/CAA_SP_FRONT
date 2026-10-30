@@ -183,21 +183,21 @@ function CollaboratorsPageContent({ patientId }: { patientId: string }) {
         <section className="flex flex-col gap-3">
           <h3 className="font-semibold text-foreground">Con acceso</h3>
           <ul aria-label="Familiares vinculados" className="flex flex-col gap-3">
-          {collaborators.map((collaborator) => (
-            <CollaboratorRow
-              key={collaborator.userId}
-              collaborator={collaborator}
-              isPermissionPending={updatePermission.isPending && updatePermission.variables?.userId === collaborator.userId}
-              permissionError={permissionErrorTargetId === collaborator.userId ? permissionError : null}
-              isRevokePending={revokeCollaborator.isPending && revokeTargetId === collaborator.userId}
-              revokeError={revokeTargetId === collaborator.userId ? revokeError : null}
-              onChangePermission={(permiso) => void handleChangePermission(collaborator.userId, permiso)}
-              onConfirmRevoke={() => {
-                setRevokeTargetId(collaborator.userId)
-                void handleRevoke(collaborator.userId)
-              }}
-            />
-          ))}
+            {collaborators.map((collaborator) => (
+              <CollaboratorRow
+                key={collaborator.userId}
+                collaborator={collaborator}
+                isPermissionPending={updatePermission.isPending && updatePermission.variables?.userId === collaborator.userId}
+                permissionError={permissionErrorTargetId === collaborator.userId ? permissionError : null}
+                isRevokePending={revokeCollaborator.isPending && revokeTargetId === collaborator.userId}
+                revokeError={revokeTargetId === collaborator.userId ? revokeError : null}
+                onChangePermission={(permiso) => void handleChangePermission(collaborator.userId, permiso)}
+                onConfirmRevoke={() => {
+                  setRevokeTargetId(collaborator.userId)
+                  void handleRevoke(collaborator.userId)
+                }}
+              />
+            ))}
           </ul>
         </section>
       )}
