@@ -56,7 +56,8 @@ test.describe('OWNER (therapist)', () => {
     await page.getByLabel('Fecha de nacimiento').fill('2020-02-02')
     await page.getByRole('button', { name: 'Crear paciente' }).click()
     await expect(page).toHaveURL(/\/pacientes\/[^/]+\/cartillas$/)
-    await expect(page.getByRole('heading', { name: 'Paciente Tres' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Paciente Tres', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Paciente Tres ya está en tu espacio' })).toBeFocused()
     // Capabilities returned by the POST drive the sections right away.
     await expect(nav(page).getByRole('link', { name: 'Equipo' })).toBeVisible()
   })
