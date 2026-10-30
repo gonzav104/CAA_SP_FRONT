@@ -6,6 +6,7 @@ import { getInvitationAcceptErrorMessage } from '@/api/errors'
 import { FullScreenStatus } from '@/components/FullScreenStatus'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { useCurrentUser } from '@/features/auth/hooks'
+import { AuthLayout } from '@/features/auth/components/AuthLayout'
 import { LogoutButton } from '@/features/auth/components/LogoutButton'
 import { useTokenFromUrl } from '@/features/auth/useTokenFromUrl'
 import type { AceptarInvitacionResponse } from '../apiTypes'
@@ -23,12 +24,9 @@ function destinationOf(result: AceptarInvitacionResponse): { to: string; label: 
 
 function InvitationCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-muted/40 p-6">
-      <div className="flex w-full max-w-sm flex-col gap-4 rounded-xl border bg-background p-6 shadow-sm">
-        <h1 className="text-xl font-semibold">{title}</h1>
-        {children}
-      </div>
-    </div>
+    <AuthLayout title={title}>
+      <div className="mt-4 flex flex-col gap-4">{children}</div>
+    </AuthLayout>
   )
 }
 
