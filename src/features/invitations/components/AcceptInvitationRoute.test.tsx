@@ -172,4 +172,14 @@ describe('AcceptInvitationRoute', () => {
     expect(screen.queryByRole('button', { name: 'Aceptar invitación' })).not.toBeInTheDocument()
     expect(acceptInvitation).not.toHaveBeenCalled()
   })
+
+  it('keeps the visible border of its outline links', async () => {
+    setup('/invitaciones/aceptar')
+    expect(await screen.findByRole('link', { name: 'Ir al inicio' })).not.toHaveClass('border-transparent')
+  })
+
+  it('keeps the visible border of "Ahora no" next to the confirmation', async () => {
+    setup()
+    expect(await screen.findByRole('link', { name: 'Ahora no' })).not.toHaveClass('border-transparent')
+  })
 })

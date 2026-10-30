@@ -9,6 +9,7 @@ import { useCurrentUser } from '@/features/auth/hooks'
 import { AuthLayout } from '@/features/auth/components/AuthLayout'
 import { LogoutButton } from '@/features/auth/components/LogoutButton'
 import { useTokenFromUrl } from '@/features/auth/useTokenFromUrl'
+import { cn } from '@/lib/utils'
 import type { AceptarInvitacionResponse } from '../apiTypes'
 import { useAcceptInvitation } from '../hooks'
 
@@ -82,7 +83,7 @@ export function AcceptInvitationRoute() {
         <p role="alert" className="text-sm text-muted-foreground">
           No encontramos los datos de la invitación. Vuelve a abrir el enlace que recibiste por correo.
         </p>
-        <Link to={paths.dashboard()} className={buttonVariants({ variant: 'outline', size: 'lg' })}>
+        <Link to={paths.dashboard()} className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}>
           Ir al inicio
         </Link>
       </InvitationCard>
@@ -134,7 +135,7 @@ export function AcceptInvitationRoute() {
         >
           {accept.isPending ? 'Aceptando…' : 'Aceptar invitación'}
         </Button>
-        <Link to={paths.dashboard()} className={buttonVariants({ variant: 'outline', size: 'lg' })}>
+        <Link to={paths.dashboard()} className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}>
           Ahora no
         </Link>
       </div>

@@ -108,6 +108,7 @@ describe('BoardEditorRoute', () => {
     mockApi(familyMember, undefined, { ...therapistPatientsResponse[0], miPermiso: 'LECTURA', capacidades: [] })
     renderApp(url)
     expect(await screen.findByText('No tienes permiso para editar esta cartilla.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Volver a las cartillas' })).not.toHaveClass('border-transparent')
     expect(screen.getByRole('link', { name: 'Abrir en Modo Uso' })).toHaveAttribute(
       'href',
       `/pacientes/${PATIENT_ID}/cartillas/${BOARD_ID}/uso`,
