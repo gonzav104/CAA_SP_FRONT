@@ -11,7 +11,7 @@ export interface PatientSection {
 
 function sectionLinkClassName({ isActive }: { isActive: boolean }): string {
   return cn(
-    '-mb-px flex min-h-11 shrink-0 items-center gap-2 rounded-t-md border-b-2 px-3 text-sm outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset',
+    '-mb-px flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-3 text-sm outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset',
     isActive
       ? 'border-caa-azul font-semibold text-foreground'
       : 'border-transparent font-medium text-muted-foreground hover:border-border hover:text-foreground',

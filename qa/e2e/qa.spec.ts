@@ -60,6 +60,10 @@ test.describe('OWNER (therapist)', () => {
     await expect(page.getByRole('heading', { name: 'Paciente Tres ya está en tu espacio' })).toBeFocused()
     // Capabilities returned by the POST drive the sections right away.
     await expect(nav(page).getByRole('link', { name: 'Equipo' })).toBeVisible()
+    // The confirmation belongs to the registration: a reload never repeats it.
+    await page.reload()
+    await expect(page.getByRole('heading', { name: 'Paciente Tres', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Paciente Tres ya está en tu espacio' })).toHaveCount(0)
   })
 
   test('Modo Uso and Editor open the seeded principal cartilla', async ({ page }) => {
