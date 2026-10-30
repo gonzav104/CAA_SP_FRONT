@@ -1,0 +1,80 @@
+/*
+  CAA_SP — tokens de marca (Propuesta A · "Grilla de diálogo")
+  Para Tailwind v4 + shadcn/ui. Importar en src/index.css después de `@import "tailwindcss";`
+  Fuentes: Manrope (títulos/logo) e Inter (interfaz), por ejemplo vía @fontsource:
+    npm i @fontsource-variable/manrope @fontsource-variable/inter
+*/
+
+/* ---- Paleta base ---- */
+:root {
+  --caa-tinta: #0F1B3D;       /* texto principal, fondos oscuros — 16.9:1 sobre blanco */
+  --caa-azul: #2F5BEA;        /* primario, botones — 5.5:1 con texto blanco */
+  --caa-azul-hover: #1E3FB0;  /* estado hover/activo — 8.8:1 con texto blanco */
+  --caa-cian: #12A594;        /* acento GRÁFICO (iconos, foco, indicadores) — 3.1:1, no usar en texto */
+  --caa-cian-texto: #0E7C6F;  /* cian para texto o enlaces sobre blanco — 5.1:1 */
+  --caa-niebla: #F4F7FB;      /* superficies y fondos de página */
+  --caa-gris: #5B6478;        /* texto secundario — 5.9:1 sobre blanco */
+  --caa-borde: #DDE3EE;
+
+  /* Variantes para fondo oscuro */
+  --caa-azul-claro: #7B9BFF;  /* 6.4:1 sobre tinta */
+  --caa-cian-claro: #2DD4BF;  /* 9.1:1 sobre tinta */
+}
+
+/* ---- Mapeo a variables de shadcn/ui ---- */
+:root {
+  --background: #FFFFFF;
+  --foreground: var(--caa-tinta);
+  --card: #FFFFFF;
+  --card-foreground: var(--caa-tinta);
+  --popover: #FFFFFF;
+  --popover-foreground: var(--caa-tinta);
+  --primary: var(--caa-azul);
+  --primary-foreground: #FFFFFF;
+  --secondary: var(--caa-niebla);
+  --secondary-foreground: var(--caa-tinta);
+  --muted: var(--caa-niebla);
+  --muted-foreground: var(--caa-gris);
+  --accent: #E6F6F3;
+  --accent-foreground: var(--caa-tinta);
+  --destructive: #C2362F;
+  --border: var(--caa-borde);
+  --input: #C9D2E3;
+  --ring: var(--caa-cian);
+  --radius: 0.625rem;
+}
+
+.dark {
+  --background: var(--caa-tinta);
+  --foreground: #FFFFFF;
+  --card: #16244D;
+  --card-foreground: #FFFFFF;
+  --popover: #16244D;
+  --popover-foreground: #FFFFFF;
+  --primary: var(--caa-azul-claro);
+  --primary-foreground: var(--caa-tinta);
+  --secondary: #1C2B57;
+  --secondary-foreground: #FFFFFF;
+  --muted: #1C2B57;
+  --muted-foreground: #A9B4CC;
+  --accent: #1C2B57;
+  --accent-foreground: #FFFFFF;
+  --destructive: #F0716A;
+  --border: #26365F;
+  --input: #33446F;
+  --ring: var(--caa-cian-claro);
+}
+
+/* ---- Utilidades Tailwind (bg-caa-azul, text-caa-tinta, font-display…) ---- */
+@theme inline {
+  --color-caa-tinta: var(--caa-tinta);
+  --color-caa-azul: var(--caa-azul);
+  --color-caa-azul-hover: var(--caa-azul-hover);
+  --color-caa-cian: var(--caa-cian);
+  --color-caa-cian-texto: var(--caa-cian-texto);
+  --color-caa-niebla: var(--caa-niebla);
+  --color-caa-gris: var(--caa-gris);
+
+  --font-display: "Manrope Variable", "Manrope", system-ui, sans-serif;
+  --font-sans: "Inter Variable", "Inter", system-ui, sans-serif;
+}
