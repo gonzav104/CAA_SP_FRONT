@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { LayoutGrid, Plus } from 'lucide-react'
 import { Navigate, useParams, useSearchParams } from 'react-router'
 import { paths } from '@/app/paths'
 import { getCartillaErrorMessage, getErrorStatus, getReadErrorMessage } from '@/api/errors'
+import { EmptyPanel } from '@/components/EmptyPanel'
 import { ErrorState } from '@/components/ErrorState'
-import { LoadingState } from '@/components/LoadingState'
 import { Button } from '@/components/ui/button'
 import { usePatient } from '@/features/patients/hooks'
 import type { Patient } from '@/features/patients/types'
+import { BRAND_SECTION_TITLE_CLASS } from '@/layouts/brand'
 import { CartillaOperationError } from '../cartillaOperations'
 import type { CartillaOperation } from '../cartillaOperations'
 import { useBoards } from '../hooks'
@@ -24,6 +25,21 @@ const RELOAD_NOTICE: Notice = {
   tone: 'error',
   message: getCartillaErrorMessage(null, 'reload', 'create'),
   retry: true,
+}
+
+function BoardsSkeleton({ message }: { message: string }) {
+  return (
+    <>
+      <p role="status" className="sr-only">
+        {message}
+      </p>
+      <div aria-hidden="true" className="flex flex-col gap-3">
+        {[0, 1].map((key) => (
+          <div key={key} className="h-[4.5rem] animate-pulse rounded-xl border border-border bg-background" />
+        ))}
+      </div>
+    </>
+  )
 }
 
 function describeFailure(error: unknown): { stage: 'request' | 'reload'; cause: unknown } {
@@ -130,12 +146,12 @@ function BoardsContent({ patientId, patient }: BoardsContentProps) {
     if (isError) {
       return (
         <ErrorState
-          message={getReadErrorMessage(error, 'No encontramos las cartillas o no tienes acceso.')}
+          message={getReadErrorMessage(error, 'No encontramos las cartillas o no tenés acceso.')}
           onRetry={() => void refetch()}
         />
       )
     }
-    return <LoadingState message="Cargando cartillas…" />
+    return <BoardsSkeleton message="Cargando cartillas…" />
   }
 
   const retry = () => void refetch()
@@ -145,8 +161,12 @@ function BoardsContent({ patientId, patient }: BoardsContentProps) {
   const showListError = isError && !notice?.retry
   const visibleNotice = notice && (!notice.retry || isError) ? notice : null
 
+  const startCreating = () => {
+    setNotice(null)
+    openEditor({ kind: 'create' })
+  }
   const createForm = (
-    <div className="flex rounded-2xl border border-border/60 bg-background px-5 py-3">
+    <div className="flex rounded-xl border border-border bg-background p-4">
       <BoardNameForm
         label="Nombre de la nueva cartilla"
         submitLabel="Crear cartilla"
@@ -163,11 +183,9 @@ function BoardsContent({ patientId, patient }: BoardsContentProps) {
       type="button"
       variant="outline"
       size="lg"
+      className="h-10 bg-background"
       disabled={isAnyPending}
-      onClick={() => {
-        setNotice(null)
-        openEditor({ kind: 'create' })
-      }}
+      onClick={startCreating}
     >
       <Plus aria-hidden="true" />
       Nueva cartilla
@@ -175,10 +193,10 @@ function BoardsContent({ patientId, patient }: BoardsContentProps) {
   )
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold text-foreground">Cartillas</h2>
-        {canCreate && !isCreating && createButton}
+        <h2 className={BRAND_SECTION_TITLE_CLASS}>Cartillas</h2>
+        {canCreate && !isCreating && boards.length > 0 && createButton}
       </div>
 
       {canCreate && isCreating && createForm}
@@ -189,9 +207,22 @@ function BoardsContent({ patientId, patient }: BoardsContentProps) {
       )}
 
       {boards.length === 0 ? (
-        <div className="flex flex-col items-center gap-4 rounded-2xl border border-border/60 bg-background px-6 py-10 text-center">
-          <p className="text-muted-foreground">Este paciente todavía no tiene cartillas.</p>
-        </div>
+        !isCreating && (
+          <EmptyPanel
+            icon={LayoutGrid}
+            hint={canCreate ? 'Una cartilla reúne los pictogramas y frases que la persona usa para comunicarse.' : undefined}
+            action={
+              canCreate ? (
+                <Button type="button" size="lg" className="h-10" disabled={isAnyPending} onClick={startCreating}>
+                  <Plus aria-hidden="true" />
+                  Crear la primera cartilla
+                </Button>
+              ) : undefined
+            }
+          >
+            Este paciente todavía no tiene cartillas.
+          </EmptyPanel>
+        )
       ) : (
         <>
           <ul className="flex flex-col gap-3">
@@ -246,12 +277,12 @@ function BoardsPageContent({ patientId }: { patientId: string }) {
   if (patient.isError) {
     return (
       <ErrorState
-        message={getReadErrorMessage(patient.error, 'No encontramos al paciente o no tienes acceso.')}
+        message={getReadErrorMessage(patient.error, 'No encontramos al paciente o no tenés acceso.')}
         onRetry={() => void patient.refetch()}
       />
     )
   }
-  if (!patient.data) return <LoadingState message="Cargando paciente…" />
+  if (!patient.data) return <BoardsSkeleton message="Cargando paciente…" />
 
   return <BoardsContent patientId={patientId} patient={patient.data} />
 }

@@ -110,12 +110,12 @@ export function getCartillaErrorMessage(
   if (status === 403) {
     return operation === 'primary'
       ? 'Solo el equipo clínico del paciente puede cambiar la cartilla principal.'
-      : 'No tienes permiso para hacer este cambio.'
+      : 'No tenés permiso para hacer este cambio.'
   }
   if (status === 404) {
-    if (operation === 'create') return 'No tienes permiso para crear cartillas para este paciente.'
-    if (operation === 'primary') return 'La cartilla ya no existe o no tienes acceso.'
-    return 'La cartilla ya no existe o no tienes permiso para modificarla.'
+    if (operation === 'create') return 'No tenés permiso para crear cartillas para este paciente.'
+    if (operation === 'primary') return 'La cartilla ya no existe o no tenés acceso.'
+    return 'La cartilla ya no existe o no tenés permiso para modificarla.'
   }
   if (status === 409) {
     return operation === 'primary'
@@ -239,7 +239,7 @@ export function getCustomPictogramWriteErrorMessage(error: unknown): string {
       ? message
       : 'El servidor rechazó el archivo.'
   }
-  if (status === 404) return 'No tienes permiso para modificar pictogramas de este paciente, o ya no existe.'
+  if (status === 404) return 'No tenés permiso para modificar pictogramas de este paciente, o ya no existe.'
   return 'Ocurrió un error inesperado.'
 }
 
@@ -249,7 +249,7 @@ export function getCustomPictogramDeleteErrorMessage(error: unknown): string {
   if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
   const status = getErrorStatus(error)
   if (status === 400) return 'No se puede eliminar: está en uso en al menos una tarjeta de una cartilla.'
-  if (status === 404) return 'El pictograma ya no existe o no tienes permiso para eliminarlo.'
+  if (status === 404) return 'El pictograma ya no existe o no tenés permiso para eliminarlo.'
   return 'Ocurrió un error inesperado.'
 }
 

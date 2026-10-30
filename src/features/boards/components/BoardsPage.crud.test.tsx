@@ -175,11 +175,11 @@ async function openList() {
 }
 
 function rowNames(): string[] {
-  return screen.getAllByRole('listitem').map((row) => row.querySelector('span')?.textContent ?? '')
+  return screen.getAllByRole('listitem').map((row) => row.querySelector('span[title]')?.textContent ?? '')
 }
 
 function rowOf(name: string): HTMLElement {
-  const row = screen.getAllByRole('listitem').find((candidate) => candidate.querySelector('span')?.textContent === name)
+  const row = screen.getAllByRole('listitem').find((candidate) => candidate.querySelector('span[title]')?.textContent === name)
   if (!row) throw new Error(`No row named ${name}`)
   return row
 }
@@ -301,7 +301,7 @@ describe('BoardsPage cartilla CRUD', () => {
       await user.type(screen.getByRole('textbox', { name: 'Nombre de la nueva cartilla' }), 'Otra')
       await user.click(screen.getByRole('button', { name: 'Crear cartilla' }))
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('No tienes permiso para crear cartillas para este paciente.')
+      expect(await screen.findByRole('alert')).toHaveTextContent('No tenés permiso para crear cartillas para este paciente.')
     })
   })
 
@@ -375,7 +375,7 @@ describe('BoardsPage cartilla CRUD', () => {
       await user.type(screen.getByRole('textbox', { name: 'Nombre de la cartilla' }), 'x')
       await user.click(screen.getByRole('button', { name: 'Guardar' }))
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('La cartilla ya no existe o no tienes permiso para modificarla.')
+      expect(await screen.findByRole('alert')).toHaveTextContent('La cartilla ya no existe o no tenés permiso para modificarla.')
       expect(screen.queryByRole('textbox', { name: 'Nombre de la cartilla' })).not.toBeInTheDocument()
     })
 
@@ -466,7 +466,7 @@ describe('BoardsPage cartilla CRUD', () => {
 
     it.each([
       [403, 'Solo el equipo clínico del paciente puede cambiar la cartilla principal.'],
-      [404, 'La cartilla ya no existe o no tienes acceso.'],
+      [404, 'La cartilla ya no existe o no tenés acceso.'],
     ])('shows a red alert for a %i', async (status, message) => {
       const fake = setupApi()
       fake.controls.failPrimary = httpError(status)
@@ -718,8 +718,8 @@ describe('BoardsPage cartilla CRUD', () => {
       renderApp(url)
 
       expect(await screen.findByText('Este paciente todavía no tiene cartillas.')).toBeInTheDocument()
-      expect(screen.getAllByRole('button', { name: 'Nueva cartilla' })).toHaveLength(1)
-      await user.click(screen.getByRole('button', { name: 'Nueva cartilla' }))
+      expect(screen.queryByRole('button', { name: 'Nueva cartilla' })).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Crear la primera cartilla' }))
       await user.type(screen.getByRole('textbox', { name: 'Nombre de la nueva cartilla' }), 'Primera')
       await user.click(screen.getByRole('button', { name: 'Crear cartilla' }))
 

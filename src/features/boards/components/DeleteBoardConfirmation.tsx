@@ -50,7 +50,7 @@ export function DeleteBoardConfirmation({
     <div
       role="group"
       aria-label="Confirmar eliminación de cartilla"
-      className="flex w-full flex-col gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm"
+      className="flex w-full flex-col gap-2 rounded-lg border border-destructive/40 bg-background p-3 text-sm"
     >
       <p className="font-medium">{`¿Eliminar la cartilla «${name}»?`}</p>
       <p>{content}</p>
@@ -64,19 +64,20 @@ export function DeleteBoardConfirmation({
         <Button
           type="button"
           variant="destructive"
-          size="sm"
+          size="lg"
+          className="h-11 flex-1 sm:h-10 sm:flex-none"
           disabled={isPending || isLoading}
           aria-busy={isPending || undefined}
           onClick={onConfirm}
         >
           {isPending ? 'Eliminando…' : 'Sí, eliminar'}
         </Button>
-        <Button type="button" variant="outline" size="sm" disabled={isPending} onClick={onCancel}>
+        <Button type="button" variant="outline" size="lg" className="h-11 flex-1 sm:h-10 sm:flex-none" disabled={isPending} onClick={onCancel}>
           Cancelar
         </Button>
       </div>
       {error && (
-        <p role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
+        <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
         </p>
       )}

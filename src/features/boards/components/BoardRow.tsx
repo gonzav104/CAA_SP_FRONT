@@ -1,7 +1,8 @@
-import { Pencil, Star, Trash2 } from 'lucide-react'
+import { LayoutGrid, Pencil, Star, Trash2 } from 'lucide-react'
 import { Link } from 'react-router'
 import { paths } from '@/app/paths'
 import { Button, buttonVariants } from '@/components/ui/button'
+import { formatBirthDate } from '@/features/patients/format'
 import { cn } from '@/lib/utils'
 import type { BoardSummary } from '../types'
 import { BoardNameForm } from './BoardNameForm'
@@ -34,6 +35,8 @@ interface BoardRowProps {
   onCancel: () => void
 }
 
+const ICON_ACTION_CLASS = 'size-11 sm:size-10'
+
 export function BoardRow({
   patientId,
   board,
@@ -57,8 +60,8 @@ export function BoardRow({
   return (
     <li
       className={cn(
-        'flex min-h-16 flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background px-5 py-3',
-        board.isPrimary && 'border-caa-accent/50',
+        'flex flex-wrap items-center gap-x-3 gap-y-3 rounded-xl border p-4 transition-colors',
+        board.isPrimary ? 'border-caa-azul/40 bg-caa-azul-suave/60' : 'border-border bg-background',
       )}
     >
       {mode === 'rename' ? (
@@ -74,24 +77,48 @@ export function BoardRow({
           onCancel={onCancel}
         />
       ) : (
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="truncate text-base font-medium">{name}</span>
-          {board.isPrimary && (
-            <span className="flex items-center gap-1 rounded-full bg-caa-accent/10 px-2.5 py-0.5 text-xs font-medium text-caa-accent">
-              <Star aria-hidden="true" className="size-3.5 fill-current" />
-              Principal
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <span
+            aria-hidden="true"
+            className={cn(
+              'flex size-10 shrink-0 items-center justify-center rounded-lg',
+              board.isPrimary ? 'bg-background text-caa-azul-hover' : 'bg-caa-azul-suave text-caa-azul',
+            )}
+          >
+            <LayoutGrid className="size-5" />
+          </span>
+          <div className="flex min-w-0 flex-col">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2">
+              <span className="truncate font-semibold text-foreground" title={name}>
+                {name}
+              </span>
+              {board.isPrimary && (
+                <span className="flex items-center gap-1 rounded-full bg-background px-2 py-0.5 text-xs font-semibold text-caa-azul-hover">
+                  <Star aria-hidden="true" className="size-3.5 fill-current" />
+                  Principal
+                </span>
+              )}
+            </div>
+            <span className="text-sm text-muted-foreground">
+              {`Creada el ${formatBirthDate(board.createdAt.slice(0, 10))}`}
+              {!canEdit && (
+                <>
+                  {' · '}
+                  <span>Solo lectura</span>
+                </>
+              )}
             </span>
-          )}
+          </div>
         </div>
       )}
-      <div className="flex items-center gap-2">
-        {!canEdit && <span className="text-sm text-muted-foreground">Solo lectura</span>}
+      <div className="flex w-full flex-wrap items-center justify-end gap-x-1 gap-y-2 sm:w-auto">
         <div className="flex items-center gap-1">
           {isPrimaryPending && <span className="text-sm text-muted-foreground">Marcando…</span>}
           {canEdit && (
             <Button
               variant="ghost"
               size="icon-lg"
+              className={ICON_ACTION_CLASS}
               disabled={actionsDisabled}
               onClick={onStartRename}
               aria-label={`Renombrar ${name}`}
@@ -103,6 +130,7 @@ export function BoardRow({
             <Button
               variant="ghost"
               size="icon-lg"
+              className={ICON_ACTION_CLASS}
               disabled={actionsDisabled}
               aria-busy={isPrimaryPending || undefined}
               onClick={onSetPrimary}
@@ -115,7 +143,7 @@ export function BoardRow({
             <Button
               variant="ghost"
               size="icon-lg"
-              className="text-destructive hover:text-destructive"
+              className={cn(ICON_ACTION_CLASS, 'text-destructive hover:text-destructive')}
               disabled={actionsDisabled}
               onClick={onStartDelete}
               aria-label={`Eliminar ${name}`}
@@ -124,17 +152,22 @@ export function BoardRow({
             </Button>
           )}
         </div>
-        {canEdit && (
+        <div className="flex w-full gap-2 sm:ml-1 sm:w-auto">
+          {canEdit && (
+            <Link
+              to={paths.boardEditor(patientId, board.id)}
+              className={buttonVariants({ variant: 'outline', size: 'lg', className: 'h-11 flex-1 bg-background sm:h-10 sm:flex-none' })}
+            >
+              Editar
+            </Link>
+          )}
           <Link
-            to={paths.boardEditor(patientId, board.id)}
-            className={buttonVariants({ variant: 'outline', size: 'lg' })}
+            to={paths.boardUse(patientId, board.id)}
+            className={buttonVariants({ size: 'lg', className: 'h-11 flex-1 sm:h-10 sm:flex-none' })}
           >
-            Editar
+            Modo Uso
           </Link>
-        )}
-        <Link to={paths.boardUse(patientId, board.id)} className={buttonVariants({ size: 'lg' })}>
-          Modo Uso
-        </Link>
+        </div>
       </div>
       {mode === 'delete' && (
         <DeleteBoardConfirmation

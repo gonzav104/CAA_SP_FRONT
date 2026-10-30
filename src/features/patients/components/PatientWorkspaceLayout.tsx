@@ -235,7 +235,7 @@ function PatientWorkspaceLayoutContent({ patientId }: { patientId: string }) {
     return (
       <PageLayout backLink={{ to: paths.patients(), label: 'Volver a pacientes' }} tone="brand">
         <ErrorState
-          message={getReadErrorMessage(patient.error, 'No encontramos al paciente o no tienes acceso.')}
+          message={getReadErrorMessage(patient.error, 'No encontramos al paciente o no tenés acceso.')}
           onRetry={() => void patient.refetch()}
         />
       </PageLayout>
