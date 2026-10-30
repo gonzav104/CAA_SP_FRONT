@@ -84,10 +84,19 @@ describe('DashboardPage', () => {
 
   it('does not offer "Nuevo paciente" to a family collaborator', async () => {
     setup(familyMember, [])
-    vi.mocked(fetchPatients).mockResolvedValue([])
+    vi.mocked(fetchPatients).mockResolvedValue([therapistPatientsResponse[0]])
     renderApp('/')
     await screen.findByText('Gestionar pacientes')
     expect(screen.queryByRole('link', { name: /Nuevo paciente/ })).not.toBeInTheDocument()
+  })
+
+  it('leaves only the onboarding to a user with no spaces and no patients', async () => {
+    setup(familyMember, [])
+    vi.mocked(fetchPatients).mockResolvedValue([])
+    renderApp('/')
+    expect(await screen.findByText('Todavía no tenés pacientes.')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Gestionar pacientes/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Creá tu espacio de trabajo' })).toBeInTheDocument()
   })
 
   it('always offers "Gestionar pacientes" to the real directory', async () => {

@@ -14,6 +14,7 @@ import { greetingFor } from '../greeting'
 function PatientSummary({ count, isPending, isFamily }: { count: number | undefined; isPending: boolean; isFamily: boolean }) {
   if (isPending) return <p className="text-muted-foreground">Cargando pacientes…</p>
   if (count === undefined) return <p className="text-muted-foreground">No se pudo cargar el total.</p>
+  if (count === 0 && isFamily) return <p className="text-muted-foreground">Todavía no tenés pacientes.</p>
   const isSingular = count === 1
   const noun = isSingular ? 'paciente' : 'pacientes'
   const qualifier = isFamily ? (isSingular ? 'vinculado' : 'vinculados') : 'a tu cargo'
@@ -34,6 +35,8 @@ export function DashboardPage() {
   const isFamily = !!organizations && !canCreate
 
   const greeting = user ? `${greetingFor(new Date())}, ${user.nombre}` : 'Bienvenido'
+  // Nothing to manage yet: the onboarding below is the only next step.
+  const isEmpty = patients?.length === 0 && organizations?.length === 0
   const actionClass = 'h-10 flex-1 sm:flex-none'
 
   return (
@@ -46,12 +49,14 @@ export function DashboardPage() {
           <PatientSummary count={isError ? undefined : patients?.length} isPending={isPending} isFamily={isFamily} />
         </div>
         <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-          <Link
-            to={paths.patients()}
-            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), actionClass, 'bg-background')}
-          >
-            Gestionar pacientes
-          </Link>
+          {!isEmpty && (
+            <Link
+              to={paths.patients()}
+              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), actionClass, 'bg-background')}
+            >
+              Gestionar pacientes
+            </Link>
+          )}
           {canCreate && (
             <Link to={`${paths.patients()}?crear=1`} className={cn(buttonVariants({ size: 'lg' }), actionClass)}>
               <Plus aria-hidden="true" />

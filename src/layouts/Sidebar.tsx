@@ -123,7 +123,7 @@ export function Sidebar() {
   return (
     <aside
       onKeyDown={handleKeyDown}
-      className="caa-brand caa-brand-dark sticky top-0 z-30 flex shrink-0 flex-col bg-caa-tinta text-white lg:h-dvh lg:w-64"
+      className="caa-brand caa-brand-dark sticky top-0 z-30 flex shrink-0 flex-col bg-caa-tinta text-white lg:h-dvh lg:w-[16.5rem]"
     >
       <div className="flex h-14 items-center justify-between px-4 lg:h-20 lg:px-6">
         <Link
