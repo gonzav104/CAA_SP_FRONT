@@ -54,7 +54,7 @@ export function RegisterPage() {
           <Input
             id="register-nombre"
             autoComplete="name"
-            className="h-10"
+            className="h-11"
             aria-invalid={errors.nombre ? true : undefined}
             aria-describedby={errors.nombre ? 'register-nombre-error' : undefined}
             {...register('nombre')}
@@ -72,7 +72,7 @@ export function RegisterPage() {
             id="register-email"
             type="email"
             autoComplete="email"
-            className="h-10"
+            className="h-11"
             aria-invalid={errors.email ? true : undefined}
             aria-describedby={errors.email ? 'register-email-error' : undefined}
             {...register('email')}
@@ -90,7 +90,7 @@ export function RegisterPage() {
             id="register-password"
             type="password"
             autoComplete="new-password"
-            className="h-10"
+            className="h-11"
             aria-invalid={errors.password ? true : undefined}
             aria-describedby="register-password-hint"
             {...register('password')}
@@ -107,7 +107,7 @@ export function RegisterPage() {
           </p>
         )}
 
-        <Button type="submit" size="lg" className="h-10" disabled={registerUser.isPending}>
+        <Button type="submit" size="lg" className="h-11" disabled={registerUser.isPending}>
           {registerUser.isPending ? 'Creando cuenta…' : 'Crear cuenta'}
         </Button>
       </form>

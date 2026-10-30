@@ -60,6 +60,11 @@ export function LoginPage() {
         </p>
       )}
 
+      {/* Google first: the quickest way in for linked accounts. The section renders nothing when unset. */}
+      <GoogleLoginSection
+        onAuthenticated={() => navigate(destination.pathname, { replace: true, state: destination.state })}
+      />
+
       <form noValidate onSubmit={handleSubmit(onSubmit)} className="mt-6 flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="email">Email</Label>
@@ -67,7 +72,7 @@ export function LoginPage() {
             id="email"
             type="email"
             autoComplete="email"
-            className="h-10"
+            className="h-11"
             aria-invalid={errors.email ? true : undefined}
             aria-describedby={errors.email ? 'email-error' : undefined}
             {...register('email')}
@@ -85,7 +90,7 @@ export function LoginPage() {
             id="password"
             type="password"
             autoComplete="current-password"
-            className="h-10"
+            className="h-11"
             aria-invalid={errors.password ? true : undefined}
             aria-describedby={errors.password ? 'password-error' : undefined}
             {...register('password')}
@@ -103,16 +108,12 @@ export function LoginPage() {
           </p>
         )}
 
-        <Button type="submit" size="lg" className="h-10" disabled={login.isPending}>
+        <Button type="submit" size="lg" className="h-11" disabled={login.isPending}>
           {login.isPending ? 'Ingresando…' : 'Ingresar'}
         </Button>
       </form>
 
-      <GoogleLoginSection
-        onAuthenticated={() => navigate(destination.pathname, { replace: true, state: destination.state })}
-      />
-
-      <div className="mt-6 flex flex-col gap-2 text-sm text-muted-foreground">
+      <div className="mt-8 flex flex-col gap-2 text-sm text-muted-foreground">
         <Link to={routes.forgotPassword} state={linkState} className={authLinkClassName}>
           Olvidé mi contraseña
         </Link>

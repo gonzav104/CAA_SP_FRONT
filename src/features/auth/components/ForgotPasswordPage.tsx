@@ -59,7 +59,7 @@ export function ForgotPasswordPage() {
             id="forgot-email"
             type="email"
             autoComplete="email"
-            className="h-10"
+            className="h-11"
             aria-invalid={errors.email ? true : undefined}
             aria-describedby={errors.email ? 'forgot-email-error' : undefined}
             {...register('email')}
@@ -77,7 +77,7 @@ export function ForgotPasswordPage() {
           </p>
         )}
 
-        <Button type="submit" size="lg" className="h-10" disabled={requestReset.isPending}>
+        <Button type="submit" size="lg" className="h-11" disabled={requestReset.isPending}>
           {requestReset.isPending ? 'Enviando…' : 'Enviar enlace'}
         </Button>
       </form>

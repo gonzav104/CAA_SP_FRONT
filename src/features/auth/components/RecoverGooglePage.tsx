@@ -155,7 +155,7 @@ function CompleteRecovery({ token }: { token: string }) {
             id="google-recovery-password"
             type="password"
             autoComplete="new-password"
-            className="h-10"
+            className="h-11"
             aria-invalid={errors.password ? true : undefined}
             aria-describedby="google-recovery-password-hint"
             {...register('password')}
@@ -175,7 +175,7 @@ function CompleteRecovery({ token }: { token: string }) {
             id="google-recovery-confirmacion"
             type="password"
             autoComplete="new-password"
-            className="h-10"
+            className="h-11"
             aria-invalid={errors.confirmacion ? true : undefined}
             aria-describedby={errors.confirmacion ? 'google-recovery-confirmacion-error' : undefined}
             {...register('confirmacion')}

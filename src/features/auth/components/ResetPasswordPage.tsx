@@ -84,7 +84,7 @@ export function ResetPasswordPage() {
             id="reset-password"
             type="password"
             autoComplete="new-password"
-            className="h-10"
+            className="h-11"
             aria-invalid={errors.password ? true : undefined}
             aria-describedby="reset-password-hint"
             {...register('password')}
@@ -101,7 +101,7 @@ export function ResetPasswordPage() {
             id="reset-confirmacion"
             type="password"
             autoComplete="new-password"
-            className="h-10"
+            className="h-11"
             aria-invalid={errors.confirmacion ? true : undefined}
             aria-describedby={errors.confirmacion ? 'reset-confirmacion-error' : undefined}
             {...register('confirmacion')}
@@ -119,7 +119,7 @@ export function ResetPasswordPage() {
           </p>
         )}
 
-        <Button type="submit" size="lg" className="h-10" disabled={reset.isPending}>
+        <Button type="submit" size="lg" className="h-11" disabled={reset.isPending}>
           {reset.isPending ? 'Guardando…' : 'Guardar contraseña'}
         </Button>
       </form>

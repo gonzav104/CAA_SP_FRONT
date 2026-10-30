@@ -39,7 +39,16 @@ export function GoogleSignInButton({ onCredential, text = 'continue_with' }: Goo
           cancel_on_tap_outside: true,
           use_fedcm_for_button: true,
         })
-        googleId.renderButton(container.current, { type: 'standard', theme: 'outline', size: 'large', text, locale: 'es' })
+        // GIS draws a fixed-width iframe: match the form column (GIS accepts 200–400px).
+        const width = Math.min(400, container.current.offsetWidth)
+        googleId.renderButton(container.current, {
+          type: 'standard',
+          theme: 'outline',
+          size: 'large',
+          text,
+          locale: 'es',
+          ...(width >= 200 ? { width } : {}),
+        })
       })
       .catch(() => {
         if (active) setUnavailable(true)

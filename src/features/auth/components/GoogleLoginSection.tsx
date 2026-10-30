@@ -68,7 +68,7 @@ export function GoogleLoginSection({ onAuthenticated }: GoogleLoginSectionProps)
   const failure = googleLogin.error ?? completeRegistration.error
 
   return (
-    <div className="mt-6 flex flex-col gap-3 border-t pt-6">
+    <div className="mt-8 flex flex-col gap-3">
       {pending ? (
         <div className="flex flex-col gap-3 rounded-lg border p-4 text-sm">
           <p className="font-medium">Crear cuenta con Google</p>
@@ -115,6 +115,10 @@ export function GoogleLoginSection({ onAuthenticated }: GoogleLoginSectionProps)
           </Link>
         </div>
       )}
+
+      <div aria-hidden="true" className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
+        <span className="h-px flex-1 bg-border" />o con tu email<span className="h-px flex-1 bg-border" />
+      </div>
     </div>
   )
 }
