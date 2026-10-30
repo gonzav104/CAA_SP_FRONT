@@ -23,7 +23,7 @@ function httpError(status: number, message?: string): AxiosError {
 const location = () => screen.getByTestId('location')
 
 async function fillRegistration(password = STRONG) {
-  await userEvent.type(await screen.findByLabelText('Nombre'), 'Nueva')
+  await userEvent.type(await screen.findByLabelText('Nombre completo'), 'Nueva')
   await userEvent.type(screen.getByLabelText('Email'), 'nueva@example.com')
   await userEvent.type(screen.getByLabelText('Contraseña'), password)
   await userEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }))

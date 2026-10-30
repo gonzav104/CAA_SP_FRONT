@@ -1,11 +1,10 @@
 import { useRef } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router'
 import { z } from 'zod'
 import { paths, routes } from '@/app/paths'
 import { FullScreenStatus } from '@/components/FullScreenStatus'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { getGoogleRecoveryErrorMessage, getGoogleRecoveryRequestErrorMessage } from '../errors'
 import { getGoogleClientId } from '../google/googleIdentity'
@@ -14,6 +13,8 @@ import { useCompleteGoogleRecovery, useRequestGoogleRecovery } from '../hooks'
 import { strongPassword } from '../password'
 import { useTokenFromUrl } from '../useTokenFromUrl'
 import { AuthLayout, authLinkClassName } from './AuthLayout'
+import { NewPasswordField } from './NewPasswordField'
+import { PasswordInput } from './PasswordInput'
 
 const backToLogin = (
   <Link to={routes.login} className={authLinkClassName}>
@@ -118,11 +119,13 @@ function CompleteRecovery({ token }: { token: string }) {
     register,
     trigger,
     getValues,
+    control,
     formState: { errors },
   } = useForm<CompleteFormValues>({
     resolver: zodResolver(completeSchema),
     defaultValues: { password: '', confirmacion: '' },
   })
+  const password = useWatch({ control, name: 'password' })
 
   // The Google confirmation is the submit: the password is validated first, then both proofs go together.
   const handleCredential = async (idToken: string) => {
@@ -149,31 +152,19 @@ function CompleteRecovery({ token }: { token: string }) {
       description="Elige una nueva contraseña y confirma con la misma cuenta de Google con la que lo solicitaste."
     >
       <form noValidate onSubmit={(event) => event.preventDefault()} className="mt-6 flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="google-recovery-password">Nueva contraseña</Label>
-          <Input
-            id="google-recovery-password"
-            type="password"
-            autoComplete="new-password"
-            className="h-11"
-            aria-invalid={errors.password ? true : undefined}
-            aria-describedby="google-recovery-password-hint"
-            {...register('password')}
-          />
-          <p
-            id="google-recovery-password-hint"
-            className={errors.password ? 'text-sm text-destructive' : 'text-xs text-muted-foreground'}
-          >
-            {errors.password?.message ??
-              'Al menos 8 caracteres, con una mayúscula, una minúscula, un número y un símbolo. Tiene que ser distinta de tu contraseña actual.'}
-          </p>
-        </div>
+        <NewPasswordField
+          id="google-recovery-password"
+          label="Nueva contraseña"
+          value={password}
+          error={errors.password?.message}
+          note="Tiene que ser distinta de tu contraseña actual."
+          registration={register('password')}
+        />
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="google-recovery-confirmacion">Repite la nueva contraseña</Label>
-          <Input
+          <PasswordInput
             id="google-recovery-confirmacion"
-            type="password"
             autoComplete="new-password"
             className="h-11"
             aria-invalid={errors.confirmacion ? true : undefined}

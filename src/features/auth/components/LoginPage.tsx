@@ -12,6 +12,7 @@ import { useCurrentUser, useLogin } from '../hooks'
 import { getReturnTo, pendingFrom } from '../returnTo'
 import { AuthLayout, authLinkClassName } from './AuthLayout'
 import { GoogleLoginSection } from './GoogleLoginSection'
+import { PasswordInput } from './PasswordInput'
 
 const loginSchema = z.object({
   email: z.email('Ingresa un email válido'),
@@ -86,9 +87,8 @@ export function LoginPage() {
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="password">Contraseña</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="current-password"
             className="h-11"
             aria-invalid={errors.password ? true : undefined}
