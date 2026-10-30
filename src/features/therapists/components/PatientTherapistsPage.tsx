@@ -3,15 +3,19 @@ import { Stethoscope } from 'lucide-react'
 import { Navigate, useParams } from 'react-router'
 import { paths } from '@/app/paths'
 import { getReadErrorMessage, getTherapistAssignmentErrorMessage } from '@/api/errors'
+import { EmptyPanel } from '@/components/EmptyPanel'
 import { ErrorState } from '@/components/ErrorState'
-import { LoadingState } from '@/components/LoadingState'
+import { FormAlert } from '@/components/FormAlert'
+import { RowsSkeleton } from '@/components/RowsSkeleton'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { NATIVE_SELECT_CLASS } from '@/components/ui/nativeSelect'
 import { useMembers } from '@/features/organizations/hooks'
 import { usePatient } from '@/features/patients/hooks'
 import { canManageTherapists, canViewTherapists } from '@/features/patients/permissions'
 import type { Patient } from '@/features/patients/types'
-import { initialOf } from '@/lib/utils'
+import { BRAND_ACTION_CLASS, BRAND_PANEL_CLASS, BRAND_SECTION_TITLE_CLASS } from '@/layouts/brand'
+import { cn, initialOf } from '@/lib/utils'
 import { useAssignedTherapists, useAssignTherapist, useUnassignTherapist } from '../hooks'
 
 /**
@@ -23,13 +27,9 @@ export function PatientTherapistsPage() {
   const patient = usePatient(pacienteId ?? '')
   if (!pacienteId) return <Navigate to={paths.patients()} replace />
   // The workspace layout already loads the patient (and handles its errors); this reads the same entry.
-  if (!patient.data) return <LoadingState message="Cargando equipo…" />
+  if (!patient.data) return <RowsSkeleton message="Cargando equipo…" />
   if (!canViewTherapists(patient.data)) {
-    return (
-      <p className="rounded-2xl border border-border/60 bg-background px-6 py-10 text-center text-muted-foreground">
-        Solo el equipo clínico del paciente puede ver a sus terapeutas.
-      </p>
-    )
+    return <EmptyPanel icon={Stethoscope}>Solo el equipo clínico del paciente puede ver a sus terapeutas.</EmptyPanel>
   }
   return <TherapistsContent patient={patient.data} />
 }
@@ -47,11 +47,11 @@ function TherapistsContent({ patient }: { patient: Patient }) {
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
   const [rowError, setRowError] = useState<{ userId: string; message: string } | null>(null)
 
-  if (assigned.isPending) return <LoadingState message="Cargando equipo…" />
+  if (assigned.isPending) return <RowsSkeleton message="Cargando equipo…" />
   if (assigned.isError) {
     return (
       <ErrorState
-        message={getReadErrorMessage(assigned.error, 'No encontramos el equipo de este paciente o no tienes acceso.')}
+        message={getReadErrorMessage(assigned.error, 'No encontramos el equipo de este paciente o no tenés acceso.')}
         onRetry={() => void assigned.refetch()}
       />
     )
@@ -83,11 +83,93 @@ function TherapistsContent({ patient }: { patient: Patient }) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <h2 className="text-xl font-semibold text-foreground">Equipo</h2>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h2 className={BRAND_SECTION_TITLE_CLASS}>Equipo</h2>
+        <p className="text-sm text-muted-foreground">
+          Terapeutas asignados a este paciente. Ser miembro del espacio no implica atenderlo.
+        </p>
+      </div>
+
+      {assigned.data.length === 0 ? (
+        <EmptyPanel icon={Stethoscope}>Este paciente todavía no tiene terapeutas asignados.</EmptyPanel>
+      ) : (
+        <ul aria-label="Terapeutas asignados" className="flex flex-col gap-3">
+          {assigned.data.map((therapist) => (
+            <li key={therapist.usuarioId} className={cn(BRAND_PANEL_CLASS, 'flex flex-col gap-3 p-4')}>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <span
+                    aria-hidden="true"
+                    className="flex size-10 shrink-0 items-center justify-center rounded-full bg-caa-azul-suave font-display font-bold text-caa-azul"
+                  >
+                    {initialOf(therapist.nombre)}
+                  </span>
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <span className="font-semibold wrap-anywhere text-foreground">{therapist.nombre}</span>
+                    <span className="text-sm wrap-anywhere text-muted-foreground">{therapist.email}</span>
+                  </div>
+                </div>
+                {canManage && confirmingId !== therapist.usuarioId && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    className="h-11 w-full sm:h-10 sm:w-auto"
+                    disabled={isPending}
+                    onClick={() => setConfirmingId(therapist.usuarioId)}
+                  >
+                    Quitar asignación
+                  </Button>
+                )}
+              </div>
+              {confirmingId === therapist.usuarioId && (
+                <div
+                  role="group"
+                  aria-label={`Confirmar que se quita la asignación de ${therapist.nombre}`}
+                  className="flex flex-col gap-2 rounded-lg border border-destructive/40 bg-background p-3 text-sm"
+                >
+                  <p className="font-medium">{`¿Quitar a ${therapist.nombre} del equipo de este paciente?`}</p>
+                  <p>Seguirá siendo miembro del espacio, pero dejará de atender a este paciente.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="lg"
+                      className={BRAND_ACTION_CLASS}
+                      disabled={isPending}
+                      aria-busy={unassign.isPending || undefined}
+                      onClick={() => void handleUnassign(therapist.usuarioId)}
+                    >
+                      {unassign.isPending ? 'Quitando…' : 'Sí, quitar asignación'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      className={BRAND_ACTION_CLASS}
+                      disabled={isPending}
+                      onClick={() => setConfirmingId(null)}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              )}
+              <FormAlert message={rowError?.userId === therapist.usuarioId ? rowError.message : null} />
+            </li>
+          ))}
+        </ul>
+      )}
 
       {canManage && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-5">
+        <section aria-labelledby="assign-therapist-title" className={cn(BRAND_PANEL_CLASS, 'flex flex-col gap-3 p-5')}>
+          <div className="flex flex-col gap-1">
+            <h3 id="assign-therapist-title" className="font-semibold text-foreground">
+              Terapeutas del espacio
+            </h3>
+            <p className="text-sm text-muted-foreground">Solo aparecen quienes todavía no atienden a este paciente.</p>
+          </div>
           {members.isError ? (
             <p role="alert" className="text-sm text-muted-foreground">
               No se pudieron cargar los terapeutas del espacio.
@@ -99,15 +181,15 @@ function TherapistsContent({ patient }: { patient: Patient }) {
                 : 'No hay más terapeutas del espacio para asignar. Habilitá a un miembro como terapeuta desde Miembros del espacio.'}
             </p>
           ) : (
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="flex min-w-60 flex-col gap-1.5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <Label htmlFor="assign-therapist">Asignar terapeuta</Label>
                 <select
                   id="assign-therapist"
                   value={selected}
                   disabled={isPending}
                   onChange={(event) => setSelected(event.target.value)}
-                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                  className={NATIVE_SELECT_CLASS}
                 >
                   <option value="">Elegí un terapeuta del espacio</option>
                   {candidates.map((member) => (
@@ -119,6 +201,8 @@ function TherapistsContent({ patient }: { patient: Patient }) {
               </div>
               <Button
                 type="button"
+                size="lg"
+                className="h-11"
                 disabled={!selected || isPending}
                 aria-busy={assign.isPending || undefined}
                 onClick={() => void handleAssign()}
@@ -127,75 +211,8 @@ function TherapistsContent({ patient }: { patient: Patient }) {
               </Button>
             </div>
           )}
-          {assignError && (
-            <p role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
-              {assignError}
-            </p>
-          )}
-        </div>
-      )}
-
-      {assigned.data.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-border/60 bg-background px-6 py-10 text-center">
-          <Stethoscope aria-hidden="true" className="size-6 text-muted-foreground" />
-          <p className="text-muted-foreground">Este paciente todavía no tiene terapeutas asignados.</p>
-        </div>
-      ) : (
-        <ul aria-label="Terapeutas asignados" className="flex flex-col gap-3">
-          {assigned.data.map((therapist) => (
-            <li key={therapist.usuarioId} className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <span
-                    aria-hidden="true"
-                    className="flex size-10 shrink-0 items-center justify-center rounded-full bg-caa-accent/10 text-sm font-semibold text-caa-accent"
-                  >
-                    {initialOf(therapist.nombre)}
-                  </span>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-medium text-foreground">{therapist.nombre}</span>
-                    <span className="text-sm text-muted-foreground">{therapist.email}</span>
-                  </div>
-                </div>
-                {canManage && confirmingId !== therapist.usuarioId && (
-                  <Button type="button" variant="outline" size="sm" disabled={isPending} onClick={() => setConfirmingId(therapist.usuarioId)}>
-                    Quitar asignación
-                  </Button>
-                )}
-              </div>
-              {confirmingId === therapist.usuarioId && (
-                <div
-                  role="group"
-                  aria-label={`Confirmar que se quita la asignación de ${therapist.nombre}`}
-                  className="flex flex-col gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm"
-                >
-                  <p className="font-medium">{`¿Quitar a ${therapist.nombre} del equipo de este paciente?`}</p>
-                  <p>Seguirá siendo miembro del espacio, pero dejará de atender a este paciente.</p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      disabled={isPending}
-                      aria-busy={unassign.isPending || undefined}
-                      onClick={() => void handleUnassign(therapist.usuarioId)}
-                    >
-                      {unassign.isPending ? 'Quitando…' : 'Sí, quitar asignación'}
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" disabled={isPending} onClick={() => setConfirmingId(null)}>
-                      Cancelar
-                    </Button>
-                  </div>
-                </div>
-              )}
-              {rowError?.userId === therapist.usuarioId && (
-                <p role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
-                  {rowError.message}
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
+          <FormAlert message={assignError} />
+        </section>
       )}
     </div>
   )
