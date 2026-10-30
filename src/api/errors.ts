@@ -274,9 +274,9 @@ export function getMemberWriteErrorMessage(error: unknown): string {
   if (isNetworkError(error)) return 'No se pudo conectar con el servidor.'
   const status = getErrorStatus(error)
   if (status === 400) return 'El servidor rechazó el cambio.'
-  if (status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente.'
-  if (status === 403) return 'No tienes permiso para hacer este cambio en el espacio.'
-  if (status === 404) return 'Esa persona ya no pertenece al espacio, o ya no tienes acceso a él.'
+  if (status === 401) return 'Tu sesión expiró. Iniciá sesión nuevamente.'
+  if (status === 403) return 'No tenés permiso para hacer este cambio en el espacio.'
+  if (status === 404) return 'Esa persona ya no pertenece al espacio, o ya no tenés acceso a él.'
   if (status === 409) return 'El propietario debe transferir la propiedad antes de salir o ser quitado del espacio.'
   return 'Ocurrió un error inesperado.'
 }
@@ -291,9 +291,9 @@ export function getOrganizationInviteErrorMessage(error: unknown): string {
       ? `El servidor rechazó los datos: ${message}`
       : 'El servidor rechazó los datos.'
   }
-  if (status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente.'
-  if (status === 403) return 'No tienes permiso para invitar con ese rol.'
-  if (status === 404) return 'El espacio ya no existe o no tienes acceso a él.'
+  if (status === 401) return 'Tu sesión expiró. Iniciá sesión nuevamente.'
+  if (status === 403) return 'No tenés permiso para invitar con ese rol.'
+  if (status === 404) return 'El espacio ya no existe o no tenés acceso a él.'
   if (status === 409) return 'Esa persona ya es miembro del espacio.'
   return 'Ocurrió un error inesperado.'
 }

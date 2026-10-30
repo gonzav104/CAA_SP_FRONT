@@ -69,7 +69,9 @@ function setup(myOrganization: OrganizacionResponse, members: MiembroResponse[] 
 
 const rowOf = async (name: string) => {
   const list = await screen.findByRole('list', { name: 'Miembros del espacio' })
-  const row = within(list).getByText(name, { exact: false, selector: 'span.font-medium' }).closest('li')
+  const row = within(list)
+    .getAllByRole('listitem')
+    .find((candidate) => candidate.textContent?.includes(name))
   if (!row) throw new Error(`row ${name} not found`)
   return row
 }
@@ -96,8 +98,8 @@ describe('OrganizationMembersPage', () => {
   it('lists members with their management role and clinical capacity', async () => {
     setup(ownerOrganization)
     renderApp(url)
-    expect(within(await rowOf('Ana')).getByText('Propietario · Terapeuta')).toBeInTheDocument()
-    expect(within(await rowOf('Bruno')).getByText('Administrador · Terapeuta')).toBeInTheDocument()
+    expect(await rowOf('Ana')).toHaveTextContent('Propietario · Terapeuta')
+    expect(await rowOf('Bruno')).toHaveTextContent('Administrador · Terapeuta')
     expect(within(await rowOf('Carla')).getByText('Miembro', { selector: 'span' })).toBeInTheDocument()
   })
 
@@ -167,8 +169,8 @@ describe('OrganizationMembersPage', () => {
   })
 
   it.each([
-    [403, 'No tienes permiso para hacer este cambio en el espacio.'],
-    [404, 'Esa persona ya no pertenece al espacio, o ya no tienes acceso a él.'],
+    [403, 'No tenés permiso para hacer este cambio en el espacio.'],
+    [404, 'Esa persona ya no pertenece al espacio, o ya no tenés acceso a él.'],
     [409, 'El propietario debe transferir la propiedad antes de salir o ser quitado del espacio.'],
   ])('shows the backend refusal %i on the member row', async (status, message) => {
     setup(ownerOrganization)
@@ -257,7 +259,7 @@ describe('OrganizationMembersPage', () => {
         focusManager.setFocused(true)
       })
 
-      await vi.waitFor(() => expect(screen.getByText('Dani', { selector: 'span.font-medium' })).toBeInTheDocument())
+      await vi.waitFor(() => expect(screen.getByRole('list', { name: 'Miembros del espacio' })).toHaveTextContent('Dani'))
       await vi.waitFor(() => expect(screen.queryByRole('list', { name: 'Invitaciones pendientes' })).not.toBeInTheDocument())
       act(() => focusManager.setFocused(undefined))
     })
@@ -314,7 +316,7 @@ describe('OrganizationMembersPage', () => {
 
     it.each([
       [409, 'Esa persona ya es miembro del espacio.'],
-      [403, 'No tienes permiso para invitar con ese rol.'],
+      [403, 'No tenés permiso para invitar con ese rol.'],
     ])('keeps the form open on %i', async (status, message) => {
       setup(ownerOrganization)
       vi.mocked(inviteToOrganization).mockRejectedValue(httpError(status))
@@ -356,5 +358,64 @@ describe('OrganizationMembersPage', () => {
     renderApp(url)
     expect(await screen.findByText('No tenés acceso a este espacio.')).toBeInTheDocument()
     expect(fetchMembers).not.toHaveBeenCalled()
+  })
+
+  it('tells each role and the clinical capacity apart, in text', async () => {
+    setup(ownerOrganization)
+    renderApp(url)
+    expect(within(await rowOf('Ana')).getByText('Propietario')).toBeInTheDocument()
+    expect(within(await rowOf('Ana')).getByText('Terapeuta')).toBeInTheDocument()
+    expect(within(await rowOf('Bruno')).getByText('Administrador', { selector: 'span' })).toBeInTheDocument()
+    expect(within(await rowOf('Carla')).getByText('Miembro', { selector: 'span' })).toBeInTheDocument()
+    expect(within(await rowOf('Carla')).queryByText('Terapeuta')).not.toBeInTheDocument()
+  })
+
+  it('tells the OWNER why there is no way to leave, and nobody else', async () => {
+    setup(ownerOrganization)
+    renderApp(url)
+    expect(within(await rowOf('Ana')).getByText('Como propietario, no podés salir del espacio.')).toBeInTheDocument()
+    expect(within(await rowOf('Bruno')).queryByText(/Como propietario/)).not.toBeInTheDocument()
+  })
+
+  it('speaks to the person who is leaving, and about the person being removed', async () => {
+    setup(ownerOrganization)
+    renderApp(url)
+    await userEvent.click(within(await rowOf('Carla')).getByRole('button', { name: 'Quitar del espacio' }))
+    expect(await screen.findByText(/^Perderá el acceso/)).toBeInTheDocument()
+  })
+
+  it('says there are no pending invitations only to whoever manages them', async () => {
+    setup(ownerOrganization)
+    renderApp(url)
+    expect(await screen.findByText('No hay invitaciones pendientes.')).toBeInTheDocument()
+  })
+
+  it('validates the invitation email when leaving the field, linked to it', async () => {
+    setup(ownerOrganization)
+    renderApp(url)
+    await userEvent.click(await screen.findByRole('button', { name: 'Invitar' }))
+    const email = screen.getByLabelText('Email')
+    await userEvent.type(email, 'nope')
+    await userEvent.tab()
+    const error = await screen.findByText('El email no es válido.')
+    expect(email).toHaveAttribute('aria-describedby', error.id)
+    expect(inviteToOrganization).not.toHaveBeenCalled()
+  })
+
+  it('shows the proposed role, clinical capacity and expiration of a pending invitation', async () => {
+    setup(ownerOrganization)
+    vi.mocked(fetchOrganizationInvitations).mockResolvedValue([pendingInvitation])
+    renderApp(url)
+    const pending = await screen.findByRole('list', { name: 'Invitaciones pendientes' })
+    expect(pending).toHaveTextContent(/Invitación pendiente · \S+/)
+    expect(pending).toHaveTextContent(pendingInvitation.email)
+    expect(screen.getByRole('list', { name: 'Miembros del espacio' })).not.toHaveTextContent(pendingInvitation.email)
+  })
+
+  it('announces the loading state', async () => {
+    setup(ownerOrganization)
+    vi.mocked(fetchMembers).mockReturnValue(new Promise(() => {}))
+    renderApp(url)
+    expect(await screen.findByText('Cargando miembros…')).toHaveAttribute('role', 'status')
   })
 })
