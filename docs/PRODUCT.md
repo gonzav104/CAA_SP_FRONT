@@ -49,7 +49,7 @@ Recorridos reales de la aplicación:
 - Sesiones del terapeuta, invitaciones familiares y de organización, asignación de terapeutas por paciente.
 - Interfaz en español.
 - No prioritario por ahora: IA predictiva, recomendaciones automáticas, gamificación, estadísticas avanzadas, chat, reorganización automática de pictogramas y construcción compleja de frases. Se evaluarán después de validar el uso real.
-- Interfaz en español argentino, con voseo. Las pantallas todavía no migradas conservan textos en tuteo hasta su rediseño.
+- Interfaz en español argentino, con voseo. El Editor y el Modo Uso conservan textos en tuteo hasta su rediseño.
 
 ## Brand Commitments
 
