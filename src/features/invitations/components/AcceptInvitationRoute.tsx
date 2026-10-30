@@ -66,8 +66,8 @@ export function AcceptInvitationRoute() {
       <InvitationCard title="Invitación aceptada">
         <p role="status" className="text-sm text-muted-foreground">
           {accept.data.tipo === 'PACIENTE_FAMILIAR'
-            ? 'Ya tienes acceso al paciente.'
-            : 'Ya formas parte de la organización.'}
+            ? 'Ya tenés acceso al paciente.'
+            : 'Ya formás parte de la organización.'}
         </p>
         <Link to={destination.to} replace className={buttonVariants({ size: 'lg' })}>
           {destination.label}
@@ -81,7 +81,7 @@ export function AcceptInvitationRoute() {
       <InvitationCard title="Aceptar invitación">
         {/* Not a backend answer: the token never arrived or was lost (e.g. an interrupted navigation). */}
         <p role="alert" className="text-sm text-muted-foreground">
-          No encontramos los datos de la invitación. Vuelve a abrir el enlace que recibiste por correo.
+          No encontramos los datos de la invitación. Volvé a abrir el enlace que recibiste por correo.
         </p>
         <Link to={paths.dashboard()} className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}>
           Ir al inicio
@@ -140,7 +140,7 @@ export function AcceptInvitationRoute() {
         </Link>
       </div>
       <div className="flex flex-col gap-2 border-t pt-4 text-sm text-muted-foreground">
-        <p>¿La invitación es para otra cuenta? Cierra sesión e ingresa con ese email.</p>
+        <p>¿La invitación es para otra cuenta? Cerrá sesión e ingresá con ese email.</p>
         <LogoutButton />
       </div>
     </InvitationCard>

@@ -10,7 +10,7 @@ export const PASSWORD_RULE_MESSAGE =
 
 export const strongPassword = z
   .string()
-  .min(1, 'Ingresa una contraseña.')
+  .min(1, 'Ingresá una contraseña.')
   .regex(STRONG_PASSWORD, PASSWORD_RULE_MESSAGE)
 
 export interface PasswordRequirement {

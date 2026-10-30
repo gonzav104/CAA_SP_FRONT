@@ -66,7 +66,7 @@ export function ResetPasswordPage() {
     return (
       <AuthLayout title="Restablecer contraseña">
         <p role="alert" className="mt-4 text-sm text-muted-foreground">
-          {`${INVALID_RESET_LINK_MESSAGE} Abre nuevamente el enlace que recibiste por correo o solicita uno nuevo.`}
+          {`${INVALID_RESET_LINK_MESSAGE} Abrí nuevamente el enlace que recibiste por correo o solicitá uno nuevo.`}
         </p>
         <p className="mt-6 text-sm">{requestNewLink}</p>
       </AuthLayout>
@@ -79,7 +79,7 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <AuthLayout title="Restablecer contraseña" description="Elige una nueva contraseña para tu cuenta.">
+    <AuthLayout title="Restablecer contraseña" description="Elegí una nueva contraseña para tu cuenta.">
       <form noValidate onSubmit={handleSubmit(onSubmit)} className="mt-6 flex flex-col gap-4">
         <NewPasswordField
           id="reset-password"

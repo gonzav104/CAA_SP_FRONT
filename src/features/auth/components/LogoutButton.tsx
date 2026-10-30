@@ -41,7 +41,7 @@ export function LogoutButton({ confirmMessage, inShell = false }: LogoutButtonPr
       )}
       {logout.isError && (
         <p role="alert" className={inShell ? 'px-3 text-sm text-red-200' : 'text-sm text-destructive'}>
-          No se pudo cerrar la sesión. Intenta nuevamente.
+          No se pudo cerrar la sesión. Intentá nuevamente.
         </p>
       )}
     </div>

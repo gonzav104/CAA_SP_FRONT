@@ -11,7 +11,7 @@ import { useRequestPasswordReset } from '../hooks'
 import { pendingFrom } from '../returnTo'
 import { AuthLayout, authLinkClassName } from './AuthLayout'
 
-const forgotPasswordSchema = z.object({ email: z.email('Ingresa un email válido.') })
+const forgotPasswordSchema = z.object({ email: z.email('Ingresá un email válido.') })
 
 type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>
 
@@ -37,7 +37,7 @@ export function ForgotPasswordPage() {
 
   if (requestReset.isSuccess) {
     return (
-      <AuthLayout title="Revisa tu correo">
+      <AuthLayout title="Revisá tu correo">
         <p role="status" className="mt-4 text-sm text-muted-foreground">
           Si el email está registrado, vas a recibir un enlace para restablecer tu contraseña.
         </p>

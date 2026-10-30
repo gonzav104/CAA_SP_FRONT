@@ -58,15 +58,15 @@ describe('getReadErrorMessage', () => {
 
   it('explains connection problems for network errors', () => {
     expect(getReadErrorMessage(new AxiosError('Network Error', 'ERR_NETWORK'), 'x')).toBe(
-      'No se pudo conectar con el servidor. Verifica tu conexión e intenta nuevamente.',
+      'No se pudo conectar con el servidor. Verificá tu conexión e intentá nuevamente.',
     )
   })
 
   it('falls back to a generic message and never echoes the backend message', () => {
     const message = getReadErrorMessage(httpError(500), 'x')
-    expect(message).toBe('Ocurrió un error inesperado. Intenta nuevamente.')
+    expect(message).toBe('Ocurrió un error inesperado. Intentá nuevamente.')
     expect(message).not.toContain('backend detail')
-    expect(getReadErrorMessage(new Error('boom'), 'x')).toBe('Ocurrió un error inesperado. Intenta nuevamente.')
+    expect(getReadErrorMessage(new Error('boom'), 'x')).toBe('Ocurrió un error inesperado. Intentá nuevamente.')
   })
 })
 

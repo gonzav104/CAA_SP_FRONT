@@ -52,7 +52,7 @@ function RequestRecovery() {
 
   if (requestRecovery.isSuccess) {
     return (
-      <AuthLayout title="Revisa tu correo">
+      <AuthLayout title="Revisá tu correo">
         <p role="status" className="mt-4 text-sm text-muted-foreground">
           Si la cuenta es elegible, recibirás un enlace para recuperar el acceso con Google.
         </p>
@@ -64,7 +64,7 @@ function RequestRecovery() {
   return (
     <AuthLayout
       title="Recuperar el acceso con Google"
-      description="Si tu cuenta se creó con email y contraseña, elige la cuenta de Google con ese mismo email. Te enviaremos un enlace para confirmar que es tuya."
+      description="Si tu cuenta se creó con email y contraseña, elegí la cuenta de Google con ese mismo email. Te enviaremos un enlace para confirmar que es tuya."
     >
       <div className="mt-6 flex flex-col gap-3">
         <GoogleSignInButton
@@ -90,7 +90,7 @@ function RequestRecovery() {
           </p>
         )}
         <p className="text-sm text-muted-foreground">
-          ¿Ya recibiste el correo? Vuelve a abrir el enlace que contiene.
+          ¿Ya recibiste el correo? Volvé a abrir el enlace que contiene.
         </p>
       </div>
       <p className="mt-6 text-sm">{backToLogin}</p>
@@ -149,7 +149,7 @@ function CompleteRecovery({ token }: { token: string }) {
   return (
     <AuthLayout
       title="Recuperar el acceso con Google"
-      description="Elige una nueva contraseña y confirma con la misma cuenta de Google con la que lo solicitaste."
+      description="Elegí una nueva contraseña y confirmá con la misma cuenta de Google con la que lo solicitaste."
     >
       <form noValidate onSubmit={(event) => event.preventDefault()} className="mt-6 flex flex-col gap-4">
         <NewPasswordField

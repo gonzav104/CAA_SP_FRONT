@@ -23,7 +23,7 @@ const newPatientSchema = z.object({
     .min(1, 'La fecha de nacimiento es obligatoria.')
     .refine((value) => value < todayIso(), { message: 'La fecha de nacimiento debe ser en el pasado.' }),
   // The organization the patient belongs to (part of the POST path, not of the body).
-  organizacionId: z.string().min(1, 'Selecciona el espacio.'),
+  organizacionId: z.string().min(1, 'Seleccioná el espacio.'),
 })
 
 export type NewPatientFormValues = z.infer<typeof newPatientSchema>
@@ -98,7 +98,7 @@ export function NewPatientForm({
             className={NATIVE_SELECT_CLASS}
             {...register('organizacionId')}
           >
-            <option value="">Selecciona un espacio</option>
+            <option value="">Seleccioná un espacio</option>
             {organizations.map((organization) => (
               <option key={organization.id} value={organization.id}>
                 {organization.nombre}

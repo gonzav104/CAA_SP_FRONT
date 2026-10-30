@@ -171,7 +171,7 @@ describe('OrganizationMembersPage', () => {
   it.each([
     [403, 'No tenés permiso para hacer este cambio en el espacio.'],
     [404, 'Esa persona ya no pertenece al espacio, o ya no tenés acceso a él.'],
-    [409, 'El propietario debe transferir la propiedad antes de salir o ser quitado del espacio.'],
+    [409, 'El propietario no puede salir del espacio ni ser quitado.'],
   ])('shows the backend refusal %i on the member row', async (status, message) => {
     setup(ownerOrganization)
     vi.mocked(removeMember).mockRejectedValue(httpError(status))

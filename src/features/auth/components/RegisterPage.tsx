@@ -15,8 +15,8 @@ import { NewPasswordField } from './NewPasswordField'
 
 // Mirrors UsuarioRegistroDTO: nombre @NotBlank, email @NotBlank @Email, password with the strength @Pattern.
 const registerSchema = z.object({
-  nombre: z.string().trim().min(1, 'Ingresa tu nombre.'),
-  email: z.email('Ingresa un email válido.'),
+  nombre: z.string().trim().min(1, 'Ingresá tu nombre.'),
+  email: z.email('Ingresá un email válido.'),
   password: strongPassword,
 })
 
@@ -108,7 +108,7 @@ export function RegisterPage() {
       </form>
 
       <p className="mt-6 text-sm text-muted-foreground">
-        ¿Ya tienes cuenta?{' '}
+        ¿Ya tenés cuenta?{' '}
         <Link to={routes.login} state={{ from }} className={authLinkClassName}>
           Iniciar sesión
         </Link>

@@ -42,7 +42,7 @@ function httpError(status: number): AxiosError {
 const location = () => screen.getByTestId('location')
 const linked = { requiereRegistro: false, tipo: 'Bearer', email: null, nombre: null }
 const GENERIC_GOOGLE_MESSAGE =
-  'No pudimos ingresar con esa cuenta de Google. Si ya tienes una cuenta con ese email, ingresa con tu contraseña o recupera el acceso con Google.'
+  'No pudimos ingresar con esa cuenta de Google. Si ya tenés una cuenta con ese email, ingresá con tu contraseña o recuperá el acceso con Google.'
 
 beforeEach(() => {
   vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'test-client-id.apps.googleusercontent.com')
@@ -106,7 +106,7 @@ describe('Google login', () => {
     renderAuthRoutes('/login')
 
     await userEvent.click(await screen.findByRole('button', { name: 'Google (simulado)' }))
-    expect(await screen.findByText('No hay una cuenta para gina@gmail.com. ¿Quieres crearla a nombre de Gina?')).toBeInTheDocument()
+    expect(await screen.findByText('No hay una cuenta para gina@gmail.com. ¿Querés crearla a nombre de Gina?')).toBeInTheDocument()
     // Nothing was created nor authenticated yet.
     expect(completeGoogleRegistration).not.toHaveBeenCalled()
     expect(location()).toHaveTextContent('/login')
@@ -152,9 +152,9 @@ describe('Google login', () => {
   })
 
   it.each([
-    ['a blocked session cookie', null, 'No se pudo iniciar la sesión. Verifica que el navegador permita cookies.'],
+    ['a blocked session cookie', null, 'No se pudo iniciar la sesión. Verificá que el navegador permita cookies.'],
     ['a network failure', new AxiosError('Network Error', 'ERR_NETWORK'), 'No se pudo conectar con el servidor.'],
-    ['too many attempts', httpError(429), 'Demasiados intentos. Espera unos minutos e intenta nuevamente.'],
+    ['too many attempts', httpError(429), 'Demasiados intentos. Esperá unos minutos e intentá nuevamente.'],
   ])('reports %s without logging in', async (_label, failure, message) => {
     if (failure) vi.mocked(googleLogin).mockRejectedValue(failure)
     else vi.mocked(googleLogin).mockResolvedValue(linked)

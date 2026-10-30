@@ -55,7 +55,7 @@ describe('LogoutButton', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo cerrar la sesión. Intenta nuevamente.')
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo cerrar la sesión. Intentá nuevamente.')
     expect(queryClient.getQueryData(authKeys.me)).toEqual(user)
   })
 

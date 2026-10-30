@@ -73,7 +73,7 @@ export function GoogleLoginSection({ onAuthenticated }: GoogleLoginSectionProps)
         <div className="flex flex-col gap-3 rounded-lg border p-4 text-sm">
           <p className="font-medium">Crear cuenta con Google</p>
           <p className="text-muted-foreground">
-            {`No hay una cuenta para ${pending.email ?? 'esta cuenta de Google'}. ¿Quieres crearla${pending.nombre ? ` a nombre de ${pending.nombre}` : ''}?`}
+            {`No hay una cuenta para ${pending.email ?? 'esta cuenta de Google'}. ¿Querés crearla${pending.nombre ? ` a nombre de ${pending.nombre}` : ''}?`}
           </p>
           <div className="flex flex-wrap gap-2">
             <Button

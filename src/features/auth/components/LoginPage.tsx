@@ -15,8 +15,8 @@ import { GoogleLoginSection } from './GoogleLoginSection'
 import { PasswordInput } from './PasswordInput'
 
 const loginSchema = z.object({
-  email: z.email('Ingresa un email válido'),
-  password: z.string().min(1, 'Ingresa tu contraseña'),
+  email: z.email('Ingresá un email válido'),
+  password: z.string().min(1, 'Ingresá tu contraseña'),
 })
 
 type LoginFormValues = z.infer<typeof loginSchema>
@@ -54,10 +54,10 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout title="Iniciar sesión" description="Ingresa con tu email y contraseña.">
+    <AuthLayout title="Iniciar sesión" description="Ingresá con tu email y contraseña.">
       {cameFromRegistration(location.state) && (
         <p role="status" className="mt-4 rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-900">
-          Tu cuenta fue creada. Ya puedes iniciar sesión.
+          Tu cuenta fue creada. Ya podés iniciar sesión.
         </p>
       )}
 
@@ -118,7 +118,7 @@ export function LoginPage() {
           Olvidé mi contraseña
         </Link>
         <p>
-          ¿No tienes cuenta?{' '}
+          ¿No tenés cuenta?{' '}
           <Link to={routes.register} state={linkState} className={authLinkClassName}>
             Crear cuenta
           </Link>

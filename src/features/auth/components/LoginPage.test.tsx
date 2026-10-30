@@ -65,8 +65,8 @@ describe('LoginPage', () => {
   it('shows validation errors on empty submit and does not call login', async () => {
     renderLogin()
     await userEvent.click(await screen.findByRole('button', { name: 'Ingresar' }))
-    expect(await screen.findByText('Ingresa un email válido')).toBeInTheDocument()
-    expect(screen.getByText('Ingresa tu contraseña')).toBeInTheDocument()
+    expect(await screen.findByText('Ingresá un email válido')).toBeInTheDocument()
+    expect(screen.getByText('Ingresá tu contraseña')).toBeInTheDocument()
     expect(login).not.toHaveBeenCalled()
   })
 
@@ -90,7 +90,7 @@ describe('LoginPage', () => {
     vi.mocked(login).mockResolvedValue({ token: null, tipo: 'Bearer' })
     renderLogin()
     await fillAndSubmit()
-    expect(await screen.findByRole('alert')).toHaveTextContent('Verifica que el navegador permita cookies.')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Verificá que el navegador permita cookies.')
   })
 
   it('disables the submit button while pending', async () => {

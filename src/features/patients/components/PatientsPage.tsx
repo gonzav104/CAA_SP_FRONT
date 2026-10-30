@@ -170,7 +170,7 @@ export function PatientsPage() {
       {isCreating && organizations && !canCreate && (
         <div role="status" className={`${PANEL_CLASS} flex flex-col items-start gap-3 p-5`}>
           <p className="text-muted-foreground">
-            No perteneces a ninguna organización donde puedas registrar pacientes. Pide a quien administra tu
+            No pertenecés a ninguna organización donde puedas registrar pacientes. Pedí a quien administra tu
             organización que te habilite como terapeuta.
           </p>
           <Button type="button" variant="outline" onClick={stopCreating}>

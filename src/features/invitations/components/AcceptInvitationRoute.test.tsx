@@ -87,7 +87,7 @@ describe('AcceptInvitationRoute', () => {
     const button = await screen.findByRole('button', { name: 'Aceptar invitación' })
     await user.dblClick(button)
 
-    expect(await screen.findByText('Ya tienes acceso al paciente.')).toBeInTheDocument()
+    expect(await screen.findByText('Ya tenés acceso al paciente.')).toBeInTheDocument()
     expect(acceptInvitation).toHaveBeenCalledOnce()
     expect(vi.mocked(acceptInvitation).mock.calls[0][0]).toBe(TOKEN)
     expect(queryClient.getQueryState(organizationKeys.all)?.isInvalidated).toBe(true)
@@ -103,7 +103,7 @@ describe('AcceptInvitationRoute', () => {
     vi.mocked(acceptInvitation).mockResolvedValue({ tipo: 'ORGANIZACION', organizacionId: 'org-7', pacienteId: null })
     setup()
     await userEvent.click(await screen.findByRole('button', { name: 'Aceptar invitación' }))
-    expect(await screen.findByText('Ya formas parte de la organización.')).toBeInTheDocument()
+    expect(await screen.findByText('Ya formás parte de la organización.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('link', { name: 'Ir al inicio' }))
     expect(location()).toHaveTextContent(/^\/$/)
   })
@@ -147,7 +147,7 @@ describe('AcceptInvitationRoute', () => {
     setup()
     await userEvent.click(await screen.findByRole('button', { name: 'Aceptar invitación' }))
     await screen.findByRole('alert')
-    expect(screen.getByText('¿La invitación es para otra cuenta? Cierra sesión e ingresa con ese email.')).toBeInTheDocument()
+    expect(screen.getByText('¿La invitación es para otra cuenta? Cerrá sesión e ingresá con ese email.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument()
   })
 
@@ -167,7 +167,7 @@ describe('AcceptInvitationRoute', () => {
   it('without a token (lost on reload or an interrupted navigation) asks to reopen the link and calls nothing', async () => {
     setup('/invitaciones/aceptar')
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'No encontramos los datos de la invitación. Vuelve a abrir el enlace que recibiste por correo.',
+      'No encontramos los datos de la invitación. Volvé a abrir el enlace que recibiste por correo.',
     )
     expect(screen.queryByRole('button', { name: 'Aceptar invitación' })).not.toBeInTheDocument()
     expect(acceptInvitation).not.toHaveBeenCalled()
