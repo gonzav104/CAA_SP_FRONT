@@ -8,6 +8,9 @@ export const BRAND_SECTION_TITLE_CLASS = 'font-display text-lg font-bold trackin
 /** Action buttons of forms and confirmations: comfortable to touch on phones, compact from `sm:`. */
 export const BRAND_ACTION_CLASS = 'h-11 flex-1 sm:h-10 sm:flex-none'
 
+/** Same, for the footer below: it is a column on phones, where `flex-1` would collapse the height. */
+export const BRAND_FORM_ACTION_CLASS = 'h-11 sm:h-10'
+
 /** Column of a form's footer: the primary action on top on phones, on the right from `sm:`. */
 export const BRAND_FORM_ACTIONS_CLASS = 'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end'
 

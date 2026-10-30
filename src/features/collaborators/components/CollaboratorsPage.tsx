@@ -180,7 +180,9 @@ function CollaboratorsPageContent({ patientId }: { patientId: string }) {
           </EmptyPanel>
         )
       ) : (
-        <ul aria-label="Familiares vinculados" className="flex flex-col gap-3">
+        <section className="flex flex-col gap-3">
+          <h3 className="font-semibold text-foreground">Con acceso</h3>
+          <ul aria-label="Familiares vinculados" className="flex flex-col gap-3">
           {collaborators.map((collaborator) => (
             <CollaboratorRow
               key={collaborator.userId}
@@ -196,7 +198,8 @@ function CollaboratorsPageContent({ patientId }: { patientId: string }) {
               }}
             />
           ))}
-        </ul>
+          </ul>
+        </section>
       )}
 
       {invitations.isError && (

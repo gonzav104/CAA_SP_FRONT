@@ -27,9 +27,9 @@ function LeadNoteBlock({ label, value }: { label: string; value: string }) {
 function SecondaryNoteBlock({ label, value }: { label: string; value: string | null }) {
   if (!value) return null
   return (
-    <div className="flex max-w-2xl flex-col gap-2 border-t border-border pt-6">
+    <div className="flex flex-col gap-2 border-t border-border pt-6">
       <h3 className="text-sm font-semibold text-muted-foreground">{label}</h3>
-      <p className="leading-relaxed whitespace-pre-wrap text-foreground">{value}</p>
+      <p className="max-w-2xl leading-relaxed whitespace-pre-wrap text-foreground">{value}</p>
     </div>
   )
 }

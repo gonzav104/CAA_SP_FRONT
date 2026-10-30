@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NATIVE_SELECT_CLASS } from '@/components/ui/nativeSelect'
-import { BRAND_ACTION_CLASS, BRAND_FORM_ACTIONS_CLASS, BRAND_PANEL_CLASS } from '@/layouts/brand'
+import { BRAND_FORM_ACTION_CLASS, BRAND_FORM_ACTIONS_CLASS, BRAND_PANEL_CLASS } from '@/layouts/brand'
 import { cn } from '@/lib/utils'
 import type { ColaboradorRegistroRequest } from '../apiTypes'
 
@@ -93,10 +93,10 @@ export function LinkCollaboratorForm({ isPending, error, onSubmit, onCancel }: L
       <FormAlert message={error} />
 
       <div className={BRAND_FORM_ACTIONS_CLASS}>
-        <Button type="button" variant="outline" size="lg" className={BRAND_ACTION_CLASS} disabled={isPending} onClick={onCancel}>
+        <Button type="button" variant="outline" size="lg" className={BRAND_FORM_ACTION_CLASS} disabled={isPending} onClick={onCancel}>
           Cancelar
         </Button>
-        <Button type="submit" size="lg" className={BRAND_ACTION_CLASS} disabled={isPending} aria-busy={isPending || undefined}>
+        <Button type="submit" size="lg" className={BRAND_FORM_ACTION_CLASS} disabled={isPending} aria-busy={isPending || undefined}>
           {isPending ? 'Enviando…' : 'Enviar invitación'}
         </Button>
       </div>
