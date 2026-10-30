@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { CalendarDays, Image, LayoutGrid, Pencil, Play, Stethoscope, Trash2, Users } from 'lucide-react'
-import { Link, Navigate, Outlet, useNavigate, useParams } from 'react-router'
+import { Link, Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { paths } from '@/app/paths'
 import { getPatientDeleteErrorMessage, getPatientUpdateErrorMessage, getReadErrorMessage } from '@/api/errors'
 import { ErrorState } from '@/components/ErrorState'
@@ -23,10 +23,16 @@ import type { Patient } from '../types'
 import { DeletePatientConfirmation } from './DeletePatientConfirmation'
 import { EditPatientForm } from './EditPatientForm'
 import type { EditPatientSubmitValues } from './EditPatientForm'
+import { PatientCreatedPanel } from './PatientCreatedPanel'
 import type { PatientSection } from './PatientSectionNav'
 import { PatientSectionNav } from './PatientSectionNav'
 
 type HeaderAction = 'edit' | 'delete' | null
+
+/** Set in the history state by the Pacientes page right after registering this patient. */
+function cameFromCreation(state: unknown): boolean {
+  return typeof state === 'object' && state !== null && 'patientCreated' in state && state.patientCreated === true
+}
 
 interface PatientHeaderProps {
   patient: Patient
@@ -153,6 +159,7 @@ export function PatientWorkspaceLayout() {
 
 function PatientWorkspaceLayoutContent({ patientId }: { patientId: string }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const patient = usePatient(patientId)
   // Same cache entry the Cartillas tab reads (boardKeys.list): a shared GET, not a second request.
   const boards = useBoards(patientId)
@@ -241,6 +248,12 @@ function PatientWorkspaceLayoutContent({ patientId }: { patientId: string }) {
         deleteError={deleteError}
         onConfirmDelete={() => void handleConfirmDelete()}
       />
+      {cameFromCreation(location.state) && (
+        <PatientCreatedPanel
+          patient={data}
+          onDismiss={() => navigate(location.pathname, { replace: true, state: null })}
+        />
+      )}
       <PatientSectionNav sections={sections} />
       <Outlet />
     </PageLayout>
