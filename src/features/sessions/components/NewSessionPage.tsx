@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { paths } from '@/app/paths'
@@ -25,14 +25,20 @@ function NewSessionPageContent({ patientId }: { patientId: string }) {
   const navigate = useNavigate()
   const createSession = useCreateSession(patientId)
   const [error, setError] = useState<string | null>(null)
+  // A double click can land twice before React re-renders the disabled button.
+  const submitting = useRef(false)
 
   const handleSubmit = async (values: SessionFormValues) => {
+    if (submitting.current) return
+    submitting.current = true
     setError(null)
     try {
       const session = await createSession.mutateAsync(toWriteRequest(values))
       navigate(paths.sessionDetail(patientId, session.id))
     } catch (err) {
       setError(getSessionWriteErrorMessage(err))
+    } finally {
+      submitting.current = false
     }
   }
 

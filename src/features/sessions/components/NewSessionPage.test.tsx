@@ -2,6 +2,7 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { getSessionWriteErrorMessage } from '@/api/errors'
 import { fetchCurrentUser } from '@/features/auth/authApi'
 import { fetchBoards } from '@/features/boards/boardsApi'
 import { boardsListResponse } from '@/features/boards/testing/fixtures'
@@ -74,6 +75,42 @@ describe('NewSessionPage', () => {
     await userEvent.type(await screen.findByLabelText('Objetivos trabajados'), 'Pedir ayuda')
     await userEvent.click(screen.getByRole('button', { name: 'Registrar sesión' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo conectar con el servidor.')
+    expect(screen.getByLabelText('Objetivos trabajados')).toHaveValue('Pedir ayuda')
+  })
+
+  it('registers only once on a double click', async () => {
+    vi.mocked(createSession).mockReturnValue(new Promise(() => {}))
+    renderApp(url)
+    await userEvent.type(await screen.findByLabelText('Objetivos trabajados'), 'Pedir ayuda')
+    await userEvent.dblClick(screen.getByRole('button', { name: 'Registrar sesión' }))
+    expect(await screen.findByRole('button', { name: 'Registrando…' })).toBeDisabled()
+    expect(createSession).toHaveBeenCalledOnce()
+  })
+
+  it('validates when leaving a required field and links the error to it', async () => {
+    renderApp(url)
+    const objetivos = await screen.findByLabelText('Objetivos trabajados')
+    await userEvent.click(objetivos)
+    expect(screen.queryByText('Los objetivos trabajados son obligatorios.')).not.toBeInTheDocument()
+    await userEvent.tab()
+    const error = await screen.findByText('Los objetivos trabajados son obligatorios.')
+    expect(objetivos).toHaveAttribute('aria-describedby', error.id)
+    expect(objetivos).toHaveAttribute('aria-invalid', 'true')
+  })
+
+  it.each([400, 401, 403, 404, 409])('on a %i keeps what was written and explains it', async (status) => {
+    const failure = new AxiosError('failed', 'ERR_BAD_REQUEST', undefined, null, {
+      status,
+      statusText: '',
+      headers: {},
+      config: {} as never,
+      data: {},
+    })
+    vi.mocked(createSession).mockRejectedValue(failure)
+    renderApp(url)
+    await userEvent.type(await screen.findByLabelText('Objetivos trabajados'), 'Pedir ayuda')
+    await userEvent.click(screen.getByRole('button', { name: 'Registrar sesión' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(getSessionWriteErrorMessage(failure))
     expect(screen.getByLabelText('Objetivos trabajados')).toHaveValue('Pedir ayuda')
   })
 })

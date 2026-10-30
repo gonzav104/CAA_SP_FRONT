@@ -54,6 +54,11 @@ describe('SessionDetailPage', () => {
 
   it('shows a not-found message for an unknown session id', async () => {
     renderApp(`/pacientes/${PATIENT_ID}/sesiones/s-missing`)
-    expect(await screen.findByRole('alert')).toHaveTextContent('Esta sesión ya no existe o no tienes acceso.')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Esta sesión ya no existe o no tenés acceso.')
+  })
+
+  it('keeps the visible border of the Editar link', async () => {
+    renderApp(url)
+    expect(await screen.findByRole('link', { name: 'Editar' })).not.toHaveClass('border-transparent')
   })
 })
