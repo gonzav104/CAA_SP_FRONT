@@ -137,7 +137,7 @@ export function PatientsPage() {
   ) : undefined
 
   return (
-    <PageLayout tone="brand">
+    <PageLayout>
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div className="flex min-w-0 flex-col gap-1">
           <h1 className={BRAND_TITLE_CLASS}>Pacientes</h1>

@@ -233,7 +233,7 @@ function PatientWorkspaceLayoutContent({ patientId }: { patientId: string }) {
 
   if (patient.isError) {
     return (
-      <PageLayout backLink={{ to: paths.patients(), label: 'Volver a pacientes' }} tone="brand">
+      <PageLayout backLink={{ to: paths.patients(), label: 'Volver a pacientes' }}>
         <ErrorState
           message={getReadErrorMessage(patient.error, 'No encontramos al paciente o no tenés acceso.')}
           onRetry={() => void patient.refetch()}
@@ -244,7 +244,7 @@ function PatientWorkspaceLayoutContent({ patientId }: { patientId: string }) {
 
   if (!patient.data) {
     return (
-      <PageLayout backLink={{ to: paths.patients(), label: 'Volver a pacientes' }} tone="brand">
+      <PageLayout backLink={{ to: paths.patients(), label: 'Volver a pacientes' }}>
         <HeaderSkeleton />
       </PageLayout>
     )
@@ -284,7 +284,7 @@ function PatientWorkspaceLayoutContent({ patientId }: { patientId: string }) {
   }
 
   return (
-    <PageLayout backLink={{ to: paths.patients(), label: 'Volver a pacientes' }} tone="brand">
+    <PageLayout backLink={{ to: paths.patients(), label: 'Volver a pacientes' }}>
       <PatientHeader
         patient={data}
         space={spaceOf(data, organizations)}
