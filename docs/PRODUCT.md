@@ -49,7 +49,7 @@ Recorridos reales de la aplicación:
 - Sesiones del terapeuta, invitaciones familiares y de organización, asignación de terapeutas por paciente.
 - Interfaz en español.
 - No prioritario por ahora: IA predictiva, recomendaciones automáticas, gamificación, estadísticas avanzadas, chat, reorganización automática de pictogramas y construcción compleja de frases. Se evaluarán después de validar el uso real.
-- Decisiones abiertas: voseo o tuteo en la interfaz (hoy está mezclado) y nivel de accesibilidad exigido (WCAG).
+- Interfaz en español argentino, con voseo. Las pantallas todavía no migradas conservan textos en tuteo hasta su rediseño.
 
 ## Brand Commitments
 
@@ -72,4 +72,4 @@ Recorridos reales de la aplicación:
 
 ## Accessibility & Inclusion
 
-Quienes se comunican con CAA_SP tienen dificultades de comunicación y usan el Modo Uso; el equipo y las familias que administran pueden no ser usuarios técnicos. El nivel de cumplimiento (WCAG) está pendiente de definir.
+Quienes se comunican con CAA_SP tienen dificultades de comunicación y usan el Modo Uso; el equipo y las familias que administran pueden no ser usuarios técnicos. El objetivo de cumplimiento es WCAG 2.2 AA.
