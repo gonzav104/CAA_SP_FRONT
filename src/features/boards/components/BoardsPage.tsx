@@ -259,6 +259,8 @@ export function BoardsPage() {
 function BoardsPageContent({ patientId }: { patientId: string }) {
   // Same cache entry the workspace header reads (patientKeys.detail): one shared GET, not a second request.
   const patient = usePatient(patientId)
+  const [searchParams] = useSearchParams()
+  const creating = searchParams.get('crear') === '1'
 
   if (patient.isError) {
     return (
@@ -270,5 +272,6 @@ function BoardsPageContent({ patientId }: { patientId: string }) {
   }
   if (!patient.data) return <RowsSkeleton message="Cargando paciente…" />
 
-  return <BoardsContent patientId={patientId} patient={patient.data} />
+  // The key remounts on `?crear=1`: a shortcut can land here while Cartillas is already on screen.
+  return <BoardsContent key={creating ? 'crear' : 'lista'} patientId={patientId} patient={patient.data} />
 }

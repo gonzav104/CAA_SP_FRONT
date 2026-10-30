@@ -149,6 +149,18 @@ describe('after registering', () => {
   })
 })
 
+describe('next steps', () => {
+  it('"Crear cartilla" opens the form even though Cartillas is already on screen', async () => {
+    setup([ownerOrganization])
+    vi.mocked(createPatient).mockResolvedValue(created(['EDITAR_CONTENIDO']))
+    renderApp('/pacientes?crear=1')
+    await screen.findByLabelText('Nombre')
+    await fillAndSubmit()
+    await userEvent.click(await screen.findByRole('link', { name: 'Crear cartilla' }))
+    expect(await screen.findByRole('textbox', { name: 'Nombre de la nueva cartilla' })).toBeInTheDocument()
+  })
+})
+
 describe('the confirmation is one shot', () => {
   it('stays while moving between sections, and is gone when leaving the patient', async () => {
     setup([ownerOrganization])
