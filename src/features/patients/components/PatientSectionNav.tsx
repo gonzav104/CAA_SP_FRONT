@@ -1,5 +1,6 @@
+import { useEffect, useRef } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { NavLink } from 'react-router'
+import { NavLink, useLocation } from 'react-router'
 import { cn } from '@/lib/utils'
 
 export interface PatientSection {
@@ -10,19 +11,32 @@ export interface PatientSection {
 
 function sectionLinkClassName({ isActive }: { isActive: boolean }): string {
   return cn(
-    'flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50',
-    isActive ? 'bg-caa-accent text-caa-on-accent' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+    '-mb-px flex min-h-11 shrink-0 items-center gap-2 rounded-t-md border-b-2 px-3 text-sm outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset',
+    isActive
+      ? 'border-caa-azul font-semibold text-foreground'
+      : 'border-transparent font-medium text-muted-foreground hover:border-border hover:text-foreground',
   )
 }
 
 /**
  * Contextual subnavigation for one patient: icon, section name, active state — nothing else.
- * Every section's own primary action lives in its content header instead. A single horizontal
- * pill row at every width; `flex-wrap` is a safety net, never a horizontally scrolling strip.
+ * Every section's own primary action lives in its content header instead. When the row does not
+ * fit (phones) it scrolls inside itself, keeping the current section in view.
  */
 export function PatientSectionNav({ sections }: { sections: PatientSection[] }) {
+  const nav = useRef<HTMLElement>(null)
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    nav.current?.querySelector('[aria-current="page"]')?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+  }, [pathname])
+
   return (
-    <nav aria-label="Secciones del paciente" className="flex flex-wrap gap-1.5">
+    <nav
+      ref={nav}
+      aria-label="Secciones del paciente"
+      className="-mx-4 flex gap-1 overflow-x-auto border-b border-border px-4 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0"
+    >
       {sections.map((section) => {
         const Icon = section.icon
         return (

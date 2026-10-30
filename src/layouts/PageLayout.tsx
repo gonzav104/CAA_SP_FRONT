@@ -9,14 +9,13 @@ interface PageLayoutProps {
   title?: ReactNode
   description?: string
   backLink?: { to: string; label: string }
-  /** `brand`: the official palette and type on the content plane too (the Dashboard). Other pages keep their tone. */
-  tone?: 'neutral' | 'warm' | 'brand'
+  /** `brand`: the official palette and type on the content plane too. Pages not redesigned yet keep the neutral tone. */
+  tone?: 'neutral' | 'brand'
   children: ReactNode
 }
 
 const TONE_CLASS = {
   neutral: 'bg-muted/40',
-  warm: 'bg-[oklch(0.98_0.008_78)]',
   brand: 'caa-brand bg-caa-niebla',
 } as const
 
