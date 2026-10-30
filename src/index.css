@@ -3,6 +3,8 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/atkinson-hyperlegible-next";
+@import "@fontsource-variable/manrope";
+@import "@fontsource-variable/inter";
 
 @custom-variant dark (&:is(.dark *));
 /* Use Mode board shape, measured on the board container (see CommunicationGrid). */
@@ -57,6 +59,18 @@
     --color-caa-muted: oklch(0.45 0.02 60);
     --color-caa-accent: oklch(0.45 0.13 258);
     --color-caa-on-accent: oklch(1 0 0);
+    /* Official CAA_SP brand (Propuesta A, caa-sp-marca/theme.css). Additive: nothing global uses them. */
+    --font-display: "Manrope Variable", sans-serif;
+    --font-brand: "Inter Variable", sans-serif;
+    --color-caa-tinta: #0F1B3D;
+    --color-caa-azul: #2F5BEA;
+    --color-caa-azul-hover: #1E3FB0;
+    --color-caa-cian: #12A594;
+    --color-caa-cian-texto: #0E7C6F;
+    --color-caa-niebla: #F4F7FB;
+    --color-caa-gris: #5B6478;
+    --color-caa-borde: #DDE3EE;
+    --color-caa-tinta-suave: #A9B4CC;
 }
 
 :root {
@@ -138,4 +152,32 @@
   html {
     @apply font-sans;
     }
+}
+/*
+ * Brand scope: the shadcn tokens mapped to the official palette, only inside the redesigned surfaces
+ * (auth for now). Editor and Modo Uso never render inside it, so they keep their own look.
+ */
+.caa-brand {
+    --background: #FFFFFF;
+    --foreground: #0F1B3D;
+    --primary: #2F5BEA;
+    --primary-foreground: #FFFFFF;
+    --secondary: #F4F7FB;
+    --secondary-foreground: #0F1B3D;
+    --muted: #F4F7FB;
+    --muted-foreground: #5B6478;
+    --accent: #E6F6F3;
+    --accent-foreground: #0F1B3D;
+    --destructive: #C2362F;
+    --border: #DDE3EE;
+    --input: #C9D2E3;
+    --ring: #2F5BEA;
+    --radius: 0.625rem;
+    font-family: var(--font-brand);
+    color: var(--foreground);
+}
+
+.caa-brand ::selection {
+    background: #CFDCFF;
+    color: #0F1B3D;
 }
