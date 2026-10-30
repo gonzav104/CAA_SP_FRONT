@@ -24,6 +24,10 @@ qa/qa.sh logs     # últimas líneas del log de la API
 qa/qa.sh mail-config    # guarda tu clave de Resend (se escribe sin eco) en qa/.work/mail.env
 qa/qa.sh api-restart    # reinicia SOLO la API de QA con correo real (api-restart inert vuelve al modo inerte)
 qa/qa.sh mail-clear     # borra la clave guardada
+qa/qa.sh google-config  # guarda el Client ID de Google (público) en qa/.work/google.env
+qa/qa.sh google-restart # reinicia la API y Vite de QA CON Google (google-restart off lo apaga); conserva el modo de correo
+qa/qa.sh google-clear   # borra el Client ID guardado
+qa/qa.sh plant-invitation EMAIL TOKEN  # da a la invitación PENDIENTE de EMAIL un enlace conocido de un solo uso
 qa/qa.sh down     # detiene todo (los datos quedan en el volumen)
 qa/qa.sh reset    # borra SOLO el contenedor y el volumen de QA (hay que volver a hacer up + seed)
 npm run qa:e2e    # suite Playwright contra este entorno (consume datos: reset + up + seed antes de repetirla)
@@ -135,11 +139,74 @@ Contraseña de las cuentas `@qa.test`: `Qa#Clave2026`. Los enlaces de los correo
    enlace (vale 1 hora) → nueva contraseña y confirmación → “Contraseña restablecida” → iniciá sesión con la nueva.
    Reabrir el mismo enlace debe dar “El enlace no es válido o ha expirado.” (es de un solo uso).
 
+## Google real (inicio de sesión y recuperación de identidad)
+
+Google está **apagado por defecto**: `up` y `seed` arrancan sin Client ID y el botón ni se dibuja. Se enciende con el
+mismo Client ID en backend (`GOOGLE_CLIENT_ID`, la audiencia que valida el ID token) y frontend
+(`VITE_GOOGLE_CLIENT_ID`). El Client ID es **público** (se ve en el código de la página) y **no se usa ningún Client
+Secret**: solo el flujo de ID token. Los ID tokens y las cookies nunca se imprimen.
+
+### Configuración
+
+1. Google Cloud Console → tu cliente OAuth **Web**: orígenes JavaScript autorizados `http://localhost:5174` (QA) y
+   `http://localhost:5173`. No hacen falta URIs de redirección.
+2. Pantalla de consentimiento: si está en modo *Testing*, agregá como **usuarios de prueba** las cuentas de Google que
+   vayas a usar (si no, Google bloquea el acceso). Los cambios de orígenes pueden tardar unos minutos en aplicar.
+3. En tu terminal:
+
+```bash
+cd ~/proyectos/CAA_SP_FRONT
+qa/qa.sh google-config     # pegá el Client ID (termina en .apps.googleusercontent.com)
+qa/qa.sh google-restart    # reinicia SOLO la API y Vite de QA; la base no se toca y el modo de correo se conserva
+qa/qa.sh status            # "google en QA: on"
+```
+
+Recargá el navegador. Variante sin archivo: `export QA_GOOGLE_CLIENT_ID=...` antes de `google-restart`. Para volver al
+estado por defecto: `qa/qa.sh google-restart off`. El `seed` no depende de Google, pero **nunca** debe correrse con el
+correo real (se niega); si necesitás datos nuevos: `reset`, `up`, `seed` y recién después `api-restart` / `google-restart`.
+
+Comprobación automática del cableado (no hace login con Google, eso requiere a una persona):
+`npx playwright test -c qa/playwright.config.ts google.spec` → con Google apagado verifica que no hay botón; con
+Google encendido, que el botón oficial se renderiza en `/login` y `/recuperar-google`; y siempre, que un ID token
+falso recibe el 401 genérico sin cookie.
+
+### Pruebas manuales
+
+Cuentas de Google: **A** (nunca usada en QA) y **B** (cuenta con la que vas a hacer la recuperación). La recuperación
+manda un correo con el enlace; con el sandbox de Resend solo llega al email de tu cuenta de Resend, así que **B debe
+ser esa misma dirección** y ser una cuenta de Google (o tener un dominio verificado en Resend). Para esa prueba el
+correo real tiene que estar activo (`qa/qa.sh api-restart`).
+
+1. **Botón oficial visible.** `http://localhost:5174/login` muestra “Continuar con Google” debajo del formulario, y
+   `/recuperar-google` también. Sin Client ID (o apagado) no aparece nada.
+2. **Registro con una cuenta Google nueva (A).** Botón → elegí A → aparece “No hay una cuenta para A. ¿Quieres
+   crearla…?” → *Crear cuenta*. Entrás a Inicio con “Creá tu espacio de trabajo” (no se crea ninguna organización ni rol).
+   Cancelar en ese paso no crea nada. Comprobación opcional:
+   `docker exec -i caa_qa_postgres psql -U qa_user -d caa_qa -c "select email, google_sub is not null as vinculado from usuarios where email='A'"`.
+3. **Login posterior (A).** Cerrar sesión → botón → entra directo, sin pedir confirmación.
+4. **Rechazo de vinculación automática por email (B).** Creá primero una cuenta común con el email de B
+   (*Crear cuenta*, email y contraseña). Cerrá sesión y probá el botón con B: aparece “No pudimos ingresar con esa
+   cuenta de Google…” con el enlace “Recuperar el acceso con Google”. No se inició sesión ni se vinculó nada
+   (`vinculado` sigue en `f`) y B puede seguir entrando con su contraseña.
+5. **Recuperación con doble verificación (B).** Desde ese enlace: botón con B → “Revisa tu correo”. Llega el correo
+   de recuperación; abrí su enlace (el token sale de la barra de direcciones), elegí una contraseña nueva con su
+   confirmación y confirmá con el botón de Google **con la misma cuenta B**: entrás a Inicio. Después, con B funcionan
+   el botón de Google y la contraseña nueva (la anterior ya no). Con otra cuenta de Google, con un enlace usado o
+   vencido, o repitiendo la contraseña actual, el resultado es el mensaje genérico de “No se pudo recuperar el acceso…”.
+6. **Retorno a invitaciones pendientes (A).** `owner@qa.test` → Centro Sol → Miembros → *Invitar* a A (rol Miembro).
+   Para no depender del correo: `qa/qa.sh plant-invitation A qa-google-invitacion-1` imprime un enlace de un solo uso.
+   Con la sesión cerrada, abrí ese enlace → pasa a Login (el token sale de la URL) → “Continuar con Google” con A →
+   volvés a “Aceptar invitación” con la cuenta A **sin aceptarse sola** → aceptá → “Ya formas parte de la organización.”.
+
+Si algo falla: en la consola del navegador, `[GSI_LOGGER]` explica los rechazos de Google (origen no autorizado o
+cliente no encontrado → revisá el origen `http://localhost:5174` exacto y el Client ID; “acceso bloqueado” → usuario de
+prueba en la pantalla de consentimiento). Un 401 de la API es siempre genérico a propósito (`qa/qa.sh logs`).
+
 ## Qué NO se puede probar acá (pendiente con servicios externos)
 
-- **Google (inicio de sesión y recuperación de identidad):** necesita un `GOOGLE_CLIENT_ID` real en el backend y
-  `VITE_GOOGLE_CLIENT_ID` en el frontend, y el origen autorizado en Google Cloud. Sin ellos el botón se oculta.
-  Lo cubren solo pruebas unitarias con mocks, no una prueba real contra Google.
+- **Google (inicio de sesión y recuperación de identidad):** disponible de forma opt-in con tu Client ID (ver la
+  sección anterior). El login con Google siempre lo hace una persona; sin Client ID el botón se oculta y solo lo
+  cubren pruebas unitarias con mocks más la comprobación de cableado de arriba.
 - **Correo real (Resend):** disponible de forma opt-in con el sandbox (ver la sección anterior). Sin eso, el QA usa
   una clave inerte y el camino del enlace se prueba con tokens conocidos plantados en la base de QA.
 - **Cloudinary (subida de pictogramas propios):** credenciales inertes; la subida de imágenes no se prueba.

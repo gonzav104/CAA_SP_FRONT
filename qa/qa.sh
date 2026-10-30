@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Isolated QA environment: its own PostgreSQL 15 container + volume, its own build of the backend revision and
 # its own ports. It never reads the backend .env, never connects to caa_db / caa_sp_db_data_final and never
-# runs docker prune. Usage: qa/qa.sh {up|seed|down|reset|status|logs|mail-config|mail-clear|api-restart [real|inert]}
+# runs docker prune. Usage: qa/qa.sh {up|seed|down|reset|status|logs|mail-config|mail-clear|api-restart [real|inert]|
+#                                     google-config|google-clear|google-restart [on|off]|plant-invitation EMAIL TOKEN}
 set -euo pipefail
 
 QA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -42,6 +43,13 @@ guard() {
 MAIL_FILE="$WORK/mail.env"
 DEFAULT_FROM="onboarding@resend.dev"
 trap 'rm -f "$WORK/api.env"' EXIT
+
+# Google sign-in is opt-in and OFF by default (`up` always starts with it off). The OAuth Web client ID is public
+# (it is visible in the page source) and no client secret is ever needed: only the ID token flow is used. It comes
+# from the shell (QA_GOOGLE_CLIENT_ID) or from $GOOGLE_FILE; the same value feeds the backend (GOOGLE_CLIENT_ID,
+# the ID token audience) and the frontend (VITE_GOOGLE_CLIENT_ID).
+GOOGLE_FILE="$WORK/google.env"
+GOOGLE_ID_PATTERN='^[0-9]+-[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$'
 
 port_busy() { ss -ltn 2>/dev/null | awk '{print $4}' | grep -Eq "[:.]$1\$"; }
 
@@ -103,13 +111,32 @@ load_mail() {
   MAIL_FROM="${MAIL_FROM:-$DEFAULT_FROM}"
 }
 
+# Reads the client ID from the shell or $GOOGLE_FILE into GOOGLE_ID (empty when absent or malformed).
+load_google() {
+  GOOGLE_ID="${QA_GOOGLE_CLIENT_ID:-}"
+  if [[ -z "$GOOGLE_ID" && -f "$GOOGLE_FILE" ]]; then
+    GOOGLE_ID="$(grep -E '^QA_GOOGLE_CLIENT_ID=' "$GOOGLE_FILE" | head -1 | cut -d= -f2- || true)"
+  fi
+  [[ "$GOOGLE_ID" =~ $GOOGLE_ID_PATTERN ]] || GOOGLE_ID=""
+}
+
+# on | off: whether the running QA processes were started with a Google client ID.
+google_mode() {
+  if api_running && [[ -f "$WORK/google.mode" ]]; then cat "$WORK/google.mode"; else echo off; fi
+}
+
 api_running() { [[ -f "$WORK/api.pid" ]] && kill -0 "$(cat "$WORK/api.pid")" 2>/dev/null; }
 
 # Starts ONLY the QA API. mode=inert: placeholder Resend key, nothing is delivered. mode=real: the key from
 # load_mail and the Resend start-up check enabled. The settings travel in a 600 file that the child sources
 # (so no secret ever appears in a process argument) and that is deleted as soon as the API is up.
 api_start() {
-  local mode="$1" key="re_qa_inert" from="$DEFAULT_FROM" health=false
+  local mode="$1" google="${2:-off}" key="re_qa_inert" from="$DEFAULT_FROM" health=false google_id=""
+  if [[ "$google" == on ]]; then
+    load_google
+    [[ -n "$GOOGLE_ID" ]] || { echo "No hay un Client ID de Google válido. Ejecutá: qa/qa.sh google-config" >&2; exit 1; }
+    google_id="$GOOGLE_ID"
+  fi
   if [[ "$mode" == real ]]; then
     load_mail
     [[ "$MAIL_KEY" == re_* ]] || { echo "No hay una clave de Resend válida. Ejecutá: qa/qa.sh mail-config" >&2; exit 1; }
@@ -123,7 +150,8 @@ api_start() {
       printf 'POSTGRES_USER=%q\nPOSTGRES_PASSWORD=%q\nJWT_SECRET=%q\n' "$QA_DB_USER" "$QA_DB_PASSWORD" "$QA_JWT_SECRET"
       printf 'SERVER_PORT=%q\nCOOKIE_SECURE=false\n' "$QA_API_PORT"
       printf 'CORS_ALLOWED_ORIGINS=%q\nFRONTEND_URL=%q\n' "http://localhost:$QA_FRONT_PORT" "http://localhost:$QA_FRONT_PORT"
-      printf 'CLOUDINARY_CLOUD_NAME=qa-inert\nCLOUDINARY_API_KEY=qa-inert\nCLOUDINARY_API_SECRET=qa-inert\nGOOGLE_CLIENT_ID=\n'
+      printf 'CLOUDINARY_CLOUD_NAME=qa-inert\nCLOUDINARY_API_KEY=qa-inert\nCLOUDINARY_API_SECRET=qa-inert\n'
+      printf 'GOOGLE_CLIENT_ID=%q\n' "$google_id"
       printf 'RESEND_API_KEY=%q\nRESEND_FROM_EMAIL=%q\nRESEND_HEALTH_CHECK_ENABLED=%s\n' "$key" "$from" "$health"
       printf 'RATE_LIMIT_LOGIN_MAX=1000\nRATE_LIMIT_OLVIDE_PASSWORD_MAX=1000\n'
     } > "$WORK/api.env"
@@ -134,6 +162,7 @@ api_start() {
     >"$WORK/api.log" 2>&1 </dev/null &
   echo $! > "$WORK/api.pid"
   echo "$mode" > "$WORK/api.mail-mode"
+  echo "$google" > "$WORK/google.mode"
   for _ in $(seq 1 90); do
     if curl -s -o /dev/null "http://localhost:$QA_API_PORT/api/usuarios/me"; then rm -f "$WORK/api.env"; return 0; fi
     kill -0 "$(cat "$WORK/api.pid")" 2>/dev/null || { rm -f "$WORK/api.env"; tail -30 "$WORK/api.log"; exit 1; }
@@ -151,20 +180,32 @@ mail_mode() {
   if [[ -f "$WORK/api.mail-mode" ]]; then cat "$WORK/api.mail-mode"; else echo inert; fi
 }
 
-front_up() {
-  if [[ -f "$WORK/front.pid" ]] && kill -0 "$(cat "$WORK/front.pid")" 2>/dev/null; then return 0; fi
+# Starts ONLY the QA frontend. google=on passes the client ID to Vite (env is read at start, so a change needs
+# a restart); off leaves it empty and the Google button is not rendered at all.
+front_start() {
+  local google="${1:-off}" google_id=""
+  if [[ "$google" == on ]]; then
+    load_google
+    [[ -n "$GOOGLE_ID" ]] || { echo "No hay un Client ID de Google válido. Ejecutá: qa/qa.sh google-config" >&2; exit 1; }
+    google_id="$GOOGLE_ID"
+  fi
   port_busy "$QA_FRONT_PORT" && { echo "REFUSED: port $QA_FRONT_PORT is busy" >&2; exit 2; }
   # Run vite directly (not through npx) so the recorded pid is the server itself.
   # The subshell is exec'd into vite with ALL its fds redirected, so nothing keeps the caller's pipe open.
   (
     cd "$FRONT_DIR"
-    VITE_API_URL="http://localhost:$QA_API_PORT" VITE_GOOGLE_CLIENT_ID= \
+    VITE_API_URL="http://localhost:$QA_API_PORT" VITE_GOOGLE_CLIENT_ID="$google_id" \
       exec setsid node_modules/.bin/vite --port "$QA_FRONT_PORT" --strictPort >"$WORK/front.log" 2>&1 </dev/null
   ) &
   echo $! > "$WORK/front.pid"
   for _ in $(seq 1 30); do curl -s -o /dev/null "http://localhost:$QA_FRONT_PORT/" && return 0; sleep 1; done
   echo "QA frontend did not start" >&2; tail -20 "$WORK/front.log"; exit 1
 }
+
+front_running() { [[ -f "$WORK/front.pid" ]] && kill -0 "$(cat "$WORK/front.pid")" 2>/dev/null; }
+
+# `up` keeps a frontend that is already running; otherwise it starts it with Google off.
+front_up() { front_running && return 0; front_start off; }
 
 # Stops the recorded process and its children (setsid gives each its own session/process group).
 stop_pid() {
@@ -192,9 +233,9 @@ case "${1:-}" in
     fi
     QA_API="http://localhost:$QA_API_PORT" QA_DB_CONTAINER="$QA_CONTAINER" QA_DB_USER="$QA_DB_USER" QA_DB_NAME="$QA_DB" \
       node "$QA_DIR/seed.mjs" ;;
-  down) guard; stop_pid front; stop_pid api; docker stop "$QA_CONTAINER" >/dev/null 2>&1 || true; echo "QA stopped (data kept in volume $QA_VOLUME)" ;;
+  down) guard; stop_pid front; stop_pid api; rm -f "$WORK/google.mode"; docker stop "$QA_CONTAINER" >/dev/null 2>&1 || true; echo "QA stopped (data kept in volume $QA_VOLUME)" ;;
   reset)
-    guard; stop_pid front; stop_pid api
+    guard; stop_pid front; stop_pid api; rm -f "$WORK/google.mode"
     # Only the exact QA container/volume, and only when they carry the QA label.
     if docker inspect "$QA_CONTAINER" --format '{{ index .Config.Labels "caa.qa" }}' 2>/dev/null | grep -qx true; then
       docker rm -f "$QA_CONTAINER" >/dev/null
@@ -207,7 +248,10 @@ case "${1:-}" in
     for s in api front; do [[ -f "$WORK/$s.pid" ]] && kill -0 "$(cat "$WORK/$s.pid")" 2>/dev/null && echo "$s: running (pid $(cat "$WORK/$s.pid"))" || echo "$s: stopped"; done
     load_mail
     if [[ "$MAIL_KEY" == re_* ]]; then echo "mail: clave de Resend configurada, remitente $MAIL_FROM"; else echo "mail: sin clave de Resend (modo inerte)"; fi
-    echo "mail en la API: $(mail_mode)" ;;
+    echo "mail en la API: $(mail_mode)"
+    load_google
+    if [[ -n "$GOOGLE_ID" ]]; then echo "google: Client ID configurado"; else echo "google: sin Client ID"; fi
+    echo "google en QA: $(google_mode)" ;;
   mail-config)
     # Interactive: the key is typed without echo, so it never reaches the screen, the shell history or a log.
     [[ -t 0 ]] || { echo "Ejecutalo en una terminal interactiva (la clave se escribe sin eco)." >&2; exit 1; }
@@ -229,13 +273,54 @@ case "${1:-}" in
       load_mail
       [[ "$MAIL_KEY" == re_* ]] || { echo "No hay una clave de Resend válida. Ejecutá: qa/qa.sh mail-config" >&2; exit 1; }
     fi
+    google="$(google_mode)"
     stop_pid api
     for _ in $(seq 1 30); do port_busy "$QA_API_PORT" || break; sleep 1; done
-    api_start "$mode"
-    echo "API de QA reiniciada en modo $mode."
+    api_start "$mode" "$google"
+    echo "API de QA reiniciada en modo $mode (Google: $google)."
     if [[ "$mode" == real ]]; then
       echo "Los correos salen de ${MAIL_FROM}. Con el sandbox solo llegan al email de tu cuenta de Resend."
     fi ;;
+  google-config)
+    # The client ID is public, so it is typed with echo; the shape is checked so a typo cannot be saved.
+    [[ -t 0 ]] || { echo "Ejecutalo en una terminal interactiva." >&2; exit 1; }
+    mkdir -p "$WORK"
+    read -rp "Client ID de Google (termina en .apps.googleusercontent.com): " id
+    [[ "$id" =~ $GOOGLE_ID_PATTERN ]] || { echo "No parece un Client ID de Google. No se guardó nada." >&2; exit 1; }
+    ( umask 077; printf 'QA_GOOGLE_CLIENT_ID=%s\n' "$id" > "$GOOGLE_FILE" )
+    unset id
+    echo "Guardado en qa/.work/google.env (ignorado por Git). Siguiente: qa/qa.sh google-restart" ;;
+  google-clear) rm -f "$GOOGLE_FILE"; echo "Client ID borrado de qa/.work/google.env (las variables de tu shell no se tocan)." ;;
+  google-restart)
+    # Restarts the QA API and the QA frontend (both read the client ID at start) and keeps the API's mail mode.
+    # The database is not touched. Default: on; `off` goes back to the default (no Google).
+    guard; ensure_env
+    g="${2:-on}"
+    [[ "$g" == on || "$g" == off ]] || { echo "usage: qa/qa.sh google-restart [on|off]" >&2; exit 1; }
+    docker ps --format '{{.Names}}' | grep -qx "$QA_CONTAINER" || { echo "La base de QA no está corriendo: qa/qa.sh up" >&2; exit 1; }
+    if [[ "$g" == on ]]; then
+      load_google
+      [[ -n "$GOOGLE_ID" ]] || { echo "No hay un Client ID de Google válido. Ejecutá: qa/qa.sh google-config" >&2; exit 1; }
+    fi
+    mail="$(mail_mode)"; [[ "$mail" == real ]] || mail=inert
+    stop_pid api; stop_pid front
+    for _ in $(seq 1 30); do port_busy "$QA_API_PORT" || port_busy "$QA_FRONT_PORT" || break; sleep 1; done
+    api_start "$mail" "$g"
+    front_start "$g"
+    echo "QA reiniciado: Google $g, correo $mail. Recargá la página del navegador." ;;
+  plant-invitation)
+    # QA helper: gives the most recent PENDING invitation of EMAIL a known, single-use link, so an invitation can be
+    # opened (e.g. while testing Google) without depending on a delivered e-mail. Create the invitation in the UI first.
+    guard
+    email="${2:-}"; token="${3:-}"
+    [[ "$email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+$ ]] && [[ "$token" =~ ^[A-Za-z0-9_-]{8,64}$ ]] \
+      || { echo "usage: qa/qa.sh plant-invitation EMAIL TOKEN   (TOKEN: 8-64 letras, números, - o _)" >&2; exit 1; }
+    updated="$(docker exec -i "$QA_CONTAINER" psql -U "$QA_DB_USER" -d "$QA_DB" -tA -v ON_ERROR_STOP=1 -c \
+      "WITH u AS (UPDATE invitaciones SET token_hash = encode(sha256(convert_to('$token','UTF8')),'hex'), expira_en = now() + interval '7 days'
+        WHERE id = (SELECT id FROM invitaciones WHERE lower(email) = lower('$email') AND estado = 'PENDIENTE' ORDER BY creado_en DESC LIMIT 1)
+        RETURNING 1) SELECT count(*) FROM u")"
+    [[ "$updated" == 1 ]] || { echo "No hay una invitación PENDIENTE para ese email. Creala primero desde la UI (Miembros o Familia)." >&2; exit 1; }
+    echo "Enlace de un solo uso: http://localhost:$QA_FRONT_PORT/invitaciones/aceptar?token=$token" ;;
   logs) tail -n "${2:-60}" "$WORK/api.log" ;;
-  *) echo "usage: qa/qa.sh {up|seed|down|reset|status|logs|mail-config|mail-clear|api-restart [real|inert]}" >&2; exit 1 ;;
+  *) echo "usage: qa/qa.sh {up|seed|down|reset|status|logs|mail-config|mail-clear|api-restart [real|inert]|google-config|google-clear|google-restart [on|off]|plant-invitation EMAIL TOKEN}" >&2; exit 1 ;;
 esac
