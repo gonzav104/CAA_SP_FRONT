@@ -71,6 +71,9 @@
     --color-caa-gris: #5B6478;
     --color-caa-borde: #DDE3EE;
     --color-caa-tinta-suave: #A9B4CC;
+    --color-caa-azul-suave: #EAF0FE;
+    --color-caa-cian-suave: #E6F6F3;
+    --color-caa-tinta-panel: #16244D;
 }
 
 :root {
@@ -175,6 +178,23 @@
     --radius: 0.625rem;
     font-family: var(--font-brand);
     color: var(--foreground);
+}
+
+/* Dark variant of the same scope (values from the `.dark` block of the brand theme): the app shell. */
+.caa-brand-dark {
+    --background: #0F1B3D;
+    --foreground: #FFFFFF;
+    --muted-foreground: #A9B4CC;
+    --border: #26365F;
+    --ring: #2DD4BF;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .caa-brand,
+    .caa-brand * {
+        animation: none !important;
+        transition: none !important;
+    }
 }
 
 .caa-brand ::selection {

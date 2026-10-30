@@ -5,11 +5,11 @@ import { useLogout } from '../hooks'
 interface LogoutButtonProps {
   /** When set, the user must confirm (native dialog) before the logout request is sent. */
   confirmMessage?: string
-  /** Shows only the icon below `lg:` and the label from `lg:` up — for the collapsed sidebar rail. Default: the label at every width, unchanged from before. */
-  responsive?: boolean
+  /** Quiet full-width version for the dark app shell. Default: the outline button, unchanged from before. */
+  inShell?: boolean
 }
 
-export function LogoutButton({ confirmMessage, responsive = false }: LogoutButtonProps) {
+export function LogoutButton({ confirmMessage, inShell = false }: LogoutButtonProps) {
   const logout = useLogout()
 
   const handleClick = () => {
@@ -20,20 +20,19 @@ export function LogoutButton({ confirmMessage, responsive = false }: LogoutButto
   const label = logout.isPending ? 'Cerrando…' : 'Cerrar sesión'
 
   return (
-    <div className="flex items-center gap-2">
-      {responsive ? (
+    <div className={inShell ? 'flex flex-col gap-1' : 'flex items-center gap-2'}>
+      {inShell ? (
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           size="lg"
           disabled={logout.isPending}
           aria-busy={logout.isPending || undefined}
-          aria-label={label}
           onClick={handleClick}
-          className="w-9 px-0 lg:w-auto lg:px-2.5"
+          className="h-11 w-full justify-start gap-3 px-3 text-muted-foreground hover:bg-white/10 hover:text-white focus-visible:ring-ring lg:h-10"
         >
-          <LogOut aria-hidden="true" className="lg:hidden" />
-          <span className="hidden lg:inline">{label}</span>
+          <LogOut aria-hidden="true" />
+          {label}
         </Button>
       ) : (
         <Button type="button" variant="outline" size="lg" disabled={logout.isPending} onClick={handleClick}>
@@ -41,7 +40,7 @@ export function LogoutButton({ confirmMessage, responsive = false }: LogoutButto
         </Button>
       )}
       {logout.isError && (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className={inShell ? 'px-3 text-sm text-red-200' : 'text-sm text-destructive'}>
           No se pudo cerrar la sesión. Intenta nuevamente.
         </p>
       )}

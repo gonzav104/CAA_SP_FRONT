@@ -105,6 +105,7 @@ describe('SpacesSection (dashboard onboarding)', () => {
     renderApp('/')
     expect(await screen.findByText('No se pudieron cargar tus espacios.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
-    expect(await screen.findByRole('link', { name: /^Centro Sol/ })).toBeInTheDocument()
+    const section = await screen.findByRole('region', { name: 'Tus espacios' })
+    expect(within(section).getByRole('link', { name: /^Centro Sol/ })).toBeInTheDocument()
   })
 })
