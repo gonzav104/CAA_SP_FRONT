@@ -14,6 +14,7 @@ import { canCreatePatientIn, patientCreationOrganizations } from '@/features/org
 import { membershipLabel, patientsInSpace, resolveSpace, SHARED_SPACE_ID, sharedPatients } from '@/features/organizations/spaces'
 import { BRAND_TITLE_CLASS } from '@/layouts/brand'
 import { PageLayout } from '@/layouts/PageLayout'
+import { cn } from '@/lib/utils'
 import { useCreatePatient, usePatients } from '../hooks'
 import { filterPatients } from '../search'
 import { NewPatientForm } from './NewPatientForm'
@@ -146,7 +147,7 @@ export function PatientsPage() {
           {space.kind === 'organization' && (
             <Link
               to={paths.organizationMembers(space.organization.id)}
-              className={buttonVariants({ variant: 'outline', size: 'lg', className: 'h-10 flex-1 bg-background sm:flex-none' })}
+              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'h-10 flex-1 bg-background sm:flex-none')}
             >
               Miembros del espacio
             </Link>

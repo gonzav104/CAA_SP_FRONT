@@ -89,7 +89,7 @@ export function BoardRow({
           </span>
           <div className="flex min-w-0 flex-col">
             <div className="flex min-w-0 flex-wrap items-center gap-x-2">
-              <span className="truncate font-semibold text-foreground" title={name}>
+              <span className="line-clamp-2 font-semibold wrap-anywhere text-foreground sm:line-clamp-1" title={name}>
                 {name}
               </span>
               {board.isPrimary && (
@@ -111,7 +111,7 @@ export function BoardRow({
           </div>
         </div>
       )}
-      <div className="flex w-full flex-wrap items-center justify-end gap-x-1 gap-y-2 sm:w-auto">
+      <div className="flex w-full items-center gap-1 sm:w-auto">
         <div className="flex items-center gap-1">
           {isPrimaryPending && <span className="text-sm text-muted-foreground">Marcando…</span>}
           {canEdit && (
@@ -152,18 +152,18 @@ export function BoardRow({
             </Button>
           )}
         </div>
-        <div className="flex w-full gap-2 sm:ml-1 sm:w-auto">
+        <div className="flex min-w-0 flex-1 gap-2 sm:ml-1 sm:flex-none">
           {canEdit && (
             <Link
               to={paths.boardEditor(patientId, board.id)}
-              className={buttonVariants({ variant: 'outline', size: 'lg', className: 'h-11 flex-1 bg-background sm:h-10 sm:flex-none' })}
+              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'h-11 flex-1 bg-background sm:h-10 sm:flex-none')}
             >
               Editar
             </Link>
           )}
           <Link
             to={paths.boardUse(patientId, board.id)}
-            className={buttonVariants({ size: 'lg', className: 'h-11 flex-1 sm:h-10 sm:flex-none' })}
+            className={cn(buttonVariants({ size: 'lg' }), 'h-11 flex-1 sm:h-10 sm:flex-none')}
           >
             Modo Uso
           </Link>
