@@ -165,7 +165,7 @@ function CompleteRecovery({ token }: { token: string }) {
             className={errors.password ? 'text-sm text-destructive' : 'text-xs text-muted-foreground'}
           >
             {errors.password?.message ??
-              'Al menos 8 caracteres, con una mayúscula, una minúscula, un número y un símbolo.'}
+              'Al menos 8 caracteres, con una mayúscula, una minúscula, un número y un símbolo. Tiene que ser distinta de tu contraseña actual.'}
           </p>
         </div>
 

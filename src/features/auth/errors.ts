@@ -121,7 +121,9 @@ export function getGoogleRecoveryErrorMessage(error: unknown): string {
   if (isNetworkError(error)) return NETWORK_MESSAGE
   switch (getErrorStatus(error)) {
     case 401:
-      return 'No se pudo recuperar el acceso. El enlace puede no ser válido o haber expirado, la cuenta de Google debe ser la misma con la que lo solicitaste y la contraseña debe ser nueva.'
+      // The backend answers every cause with the same 401 on purpose, so the UI lists what to check. While the
+      // link is still valid a rejection does not consume it: a different password can be tried again.
+      return 'No se pudo recuperar el acceso. Verifica que la nueva contraseña sea distinta de la actual, que uses la misma cuenta de Google con la que pediste el enlace y que el enlace no esté vencido ni usado. Si el enlace sigue vigente, puedes intentarlo de nuevo con otra contraseña.'
     case 400:
       return validationMessage(error, 'Revisa la nueva contraseña.')
     case 429:

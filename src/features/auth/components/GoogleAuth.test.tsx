@@ -255,15 +255,48 @@ describe('Google identity recovery', () => {
     expect(completeGoogleRecovery).not.toHaveBeenCalled()
   })
 
-  it('shows the generic message for an invalid, used or expired link or another Google account', async () => {
+  it('tells up front that the new password must differ from the current one', async () => {
+    renderAuthRoutes(`/recuperar-google?token=${RECOVERY_TOKEN}`)
+    expect(await screen.findByText(/Tiene que ser distinta de tu contraseña actual\./)).toBeInTheDocument()
+  })
+
+  it('on the generic 401 lists the three things to check, so the error is actionable', async () => {
     vi.mocked(completeGoogleRecovery).mockRejectedValue(httpError(401))
     renderAuthRoutes(`/recuperar-google?token=${RECOVERY_TOKEN}`)
     await fillPasswords()
     await userEvent.click(screen.getByRole('button', { name: 'Google (simulado)' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'No se pudo recuperar el acceso. El enlace puede no ser válido o haber expirado',
-    )
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('No se pudo recuperar el acceso.')
+    expect(alert).toHaveTextContent('la nueva contraseña sea distinta de la actual')
+    expect(alert).toHaveTextContent('la misma cuenta de Google con la que pediste el enlace')
+    expect(alert).toHaveTextContent('el enlace no esté vencido ni usado')
     expect(location()).toHaveTextContent('/recuperar-google')
     expect(screen.getByRole('link', { name: 'Solicitar un nuevo enlace' })).toBeInTheDocument()
+  })
+
+  it('after a rejection keeps what was typed and the link token, so a different password can be retried', async () => {
+    vi.mocked(completeGoogleRecovery).mockRejectedValueOnce(httpError(401)).mockResolvedValueOnce(linked)
+    const { router } = renderAuthRoutes(`/recuperar-google?token=${RECOVERY_TOKEN}`)
+    await fillPasswords()
+    await userEvent.click(screen.getByRole('button', { name: 'Google (simulado)' }))
+    await screen.findByRole('alert')
+
+    // Nothing was cleared: the fields keep their values and the token is still in the history state, not in the URL.
+    expect(screen.getByLabelText('Nueva contraseña', { exact: true })).toHaveValue(STRONG)
+    expect(router.state.location.search).toBe('')
+
+    const OTHER = 'Otra#Clave2027'
+    await userEvent.clear(screen.getByLabelText('Nueva contraseña', { exact: true }))
+    await userEvent.clear(screen.getByLabelText('Repite la nueva contraseña'))
+    await userEvent.type(screen.getByLabelText('Nueva contraseña', { exact: true }), OTHER)
+    await userEvent.type(screen.getByLabelText('Repite la nueva contraseña'), OTHER)
+    vi.mocked(fetchCurrentUser).mockResolvedValue(user)
+    await userEvent.click(screen.getByRole('button', { name: 'Google (simulado)' }))
+
+    await screen.findByText('Dashboard stub')
+    expect(completeGoogleRecovery).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(completeGoogleRecovery).mock.calls[0][0]).toEqual({ idToken: ID_TOKEN, token: RECOVERY_TOKEN, password: STRONG })
+    expect(vi.mocked(completeGoogleRecovery).mock.calls[1][0]).toEqual({ idToken: ID_TOKEN, token: RECOVERY_TOKEN, password: OTHER })
   })
 })
