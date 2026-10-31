@@ -82,7 +82,7 @@ describe('CustomPictogramsPage', () => {
     renderApp(url)
     const card = (await screen.findByText('Mochila')).closest('li')
     if (!card) throw new Error('card not found')
-    await userEvent.click(within(card).getByRole('button', { name: 'Eliminar pictograma' }))
+    await userEvent.click(within(card).getByRole('button', { name: /^Eliminar / }))
     await userEvent.click(within(card).getByRole('button', { name: 'Sí, eliminar' }))
     expect(deleteCustomPictogram).toHaveBeenCalledWith(PATIENT_ID, 'pic-1')
   })
@@ -93,8 +93,8 @@ describe('CustomPictogramsPage', () => {
     renderApp(url)
     const card = (await screen.findByText('Mochila')).closest('li')
     if (!card) throw new Error('card not found')
-    expect(within(card).queryByRole('button', { name: 'Eliminar pictograma' })).not.toBeInTheDocument()
-    expect(within(card).getByRole('button', { name: 'Editar pictograma' })).toBeInTheDocument()
+    expect(within(card).queryByRole('button', { name: /^Eliminar / })).not.toBeInTheDocument()
+    expect(within(card).getByRole('button', { name: /^Editar / })).toBeInTheDocument()
   })
 
   it('hides every edit action for a read-only family collaborator', async () => {
@@ -103,11 +103,30 @@ describe('CustomPictogramsPage', () => {
     renderApp(url)
     await screen.findByText('Mochila')
     expect(screen.queryByRole('button', { name: 'Subir pictograma' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Editar pictograma' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Editar / })).not.toBeInTheDocument()
   })
 
   it('opens the upload form directly when the workspace nav shortcut is used', async () => {
     renderApp(`${url}?crear=1`)
     expect(await screen.findByLabelText('Etiqueta', { exact: true })).toBeInTheDocument()
+  })
+
+  it('offers the first upload from the empty state, once, only to whoever can upload', async () => {
+    vi.mocked(fetchCustomPictograms).mockResolvedValue([])
+    renderApp(url)
+    await userEvent.click(await screen.findByRole('button', { name: 'Subir pictograma' }))
+    expect(await screen.findByLabelText('Etiqueta', { exact: true })).toBeInTheDocument()
+  })
+
+  it('names each action after its pictogram, for assistive technology', async () => {
+    renderApp(url)
+    expect(await screen.findByRole('button', { name: 'Editar Abrigo' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Eliminar Abrigo' })).toBeInTheDocument()
+  })
+
+  it('announces the loading state', async () => {
+    vi.mocked(fetchCustomPictograms).mockReturnValue(new Promise(() => {}))
+    renderApp(url)
+    expect(await screen.findByText('Cargando pictogramas…')).toHaveAttribute('role', 'status')
   })
 })

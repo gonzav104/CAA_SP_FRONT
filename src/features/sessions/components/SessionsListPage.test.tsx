@@ -71,4 +71,23 @@ describe('SessionsListPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
     expect(await screen.findAllByRole('listitem')).toHaveLength(2)
   })
+
+  it('keeps the visible border of the outline action (buttonVariants needs cn on a link)', async () => {
+    renderApp(url)
+    await screen.findByRole('heading', { name: 'Sesiones' })
+    expect(screen.getByRole('link', { name: 'Registrar sesión' })).not.toHaveClass('border-transparent')
+  })
+
+  it('offers one way to register the first session, explaining what a session keeps', async () => {
+    vi.mocked(fetchSessions).mockResolvedValue([])
+    renderApp(url)
+    expect(await screen.findByText('Todavía no hay sesiones registradas.')).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: 'Registrar sesión' })).toHaveLength(1)
+  })
+
+  it('announces the loading state', async () => {
+    vi.mocked(fetchSessions).mockReturnValue(new Promise(() => {}))
+    renderApp(url)
+    expect(await screen.findByText('Cargando sesiones…')).toHaveAttribute('role', 'status')
+  })
 })

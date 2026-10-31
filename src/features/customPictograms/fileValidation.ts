@@ -7,7 +7,7 @@ export const ACCEPT_ATTRIBUTE = ALLOWED_MIME_TYPES.join(',')
 /** Fails fast with the same rule the backend will apply, before spending an upload on it. */
 export function validateImageFile(file: File): string | null {
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-    return 'Usa una imagen JPEG, PNG o WEBP.'
+    return 'Usá una imagen JPEG, PNG o WEBP.'
   }
   if (file.size > MAX_FILE_SIZE_BYTES) {
     return 'La imagen supera el tamaño máximo de 5MB.'

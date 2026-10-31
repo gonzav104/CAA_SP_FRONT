@@ -4,9 +4,13 @@ import { useNavigate } from 'react-router'
 import { z } from 'zod'
 import { paths } from '@/app/paths'
 import { getOrganizationCreateErrorMessage } from '@/api/errors'
+import { FieldError } from '@/components/FieldError'
+import { FormAlert } from '@/components/FormAlert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { BRAND_FORM_ACTION_CLASS, BRAND_FORM_ACTIONS_CLASS, BRAND_PANEL_CLASS } from '@/layouts/brand'
+import { cn } from '@/lib/utils'
 import { useCreateOrganization } from '../hooks'
 
 // Mirrors OrganizacionRegistroDTO: nombre @NotBlank. Roles are decided by the backend, never here.
@@ -38,9 +42,9 @@ export function CreateOrganizationForm({ onCancel }: CreateOrganizationFormProps
     <form
       noValidate
       onSubmit={handleSubmit(onSubmit)}
-      className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-background p-5"
+      className={cn(BRAND_PANEL_CLASS, 'flex flex-col gap-4 p-5')}
     >
-      <div className="flex flex-col gap-1.5 sm:max-w-sm">
+      <div className="flex flex-col gap-1.5">
         <Label htmlFor="new-organization-nombre">Nombre del espacio</Label>
         <Input
           id="new-organization-nombre"
@@ -48,35 +52,29 @@ export function CreateOrganizationForm({ onCancel }: CreateOrganizationFormProps
           disabled={create.isPending}
           aria-invalid={errors.nombre ? true : undefined}
           aria-describedby={errors.nombre ? 'new-organization-nombre-error' : 'new-organization-nombre-hint'}
-          className="h-10"
+          className="h-11"
           {...register('nombre')}
         />
         {errors.nombre ? (
-          <p id="new-organization-nombre-error" className="text-xs text-destructive">
-            {errors.nombre.message}
-          </p>
+          <FieldError id="new-organization-nombre-error" message={errors.nombre.message} />
         ) : (
-          <p id="new-organization-nombre-hint" className="text-xs text-muted-foreground">
+          <p id="new-organization-nombre-hint" className="text-sm text-muted-foreground">
             Serás su propietario y podrás registrar pacientes en él.
           </p>
         )}
       </div>
 
-      {create.isError && (
-        <p role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
-          {getOrganizationCreateErrorMessage(create.error)}
-        </p>
-      )}
+      <FormAlert message={create.isError ? getOrganizationCreateErrorMessage(create.error) : null} />
 
-      <div className="flex gap-2">
-        <Button type="submit" disabled={create.isPending} aria-busy={create.isPending || undefined}>
-          {create.isPending ? 'Creando…' : 'Crear espacio'}
-        </Button>
+      <div className={BRAND_FORM_ACTIONS_CLASS}>
         {onCancel && (
-          <Button type="button" variant="outline" disabled={create.isPending} onClick={onCancel}>
+          <Button type="button" variant="outline" size="lg" className={BRAND_FORM_ACTION_CLASS} disabled={create.isPending} onClick={onCancel}>
             Cancelar
           </Button>
         )}
+        <Button type="submit" size="lg" className={BRAND_FORM_ACTION_CLASS} disabled={create.isPending} aria-busy={create.isPending || undefined}>
+          {create.isPending ? 'Creando…' : 'Crear espacio'}
+        </Button>
       </div>
     </form>
   )

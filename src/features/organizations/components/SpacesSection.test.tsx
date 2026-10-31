@@ -41,7 +41,7 @@ describe('SpacesSection (dashboard onboarding)', () => {
 
     // No roles nor flags: the backend decides OWNER and esTerapeuta.
     expect(createOrganization).toHaveBeenCalledExactlyOnceWith({ nombre: 'Centro Sol' })
-    expect(await screen.findByText('Centro Sol', { selector: 'p' })).toBeInTheDocument()
+    expect(await screen.findByText(/^Centro Sol/, { selector: 'p' })).toBeInTheDocument()
     expect(location()).toHaveTextContent('/pacientes')
     expect(fetchOrganizations).toHaveBeenCalledTimes(2)
   })
@@ -84,7 +84,7 @@ describe('SpacesSection (dashboard onboarding)', () => {
   it('takes a family-only user to the shared patients, without asking for an organization', async () => {
     vi.mocked(fetchPatients).mockResolvedValue(familyPatientsResponse)
     renderApp('/')
-    const section = await screen.findByRole('region', { name: 'Tus espacios' })
+    const section = await screen.findByRole('region', { name: 'Pacientes compartidos' })
     const shared = within(section).getByRole('link', { name: /Pacientes compartidos/ })
     expect(shared).toHaveAttribute('href', '/pacientes?espacio=compartidos')
     expect(shared).toHaveTextContent('2 pacientes como familiar')
@@ -100,11 +100,39 @@ describe('SpacesSection (dashboard onboarding)', () => {
     expect(within(section).getByRole('link', { name: /Pacientes compartidos/ })).toBeInTheDocument()
   })
 
+  it('shows each organization with the patients the user sees there, apart from the shared ones', async () => {
+    vi.mocked(fetchOrganizations).mockResolvedValue([ownerOrganization])
+    vi.mocked(fetchPatients).mockResolvedValue([...therapistPatientsResponse, ...familyPatientsResponse])
+    renderApp('/')
+    const section = await screen.findByRole('region', { name: 'Tus espacios' })
+    const card = within(section).getByRole('link', { name: /^Centro Sol/ }).closest('li')!
+    expect(card).toHaveTextContent(/\d+ pacientes?/)
+    expect(within(section).getByRole('link', { name: /Pacientes compartidos/ }).closest('li')).toBeNull()
+  })
+
+  it('announces the loading state instead of an empty space', async () => {
+    vi.mocked(fetchPatients).mockReturnValue(new Promise(() => {}))
+    renderApp('/')
+    expect(await screen.findByText('Cargando espacios…')).toHaveAttribute('role', 'status')
+    expect(screen.queryByRole('heading', { name: 'Creá tu espacio de trabajo' })).not.toBeInTheDocument()
+  })
+
+  it('never offers onboarding when the patients could not be loaded, and retries them', async () => {
+    vi.mocked(fetchPatients).mockRejectedValueOnce(new Error('500')).mockResolvedValue(familyPatientsResponse)
+    renderApp('/')
+    expect(await screen.findByText('No se pudieron cargar tus pacientes.')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Creá tu espacio de trabajo' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
+    const section = await screen.findByRole('region', { name: 'Pacientes compartidos' })
+    expect(await within(section).findByRole('link', { name: /Pacientes compartidos/ })).toBeInTheDocument()
+  })
+
   it('offers a retry when the memberships cannot be loaded', async () => {
     vi.mocked(fetchOrganizations).mockRejectedValueOnce(new Error('500')).mockResolvedValue([ownerOrganization])
     renderApp('/')
     expect(await screen.findByText('No se pudieron cargar tus espacios.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
-    expect(await screen.findByRole('link', { name: /^Centro Sol/ })).toBeInTheDocument()
+    const section = await screen.findByRole('region', { name: 'Tus espacios' })
+    expect(within(section).getByRole('link', { name: /^Centro Sol/ })).toBeInTheDocument()
   })
 })

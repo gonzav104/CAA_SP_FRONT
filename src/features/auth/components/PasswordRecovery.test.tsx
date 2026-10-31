@@ -42,14 +42,14 @@ describe('ForgotPasswordPage', () => {
   it('validates the email before calling the server', async () => {
     renderAuthRoutes('/olvide-password')
     await userEvent.click(await screen.findByRole('button', { name: 'Enviar enlace' }))
-    expect(await screen.findByText('Ingresa un email válido.')).toBeInTheDocument()
+    expect(await screen.findByText('Ingresá un email válido.')).toBeInTheDocument()
     expect(requestPasswordReset).not.toHaveBeenCalled()
   })
 
   it.each([
-    [httpError(429), 'Demasiados intentos. Espera unos minutos e intenta nuevamente.'],
+    [httpError(429), 'Demasiados intentos. Esperá unos minutos e intentá nuevamente.'],
     [new AxiosError('Network Error', 'ERR_NETWORK'), 'No se pudo conectar con el servidor.'],
-    [httpError(500), 'Ocurrió un error inesperado. Intenta nuevamente.'],
+    [httpError(500), 'Ocurrió un error inesperado. Intentá nuevamente.'],
   ])('shows the error and no success on %s', async (failure, message) => {
     vi.mocked(requestPasswordReset).mockRejectedValue(failure)
     renderAuthRoutes('/olvide-password')
@@ -80,7 +80,7 @@ describe('ResetPasswordPage', () => {
 
   async function fillPasswords(password = STRONG, confirmation = password) {
     await userEvent.type(await screen.findByLabelText('Nueva contraseña'), password)
-    await userEvent.type(screen.getByLabelText('Repite la nueva contraseña'), confirmation)
+    await userEvent.type(screen.getByLabelText('Repetí la nueva contraseña'), confirmation)
     await userEvent.click(screen.getByRole('button', { name: 'Guardar contraseña' }))
   }
 
@@ -129,7 +129,7 @@ describe('ResetPasswordPage', () => {
   it('explains what to do when there is no token (lost or never sent)', async () => {
     renderAuthRoutes('/restablecer-password')
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'El enlace no es válido o ha expirado. Abre nuevamente el enlace que recibiste por correo o solicita uno nuevo.',
+      'El enlace no es válido o ha expirado. Abrí nuevamente el enlace que recibiste por correo o solicitá uno nuevo.',
     )
     expect(screen.queryByLabelText('Nueva contraseña')).not.toBeInTheDocument()
   })

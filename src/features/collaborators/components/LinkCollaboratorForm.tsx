@@ -1,9 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { FieldError } from '@/components/FieldError'
+import { FormAlert } from '@/components/FormAlert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { NATIVE_SELECT_CLASS } from '@/components/ui/nativeSelect'
+import { BRAND_FORM_ACTION_CLASS, BRAND_FORM_ACTIONS_CLASS, BRAND_PANEL_CLASS } from '@/layouts/brand'
+import { cn, keepFieldFocus } from '@/lib/utils'
 import type { ColaboradorRegistroRequest } from '../apiTypes'
 
 // Mirrors ColaboradorRegistroDTO: email @NotBlank @Email, permiso @NotNull.
@@ -32,6 +37,7 @@ export function LinkCollaboratorForm({ isPending, error, onSubmit, onCancel }: L
     formState: { errors },
   } = useForm<LinkCollaboratorFormValues>({
     resolver: zodResolver(linkCollaboratorSchema),
+    mode: 'onTouched',
     defaultValues: { email: '', permiso: 'LECTURA' },
   })
 
@@ -39,10 +45,13 @@ export function LinkCollaboratorForm({ isPending, error, onSubmit, onCancel }: L
     <form
       noValidate
       onSubmit={handleSubmit(onSubmit)}
-      className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-background p-5"
+      aria-labelledby="invite-family-title"
+      className={cn(BRAND_PANEL_CLASS, 'flex flex-col gap-4 p-5')}
     >
-      <h3 className="font-medium text-foreground">Invitar familiar</h3>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[2fr_1fr]">
+      <h3 id="invite-family-title" className="font-semibold text-foreground">
+        Invitar familiar
+      </h3>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[3fr_2fr]">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="collaborator-email">Email del familiar</Label>
           <Input
@@ -51,16 +60,14 @@ export function LinkCollaboratorForm({ isPending, error, onSubmit, onCancel }: L
             autoFocus
             disabled={isPending}
             aria-invalid={errors.email ? true : undefined}
-            aria-describedby={errors.email ? 'collaborator-email-error' : undefined}
-            className="h-10"
+            aria-describedby={errors.email ? 'collaborator-email-error' : 'collaborator-email-hint'}
+            className="h-11"
             {...register('email')}
           />
           {errors.email ? (
-            <p id="collaborator-email-error" className="text-xs text-destructive">
-              {errors.email.message}
-            </p>
+            <FieldError id="collaborator-email-error" message={errors.email.message} />
           ) : (
-            <p className="text-xs text-muted-foreground">
+            <p id="collaborator-email-hint" className="text-sm text-muted-foreground">
               Le enviaremos una invitación por correo. No necesita tener una cuenta todavía.
             </p>
           )}
@@ -70,27 +77,27 @@ export function LinkCollaboratorForm({ isPending, error, onSubmit, onCancel }: L
           <select
             id="collaborator-permiso"
             disabled={isPending}
-            className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            aria-describedby="collaborator-permiso-hint"
+            className={NATIVE_SELECT_CLASS}
             {...register('permiso')}
           >
             <option value="LECTURA">Solo lectura</option>
             <option value="EDICION_LIMITADA">Edición limitada</option>
           </select>
+          <p id="collaborator-permiso-hint" className="text-sm text-muted-foreground">
+            Edición limitada también permite modificar cartillas y datos del paciente.
+          </p>
         </div>
       </div>
 
-      {error && (
-        <p role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
-          {error}
-        </p>
-      )}
+      <FormAlert message={error} />
 
-      <div className="flex gap-2">
-        <Button type="submit" disabled={isPending} aria-busy={isPending || undefined}>
-          {isPending ? 'Enviando…' : 'Enviar invitación'}
-        </Button>
-        <Button type="button" variant="outline" disabled={isPending} onClick={onCancel}>
+      <div className={BRAND_FORM_ACTIONS_CLASS}>
+        <Button type="button" variant="outline" size="lg" className={BRAND_FORM_ACTION_CLASS} disabled={isPending} onMouseDown={keepFieldFocus} onClick={onCancel}>
           Cancelar
+        </Button>
+        <Button type="submit" size="lg" className={BRAND_FORM_ACTION_CLASS} disabled={isPending} aria-busy={isPending || undefined}>
+          {isPending ? 'Enviando…' : 'Enviar invitación'}
         </Button>
       </div>
     </form>

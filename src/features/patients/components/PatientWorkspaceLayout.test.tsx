@@ -4,12 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchCurrentUser } from '@/features/auth/authApi'
 import { fetchBoards } from '@/features/boards/boardsApi'
 import { boardsListResponse } from '@/features/boards/testing/fixtures'
+import { fetchOrganizations } from '@/features/organizations/organizationsApi'
+import { ownerOrganization } from '@/features/organizations/testing/fixtures'
 import { renderApp } from '@/test/renderApp'
+import type { Capability } from '../apiTypes'
 import { deletePatient, fetchPatient, updatePatient } from '../patientsApi'
 import { familyMember, therapist, therapistPatientsResponse } from '../testing/fixtures'
 
 vi.mock('@/features/auth/authApi')
 vi.mock('@/features/boards/boardsApi')
+vi.mock('@/features/organizations/organizationsApi')
 vi.mock('../patientsApi')
 
 const PATIENT_ID = therapistPatientsResponse[0].id
@@ -18,6 +22,7 @@ const url = `/pacientes/${PATIENT_ID}/cartillas`
 describe('PatientWorkspaceLayout', () => {
   beforeEach(() => {
     vi.mocked(fetchCurrentUser).mockReset().mockResolvedValue(therapist)
+    vi.mocked(fetchOrganizations).mockReset().mockResolvedValue([])
     vi.mocked(fetchPatient).mockReset().mockResolvedValue(therapistPatientsResponse[0])
     vi.mocked(fetchBoards).mockReset().mockResolvedValue(boardsListResponse)
     vi.mocked(updatePatient).mockReset()
@@ -103,5 +108,67 @@ describe('PatientWorkspaceLayout', () => {
 
     expect(deletePatient).toHaveBeenCalledWith(PATIENT_ID)
     expect(await screen.findByText('/pacientes')).toBeInTheDocument()
+  })
+
+  describe('header', () => {
+    const capabilitiesCases: [string, Capability[], string[]][] = [
+      ['ADMINISTRAR', ['EDITAR_CONTENIDO', 'GESTION_CLINICA', 'ADMINISTRAR'], ['Editar datos del paciente', 'Eliminar paciente']],
+      ['therapist', ['EDITAR_CONTENIDO', 'GESTION_CLINICA'], ['Editar datos del paciente']],
+      ['EDICION_LIMITADA', ['EDITAR_CONTENIDO'], ['Editar datos del paciente']],
+      ['LECTURA', [], []],
+    ]
+
+    it.each(capabilitiesCases)('offers %s only what the backend allows', async (_label, capacidades, actions) => {
+      vi.mocked(fetchPatient).mockResolvedValue({ ...therapistPatientsResponse[0], capacidades })
+      renderApp(url)
+      await screen.findByRole('heading', { level: 1 })
+      for (const name of ['Editar datos del paciente', 'Eliminar paciente']) {
+        expect(screen.queryAllByRole('button', { name })).toHaveLength(actions.includes(name) ? 1 : 0)
+      }
+    })
+
+    it('identifies the organization of the patient, linking to that space', async () => {
+      vi.mocked(fetchOrganizations).mockResolvedValue([{ ...ownerOrganization, id: therapistPatientsResponse[0].organizacionId }])
+      renderApp(url)
+      const heading = await screen.findByRole('heading', { level: 1 })
+      const header = within(heading.closest('header')!)
+      expect(await header.findByRole('link', { name: ownerOrganization.nombre })).toHaveAttribute(
+        'href',
+        `/pacientes?espacio=${therapistPatientsResponse[0].organizacionId}`,
+      )
+    })
+
+    it('identifies a family link as shared, with its permission', async () => {
+      vi.mocked(fetchPatient).mockResolvedValue({ ...therapistPatientsResponse[0], miPermiso: 'LECTURA', capacidades: [] })
+      renderApp(url)
+      expect(await screen.findByRole('link', { name: 'Compartido como familiar · Solo lectura' })).toHaveAttribute(
+        'href',
+        '/pacientes?espacio=compartidos',
+      )
+    })
+
+    it('shows nothing about the patient when the backend refuses it, and offers a retry', async () => {
+      vi.mocked(fetchPatient).mockRejectedValue(new Error('404'))
+      renderApp(url)
+      expect(await screen.findByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
+      expect(screen.queryByRole('navigation', { name: 'Secciones del paciente' })).not.toBeInTheDocument()
+    })
+
+    it('announces the loading state', async () => {
+      vi.mocked(fetchPatient).mockReturnValue(new Promise(() => {}))
+      renderApp(url)
+      expect(await screen.findByText('Cargando paciente…')).toHaveAttribute('role', 'status')
+    })
+  })
+
+  it('moves between the sections with the keyboard', async () => {
+    renderApp(url)
+    const nav = await screen.findByRole('navigation', { name: 'Secciones del paciente' })
+    const links = within(nav).getAllByRole('link')
+    links[0].focus()
+    await userEvent.tab()
+    expect(links[1]).toHaveFocus()
+    await userEvent.keyboard('{Enter}')
+    expect(await screen.findByTestId('location')).toHaveTextContent(`/pacientes/${PATIENT_ID}/sesiones`)
   })
 })

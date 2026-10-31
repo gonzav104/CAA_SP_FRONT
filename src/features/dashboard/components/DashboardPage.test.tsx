@@ -55,7 +55,7 @@ describe('DashboardPage', () => {
     vi.mocked(fetchPatients).mockResolvedValue(therapistPatientsResponse)
     renderApp('/')
     expect(await screen.findByText('3')).toBeInTheDocument()
-    expect(screen.getByText('Pacientes a tu cargo')).toBeInTheDocument()
+    expect(screen.getByText('pacientes a tu cargo')).toBeInTheDocument()
   })
 
   it('shows the right noun for a family collaborator', async () => {
@@ -63,7 +63,7 @@ describe('DashboardPage', () => {
     vi.mocked(fetchPatients).mockResolvedValue([therapistPatientsResponse[0]])
     renderApp('/')
     expect(await screen.findByText('1')).toBeInTheDocument()
-    expect(screen.getByText('Paciente vinculado')).toBeInTheDocument()
+    expect(screen.getByText('paciente vinculado')).toBeInTheDocument()
   })
 
   it('shows a plain fallback for the count on error, without a blocking alert', async () => {
@@ -84,10 +84,27 @@ describe('DashboardPage', () => {
 
   it('does not offer "Nuevo paciente" to a family collaborator', async () => {
     setup(familyMember, [])
+    vi.mocked(fetchPatients).mockResolvedValue([therapistPatientsResponse[0]])
+    renderApp('/')
+    await screen.findByRole('link', { name: 'Ver pacientes' })
+    expect(screen.queryByRole('link', { name: /Nuevo paciente/ })).not.toBeInTheDocument()
+  })
+
+  it('a family member sees the patients, nothing to manage', async () => {
+    setup(familyMember, [])
+    vi.mocked(fetchPatients).mockResolvedValue([therapistPatientsResponse[0]])
+    renderApp('/')
+    expect(await screen.findByRole('link', { name: 'Ver pacientes' })).toHaveAttribute('href', '/pacientes')
+    expect(screen.queryByRole('link', { name: 'Gestionar pacientes' })).not.toBeInTheDocument()
+  })
+
+  it('leaves only the onboarding to a user with no spaces and no patients', async () => {
+    setup(familyMember, [])
     vi.mocked(fetchPatients).mockResolvedValue([])
     renderApp('/')
-    await screen.findByText('Gestionar pacientes')
-    expect(screen.queryByRole('link', { name: /Nuevo paciente/ })).not.toBeInTheDocument()
+    expect(await screen.findByText('Todavía no tenés pacientes.')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Gestionar pacientes/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Creá tu espacio de trabajo' })).toBeInTheDocument()
   })
 
   it('always offers "Gestionar pacientes" to the real directory', async () => {

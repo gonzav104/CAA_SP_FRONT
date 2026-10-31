@@ -4,7 +4,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { paths } from '@/app/paths'
 import { getReadErrorMessage, getSessionWriteErrorMessage } from '@/api/errors'
 import { ErrorState } from '@/components/ErrorState'
-import { LoadingState } from '@/components/LoadingState'
+import { RowsSkeleton } from '@/components/RowsSkeleton'
 import { useSessions, useUpdateSession } from '../hooks'
 import { toDateTimeInputValue } from '../format'
 import { toWriteRequest } from '../sessionForm'
@@ -24,11 +24,11 @@ function EditSessionPageContent({ patientId, sessionId }: { patientId: string; s
   const updateSession = useUpdateSession(patientId)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  if (isPending) return <LoadingState message="Cargando sesión…" />
+  if (isPending) return <RowsSkeleton message="Cargando sesión…" rows={1} />
   if (isError) {
     return (
       <ErrorState
-        message={getReadErrorMessage(error, 'No encontramos esta sesión o no tienes acceso.')}
+        message={getReadErrorMessage(error, 'No encontramos esta sesión o no tenés acceso.')}
         onRetry={() => void refetch()}
       />
     )
@@ -36,7 +36,7 @@ function EditSessionPageContent({ patientId, sessionId }: { patientId: string; s
 
   const session = sessions.find((s) => s.id === sessionId)
   if (!session) {
-    return <ErrorState message="Esta sesión ya no existe o no tienes acceso." onRetry={() => void refetch()} />
+    return <ErrorState message="Esta sesión ya no existe o no tenés acceso." onRetry={() => void refetch()} />
   }
 
   const handleSubmit = async (values: SessionFormValues) => {

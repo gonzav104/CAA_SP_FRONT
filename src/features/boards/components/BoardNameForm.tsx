@@ -69,22 +69,22 @@ export function BoardNameForm({
           onKeyDown={handleKeyDown}
           aria-invalid={showProblem || undefined}
           aria-describedby={showProblem ? messageId : undefined}
-          className="h-9 min-w-48 flex-1"
+          className="h-11 min-w-48 flex-1 sm:h-10"
         />
-        <Button type="submit" size="sm" disabled={isPending || problem !== null || isUnchanged} aria-busy={isPending || undefined}>
+        <Button type="submit" size="lg" className="h-11 flex-1 sm:h-10 sm:flex-none" disabled={isPending || problem !== null || isUnchanged} aria-busy={isPending || undefined}>
           {isPending ? pendingLabel : submitLabel}
         </Button>
-        <Button type="button" variant="outline" size="sm" disabled={isPending} onClick={onCancel}>
+        <Button type="button" variant="outline" size="lg" className="h-11 flex-1 sm:h-10 sm:flex-none" disabled={isPending} onClick={onCancel}>
           Cancelar
         </Button>
       </div>
       {showProblem && (
-        <p id={messageId} className="text-xs text-destructive">
+        <p id={messageId} className="text-sm text-destructive">
           {problem === 'blank' ? 'El nombre es obligatorio.' : `Máximo ${BOARD_NAME_MAX} caracteres.`}
         </p>
       )}
       {error && (
-        <p role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
+        <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
         </p>
       )}

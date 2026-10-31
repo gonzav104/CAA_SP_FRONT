@@ -4,8 +4,10 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { paths } from '@/app/paths'
 import { getReadErrorMessage, getSessionDeleteErrorMessage } from '@/api/errors'
 import { ErrorState } from '@/components/ErrorState'
-import { LoadingState } from '@/components/LoadingState'
+import { RowsSkeleton } from '@/components/RowsSkeleton'
 import { Button, buttonVariants } from '@/components/ui/button'
+import { BRAND_ACTION_CLASS, BRAND_PANEL_CLASS } from '@/layouts/brand'
+import { cn } from '@/lib/utils'
 import { formatSessionDateTime } from '../format'
 import { useDeleteSession, useSessions } from '../hooks'
 import type { Session } from '../types'
@@ -25,9 +27,9 @@ function LeadNoteBlock({ label, value }: { label: string; value: string }) {
 function SecondaryNoteBlock({ label, value }: { label: string; value: string | null }) {
   if (!value) return null
   return (
-    <div className="flex max-w-2xl flex-col gap-2 border-t border-border/60 pt-6">
+    <div className="flex flex-col gap-2 border-t border-border pt-6">
       <h3 className="text-sm font-semibold text-muted-foreground">{label}</h3>
-      <p className="leading-relaxed whitespace-pre-wrap text-foreground/90">{value}</p>
+      <p className="max-w-2xl leading-relaxed whitespace-pre-wrap text-foreground">{value}</p>
     </div>
   )
 }
@@ -46,11 +48,11 @@ function SessionDetailPageContent({ patientId, sessionId }: { patientId: string;
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
-  if (isPending) return <LoadingState message="Cargando sesión…" />
+  if (isPending) return <RowsSkeleton message="Cargando sesión…" rows={1} />
   if (isError) {
     return (
       <ErrorState
-        message={getReadErrorMessage(error, 'No encontramos esta sesión o no tienes acceso.')}
+        message={getReadErrorMessage(error, 'No encontramos esta sesión o no tenés acceso.')}
         onRetry={() => void refetch()}
       />
     )
@@ -58,7 +60,7 @@ function SessionDetailPageContent({ patientId, sessionId }: { patientId: string;
 
   const session: Session | undefined = sessions.find((s) => s.id === sessionId)
   if (!session) {
-    return <ErrorState message="Esta sesión ya no existe o no tienes acceso." onRetry={() => void refetch()} />
+    return <ErrorState message="Esta sesión ya no existe o no tenés acceso." onRetry={() => void refetch()} />
   }
 
   const handleDelete = async () => {
@@ -81,20 +83,22 @@ function SessionDetailPageContent({ patientId, sessionId }: { patientId: string;
         Volver a sesiones
       </Link>
 
-      <div className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-background p-6 sm:p-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-2xl font-semibold text-foreground">{formatSessionDateTime(session.dateTime)}</h2>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-col gap-1.5">
+            <h2 className="font-display text-xl font-bold tracking-[-0.01em] text-foreground tabular-nums sm:text-2xl">
+              {formatSessionDateTime(session.dateTime)}
+            </h2>
             {session.disposition && (
-              <span className="w-fit rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                {session.disposition}
-              </span>
+              <p className="text-sm text-muted-foreground">
+                Disposición: <span className="font-medium text-foreground">{session.disposition}</span>
+              </p>
             )}
           </div>
-          <div className="flex shrink-0 gap-2">
+          <div className="flex w-full shrink-0 gap-2 sm:w-auto">
             <Link
               to={paths.sessionEdit(patientId, sessionId)}
-              className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), BRAND_ACTION_CLASS)}
             >
               <Pencil aria-hidden="true" className="size-4" />
               Editar
@@ -102,8 +106,8 @@ function SessionDetailPageContent({ patientId, sessionId }: { patientId: string;
             <Button
               type="button"
               variant="outline"
-              size="sm"
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              size="lg"
+              className={cn(BRAND_ACTION_CLASS, 'text-destructive hover:bg-destructive/10 hover:text-destructive')}
               onClick={() => {
                 setDeleteError(null)
                 setIsConfirmingDelete(true)
@@ -126,7 +130,7 @@ function SessionDetailPageContent({ patientId, sessionId }: { patientId: string;
         )}
       </div>
 
-      <div className="flex flex-col gap-6 rounded-2xl border border-border/60 bg-background p-6 sm:p-8">
+      <div className={cn(BRAND_PANEL_CLASS, 'flex flex-col gap-6 p-5 sm:p-6')}>
         <LeadNoteBlock label="Objetivos trabajados" value={session.objectives} />
         <SecondaryNoteBlock label="Observaciones" value={session.notes} />
         <SecondaryNoteBlock label="Estrategias y próximos pasos" value={session.nextSteps} />

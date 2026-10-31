@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, ShieldOff } from 'lucide-react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { paths } from '@/app/paths'
 import {
@@ -8,12 +8,14 @@ import {
   getOrganizationInviteErrorMessage,
   getReadErrorMessage,
 } from '@/api/errors'
+import { EmptyPanel } from '@/components/EmptyPanel'
 import { ErrorState } from '@/components/ErrorState'
-import { LoadingState } from '@/components/LoadingState'
+import { RowsSkeleton } from '@/components/RowsSkeleton'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { useCurrentUser } from '@/features/auth/hooks'
 import { InvitationRow } from '@/features/collaborators/components/InvitationRow'
 import { ListNotice } from '@/features/boards/components/ListNotice'
+import { BRAND_SECTION_TITLE_CLASS, BRAND_TITLE_CLASS } from '@/layouts/brand'
 import { PageLayout } from '@/layouts/PageLayout'
 import type { InvitacionOrganizacionRequest, OrganizacionResponse, RolGestionAsignable } from '../apiTypes'
 import {
@@ -40,7 +42,7 @@ export function OrganizationMembersPage() {
   if (organizations.isPending) {
     return (
       <PageLayout title="Miembros" backLink={{ to: paths.dashboard(), label: 'Volver al inicio' }}>
-        <LoadingState message="Cargando espacio…" />
+        <RowsSkeleton message="Cargando espacio…" rows={3} />
       </PageLayout>
     )
   }
@@ -59,9 +61,18 @@ export function OrganizationMembersPage() {
   if (!organization) {
     return (
       <PageLayout title="Miembros" backLink={{ to: paths.dashboard(), label: 'Volver al inicio' }}>
-        <p role="status" className="rounded-2xl border border-border/60 bg-background px-6 py-10 text-center text-muted-foreground">
-          No tenés acceso a este espacio.
-        </p>
+        <div role="status">
+          <EmptyPanel
+            icon={ShieldOff}
+            action={
+              <Link to={paths.dashboard()} className={buttonVariants({ size: 'lg' })}>
+                Volver al inicio
+              </Link>
+            }
+          >
+            No tenés acceso a este espacio.
+          </EmptyPanel>
+        </div>
       </PageLayout>
     )
   }
@@ -145,30 +156,31 @@ function MembersContent({ organization }: { organization: OrganizacionResponse }
 
   return (
     <PageLayout
-      title={organization.nombre}
-      description="Miembros y permisos del espacio."
       backLink={{ to: paths.patientsInSpace(organizationId), label: 'Volver a los pacientes del espacio' }}
     >
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold text-foreground">Miembros</h2>
-          {canInvite && !isInviting && (
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              onClick={() => {
-                setInviteError(null)
-                setNotice(null)
-                setIsInviting(true)
-              }}
-            >
-              <Plus aria-hidden="true" />
-              Invitar
-            </Button>
-          )}
+      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className={BRAND_TITLE_CLASS}>{organization.nombre}</h1>
+          <p className="text-muted-foreground">Miembros y permisos del espacio.</p>
         </div>
+        {canInvite && !isInviting && (
+          <Button
+            type="button"
+            size="lg"
+            className="h-10 w-full sm:w-auto"
+            onClick={() => {
+              setInviteError(null)
+              setNotice(null)
+              setIsInviting(true)
+            }}
+          >
+            <Plus aria-hidden="true" />
+            Invitar
+          </Button>
+        )}
+      </header>
 
+      <div className="flex flex-col gap-3">
         {notice && <ListNotice notice={{ tone: 'success', message: notice }} onRetry={() => undefined} />}
 
         {isInviting && (
@@ -184,7 +196,8 @@ function MembersContent({ organization }: { organization: OrganizacionResponse }
           />
         )}
 
-        {members.isPending && <LoadingState message="Cargando miembros…" />}
+        <h2 className={BRAND_SECTION_TITLE_CLASS}>Miembros</h2>
+        {members.isPending && <RowsSkeleton message="Cargando miembros…" rows={3} />}
         {members.isError && (
           <ErrorState
             message={getReadErrorMessage(members.error, 'El espacio ya no existe o no tenés acceso a él.')}
@@ -229,11 +242,18 @@ function MembersContent({ organization }: { organization: OrganizacionResponse }
           />
         )}
 
+        {canInvite && !invitations.isPending && !invitations.isError && pending.length === 0 && (
+          <section className="flex flex-col gap-1 pt-3">
+            <h2 className={BRAND_SECTION_TITLE_CLASS}>Invitaciones pendientes</h2>
+            <p className="text-sm text-muted-foreground">No hay invitaciones pendientes.</p>
+          </section>
+        )}
+
         {pending.length > 0 && (
-          <section className="flex flex-col gap-3 pt-2">
-            <h3 id="organization-invitations-title" className="font-medium text-foreground">
+          <section className="flex flex-col gap-3 pt-3">
+            <h2 id="organization-invitations-title" className={BRAND_SECTION_TITLE_CLASS}>
               Invitaciones pendientes
-            </h3>
+            </h2>
             <ul aria-labelledby="organization-invitations-title" className="flex flex-col gap-3">
               {pending.map((invitation) => {
                 const rolGestion: RolGestionAsignable = invitation.rolGestionPropuesto === 'ADMIN' ? 'ADMIN' : 'MIEMBRO'
@@ -259,9 +279,6 @@ function MembersContent({ organization }: { organization: OrganizacionResponse }
           </section>
         )}
 
-        <Link to={paths.patientsInSpace(organizationId)} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
-          Ver los pacientes del espacio
-        </Link>
       </div>
     </PageLayout>
   )

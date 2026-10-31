@@ -21,29 +21,29 @@ describe('getLoginErrorMessage', () => {
 
   it('maps 429', () => {
     expect(getLoginErrorMessage(httpError(429))).toBe(
-      'Demasiados intentos. Espera unos minutos e intenta nuevamente.',
+      'Demasiados intentos. Esperá unos minutos e intentá nuevamente.',
     )
   })
 
   it('maps 400', () => {
-    expect(getLoginErrorMessage(httpError(400))).toBe('Revisa el email y la contraseña.')
+    expect(getLoginErrorMessage(httpError(400))).toBe('Revisá el email y la contraseña.')
   })
 
   it('maps network errors', () => {
     expect(getLoginErrorMessage(new AxiosError('Network Error', 'ERR_NETWORK'))).toBe(
-      'No se pudo conectar con el servidor. Verifica tu conexión e intenta nuevamente.',
+      'No se pudo conectar con el servidor. Verificá tu conexión e intentá nuevamente.',
     )
   })
 
   it('maps SessionNotEstablishedError', () => {
     expect(getLoginErrorMessage(new SessionNotEstablishedError())).toBe(
-      'No se pudo iniciar la sesión. Verifica que el navegador permita cookies.',
+      'No se pudo iniciar la sesión. Verificá que el navegador permita cookies.',
     )
   })
 
   it('maps anything else without echoing backend messages', () => {
-    expect(getLoginErrorMessage(httpError(500))).toBe('Ocurrió un error inesperado. Intenta nuevamente.')
-    expect(getLoginErrorMessage(new Error('boom'))).toBe('Ocurrió un error inesperado. Intenta nuevamente.')
-    expect(getLoginErrorMessage(undefined)).toBe('Ocurrió un error inesperado. Intenta nuevamente.')
+    expect(getLoginErrorMessage(httpError(500))).toBe('Ocurrió un error inesperado. Intentá nuevamente.')
+    expect(getLoginErrorMessage(new Error('boom'))).toBe('Ocurrió un error inesperado. Intentá nuevamente.')
+    expect(getLoginErrorMessage(undefined)).toBe('Ocurrió un error inesperado. Intentá nuevamente.')
   })
 })

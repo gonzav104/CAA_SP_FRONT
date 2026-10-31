@@ -7,14 +7,17 @@ import {
   getCustomPictogramWriteErrorMessage,
   getReadErrorMessage,
 } from '@/api/errors'
+import { EmptyPanel } from '@/components/EmptyPanel'
 import { ErrorState } from '@/components/ErrorState'
-import { LoadingState } from '@/components/LoadingState'
 import { Button } from '@/components/ui/button'
 import { usePatient } from '@/features/patients/hooks'
+import { BRAND_SECTION_TITLE_CLASS } from '@/layouts/brand'
 import { useCreateCustomPictogram, useCustomPictograms, useDeleteCustomPictogram, useUpdateCustomPictogram } from '../hooks'
 import { canDeleteCustomPictogram, canEditCustomPictograms } from '../permissions'
 import { CustomPictogramCard } from './CustomPictogramCard'
 import { UploadPictogramForm } from './UploadPictogramForm'
+
+const GRID_CLASS = 'grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5'
 
 type Editor = { kind: 'create' } | { kind: 'edit'; id: string } | { kind: 'delete'; id: string }
 
@@ -77,11 +80,24 @@ function CustomPictogramsPageContent({ patientId }: { patientId: string }) {
     }
   }
 
-  if (isPending || !patient.data) return <LoadingState message="Cargando pictogramas…" />
+  if (isPending || !patient.data) {
+    return (
+      <>
+        <p role="status" className="sr-only">
+          Cargando pictogramas…
+        </p>
+        <div aria-hidden="true" className={GRID_CLASS}>
+          {[0, 1, 2, 3].map((key) => (
+            <div key={key} className="aspect-square animate-pulse rounded-xl border border-border bg-background" />
+          ))}
+        </div>
+      </>
+    )
+  }
   if (isError) {
     return (
       <ErrorState
-        message={getReadErrorMessage(error, 'No encontramos pictogramas para este paciente o no tienes acceso.')}
+        message={getReadErrorMessage(error, 'No encontramos pictogramas para este paciente o no tenés acceso.')}
         onRetry={() => void refetch()}
       />
     )
@@ -92,11 +108,11 @@ function CustomPictogramsPageContent({ patientId }: { patientId: string }) {
   const isCreating = editor?.kind === 'create'
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold text-foreground">Pictogramas</h2>
-        {canEdit && !isCreating && (
-          <Button type="button" variant="outline" size="lg" onClick={() => openEditor({ kind: 'create' })}>
+        <h2 className={BRAND_SECTION_TITLE_CLASS}>Pictogramas</h2>
+        {canEdit && !isCreating && pictograms.length > 0 && (
+          <Button type="button" variant="outline" size="lg" className="h-10 bg-background" onClick={() => openEditor({ kind: 'create' })}>
             <Plus aria-hidden="true" />
             Subir pictograma
           </Button>
@@ -113,12 +129,24 @@ function CustomPictogramsPageContent({ patientId }: { patientId: string }) {
       )}
 
       {pictograms.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-border/60 bg-background px-6 py-10 text-center">
-          <ImageIcon aria-hidden="true" className="size-6 text-muted-foreground" />
-          <p className="text-muted-foreground">Este paciente todavía no tiene pictogramas propios.</p>
-        </div>
+        !isCreating && (
+          <EmptyPanel
+            icon={ImageIcon}
+            hint={canEdit ? 'Son imágenes propias para usar en sus cartillas.' : undefined}
+            action={
+              canEdit ? (
+                <Button type="button" size="lg" className="h-10" onClick={() => openEditor({ kind: 'create' })}>
+                  <Plus aria-hidden="true" />
+                  Subir pictograma
+                </Button>
+              ) : undefined
+            }
+          >
+            Este paciente todavía no tiene pictogramas propios.
+          </EmptyPanel>
+        )
       ) : (
-        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <ul className={GRID_CLASS}>
           {pictograms.map((pictogram) => {
             const mode = editor && editor.kind !== 'create' && editor.id === pictogram.id ? editor.kind : 'view'
             return (

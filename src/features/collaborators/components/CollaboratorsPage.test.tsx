@@ -157,9 +157,9 @@ describe('CollaboratorsPage', () => {
 
     it.each([
       [400, 'El servidor rechazó los datos.'],
-      [401, 'Tu sesión expiró. Inicia sesión nuevamente.'],
-      [403, 'No tienes permiso para invitar familiares a este paciente.'],
-      [404, 'El paciente ya no existe o no tienes permiso para administrar su familia.'],
+      [401, 'Tu sesión expiró. Iniciá sesión nuevamente.'],
+      [403, 'No tenés permiso para invitar familiares a este paciente.'],
+      [404, 'El paciente ya no existe o no tenés permiso para administrar su familia.'],
       [409, 'Esa persona ya es un familiar vinculado de este paciente.'],
     ])('on a %i keeps the form open with its message and shows no success', async (status, message) => {
       vi.mocked(inviteCollaborator).mockRejectedValue(httpError(status))
@@ -179,7 +179,7 @@ describe('CollaboratorsPage', () => {
       renderApp(url)
       await userEvent.click(await screen.findByRole('button', { name: 'Revocar invitación a ana.nueva@example.com' }))
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'La invitación ya no existe o no tienes permiso para revocarla.',
+        'La invitación ya no existe o no tenés permiso para revocarla.',
       )
     })
   })
@@ -233,5 +233,19 @@ describe('CollaboratorsPage', () => {
     expect(screen.queryByRole('button', { name: 'Invitar familiar' })).not.toBeInTheDocument()
     expect(fetchCollaborators).not.toHaveBeenCalled()
     expect(fetchFamilyInvitations).not.toHaveBeenCalled()
+  })
+
+  it('offers a single way to invite when there is nobody yet', async () => {
+    vi.mocked(fetchCollaborators).mockResolvedValue([])
+    vi.mocked(fetchFamilyInvitations).mockResolvedValue([])
+    renderApp(url)
+    expect(await screen.findByText('Todavía no hay familiares vinculados a este paciente.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Invitar familiar' }))
+    expect(await screen.findByLabelText('Email del familiar')).toHaveAccessibleDescription(/No necesita tener una cuenta/)
+  })
+
+  it('explains what each permission allows while inviting', async () => {
+    renderApp(`${url}?crear=1`)
+    expect(await screen.findByLabelText('Permiso')).toHaveAccessibleDescription(/Edición limitada también permite/)
   })
 })

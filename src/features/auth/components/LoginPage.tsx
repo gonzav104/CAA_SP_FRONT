@@ -12,10 +12,11 @@ import { useCurrentUser, useLogin } from '../hooks'
 import { getReturnTo, pendingFrom } from '../returnTo'
 import { AuthLayout, authLinkClassName } from './AuthLayout'
 import { GoogleLoginSection } from './GoogleLoginSection'
+import { PasswordInput } from './PasswordInput'
 
 const loginSchema = z.object({
-  email: z.email('Ingresa un email válido'),
-  password: z.string().min(1, 'Ingresa tu contraseña'),
+  email: z.email('Ingresá un email válido.'),
+  password: z.string().min(1, 'Ingresá tu contraseña.'),
 })
 
 type LoginFormValues = z.infer<typeof loginSchema>
@@ -53,12 +54,17 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout title="Iniciar sesión" description="Ingresa con tu email y contraseña.">
+    <AuthLayout title="Iniciar sesión" description="Ingresá con tu email y contraseña.">
       {cameFromRegistration(location.state) && (
         <p role="status" className="mt-4 rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-900">
-          Tu cuenta fue creada. Ya puedes iniciar sesión.
+          Tu cuenta fue creada. Ya podés iniciar sesión.
         </p>
       )}
+
+      {/* Google first: the quickest way in for linked accounts. The section renders nothing when unset. */}
+      <GoogleLoginSection
+        onAuthenticated={() => navigate(destination.pathname, { replace: true, state: destination.state })}
+      />
 
       <form noValidate onSubmit={handleSubmit(onSubmit)} className="mt-6 flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
@@ -67,7 +73,7 @@ export function LoginPage() {
             id="email"
             type="email"
             autoComplete="email"
-            className="h-10"
+            className="h-11"
             aria-invalid={errors.email ? true : undefined}
             aria-describedby={errors.email ? 'email-error' : undefined}
             {...register('email')}
@@ -81,11 +87,10 @@ export function LoginPage() {
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="password">Contraseña</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="current-password"
-            className="h-10"
+            className="h-11"
             aria-invalid={errors.password ? true : undefined}
             aria-describedby={errors.password ? 'password-error' : undefined}
             {...register('password')}
@@ -103,21 +108,17 @@ export function LoginPage() {
           </p>
         )}
 
-        <Button type="submit" size="lg" className="h-10" disabled={login.isPending}>
+        <Button type="submit" size="lg" className="h-11" disabled={login.isPending}>
           {login.isPending ? 'Ingresando…' : 'Ingresar'}
         </Button>
       </form>
 
-      <GoogleLoginSection
-        onAuthenticated={() => navigate(destination.pathname, { replace: true, state: destination.state })}
-      />
-
-      <div className="mt-6 flex flex-col gap-2 text-sm text-muted-foreground">
+      <div className="mt-8 flex flex-col gap-2 text-sm text-muted-foreground">
         <Link to={routes.forgotPassword} state={linkState} className={authLinkClassName}>
           Olvidé mi contraseña
         </Link>
         <p>
-          ¿No tienes cuenta?{' '}
+          ¿No tenés cuenta?{' '}
           <Link to={routes.register} state={linkState} className={authLinkClassName}>
             Crear cuenta
           </Link>

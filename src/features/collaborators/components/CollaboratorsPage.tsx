@@ -8,11 +8,13 @@ import {
   getInvitationRevokeErrorMessage,
   getReadErrorMessage,
 } from '@/api/errors'
+import { EmptyPanel } from '@/components/EmptyPanel'
 import { ErrorState } from '@/components/ErrorState'
-import { LoadingState } from '@/components/LoadingState'
+import { RowsSkeleton } from '@/components/RowsSkeleton'
 import { Button } from '@/components/ui/button'
 import { ListNotice } from '@/features/boards/components/ListNotice'
 import { usePatient } from '@/features/patients/hooks'
+import { BRAND_SECTION_TITLE_CLASS } from '@/layouts/brand'
 import { PERMISSION_LABELS } from '@/features/patients/format'
 import { canAccessCollaborators } from '@/features/patients/permissions'
 import type { ColaboradorRegistroRequest, PermisoColaborador } from '../apiTypes'
@@ -113,20 +115,13 @@ function CollaboratorsPageContent({ patientId }: { patientId: string }) {
     }
   }
 
-  if (!patient.data) return <LoadingState message="Cargando familiares…" />
-  if (!canManage) {
-    return (
-      <div className="flex flex-col items-center gap-2 rounded-2xl border border-border/60 bg-background px-6 py-10 text-center">
-        <Users aria-hidden="true" className="size-6 text-muted-foreground" />
-        <p className="text-muted-foreground">Solo el equipo clínico del paciente puede administrar a su familia.</p>
-      </div>
-    )
-  }
-  if (isPending) return <LoadingState message="Cargando familiares…" />
+  if (!patient.data) return <RowsSkeleton message="Cargando familiares…" />
+  if (!canManage) return <EmptyPanel icon={Users}>Solo el equipo clínico del paciente puede administrar a su familia.</EmptyPanel>
+  if (isPending) return <RowsSkeleton message="Cargando familiares…" />
   if (isError) {
     return (
       <ErrorState
-        message={getReadErrorMessage(error, 'No encontramos familiares para este paciente o no tienes acceso.')}
+        message={getReadErrorMessage(error, 'No encontramos familiares para este paciente o no tenés acceso.')}
         onRetry={() => void refetch()}
       />
     )
@@ -134,22 +129,19 @@ function CollaboratorsPageContent({ patientId }: { patientId: string }) {
 
   const pendingInvitations = invitations.data ?? []
   const invitationActionsDisabled = inviteCollaborator.isPending || revokeInvitation.isPending
+  const isEmpty = collaborators.length === 0 && pendingInvitations.length === 0
+  const startInviting = () => {
+    setInviteError(null)
+    setNotice(null)
+    setIsInviting(true)
+  }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold text-foreground">Familia</h2>
-        {!isInviting && (
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            onClick={() => {
-              setInviteError(null)
-              setNotice(null)
-              setIsInviting(true)
-            }}
-          >
+        <h2 className={BRAND_SECTION_TITLE_CLASS}>Familia</h2>
+        {!isInviting && !isEmpty && (
+          <Button type="button" variant="outline" size="lg" className="h-10" onClick={startInviting}>
             <Plus aria-hidden="true" />
             Invitar familiar
           </Button>
@@ -171,28 +163,43 @@ function CollaboratorsPageContent({ patientId }: { patientId: string }) {
       )}
 
       {collaborators.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-border/60 bg-background px-6 py-10 text-center">
-          <Users aria-hidden="true" className="size-6 text-muted-foreground" />
-          <p className="text-muted-foreground">Todavía no hay familiares vinculados a este paciente.</p>
-        </div>
+        !isInviting && (
+          <EmptyPanel
+            icon={Users}
+            hint={isEmpty ? 'La persona invitada recibe un correo y tiene acceso cuando lo acepta.' : undefined}
+            action={
+              isEmpty ? (
+                <Button type="button" size="lg" className="h-10" onClick={startInviting}>
+                  <Plus aria-hidden="true" />
+                  Invitar familiar
+                </Button>
+              ) : undefined
+            }
+          >
+            Todavía no hay familiares vinculados a este paciente.
+          </EmptyPanel>
+        )
       ) : (
-        <ul aria-label="Familiares vinculados" className="flex flex-col gap-3">
-          {collaborators.map((collaborator) => (
-            <CollaboratorRow
-              key={collaborator.userId}
-              collaborator={collaborator}
-              isPermissionPending={updatePermission.isPending && updatePermission.variables?.userId === collaborator.userId}
-              permissionError={permissionErrorTargetId === collaborator.userId ? permissionError : null}
-              isRevokePending={revokeCollaborator.isPending && revokeTargetId === collaborator.userId}
-              revokeError={revokeTargetId === collaborator.userId ? revokeError : null}
-              onChangePermission={(permiso) => void handleChangePermission(collaborator.userId, permiso)}
-              onConfirmRevoke={() => {
-                setRevokeTargetId(collaborator.userId)
-                void handleRevoke(collaborator.userId)
-              }}
-            />
-          ))}
-        </ul>
+        <section className="flex flex-col gap-3">
+          <h3 className="font-semibold text-foreground">Con acceso</h3>
+          <ul aria-label="Familiares vinculados" className="flex flex-col gap-3">
+            {collaborators.map((collaborator) => (
+              <CollaboratorRow
+                key={collaborator.userId}
+                collaborator={collaborator}
+                isPermissionPending={updatePermission.isPending && updatePermission.variables?.userId === collaborator.userId}
+                permissionError={permissionErrorTargetId === collaborator.userId ? permissionError : null}
+                isRevokePending={revokeCollaborator.isPending && revokeTargetId === collaborator.userId}
+                revokeError={revokeTargetId === collaborator.userId ? revokeError : null}
+                onChangePermission={(permiso) => void handleChangePermission(collaborator.userId, permiso)}
+                onConfirmRevoke={() => {
+                  setRevokeTargetId(collaborator.userId)
+                  void handleRevoke(collaborator.userId)
+                }}
+              />
+            ))}
+          </ul>
+        </section>
       )}
 
       {invitations.isError && (
@@ -204,7 +211,7 @@ function CollaboratorsPageContent({ patientId }: { patientId: string }) {
 
       {pendingInvitations.length > 0 && (
         <section className="flex flex-col gap-3 pt-2">
-          <h3 id="pending-invitations-title" className="font-medium text-foreground">
+          <h3 id="pending-invitations-title" className="font-semibold text-foreground">
             Invitaciones pendientes
           </h3>
           <ul aria-labelledby="pending-invitations-title" className="flex flex-col gap-3">

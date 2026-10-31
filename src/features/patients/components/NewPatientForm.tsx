@@ -1,14 +1,18 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { FieldError } from '@/components/FieldError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { NATIVE_SELECT_CLASS } from '@/components/ui/nativeSelect'
 import type { OrganizacionResponse } from '@/features/organizations/apiTypes'
-import { cn } from '@/lib/utils'
+import { keepFieldFocus } from '@/lib/utils'
 
+/** The user's local date: `toISOString()` alone is UTC, which is already tomorrow in the evening here. */
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10)
+  const now = new Date()
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
 }
 
 // Mirrors PacienteRegistroDTO: nombre/apellido @NotBlank, fechaNacimiento @NotNull @Past.
@@ -20,7 +24,7 @@ const newPatientSchema = z.object({
     .min(1, 'La fecha de nacimiento es obligatoria.')
     .refine((value) => value < todayIso(), { message: 'La fecha de nacimiento debe ser en el pasado.' }),
   // The organization the patient belongs to (part of the POST path, not of the body).
-  organizacionId: z.string().min(1, 'Selecciona la organización.'),
+  organizacionId: z.string().min(1, 'Seleccioná el espacio.'),
 })
 
 export type NewPatientFormValues = z.infer<typeof newPatientSchema>
@@ -37,7 +41,9 @@ interface NewPatientFormProps {
   onCancel: () => void
 }
 
-/** Inline card to register a new patient, in the same visual language as the rest of the shell. */
+const LEGEND_CLASS = 'text-sm font-semibold text-foreground'
+
+/** Focused panel to register a patient: where it belongs first, then its own data. */
 export function NewPatientForm({
   organizations,
   defaultOrganizationId,
@@ -56,6 +62,8 @@ export function NewPatientForm({
     formState: { errors },
   } = useForm<NewPatientFormValues>({
     resolver: zodResolver(newPatientSchema),
+    // Errors appear when leaving a field, never while typing it for the first time.
+    mode: 'onTouched',
     defaultValues: {
       nombre: '',
       apellido: '',
@@ -64,108 +72,104 @@ export function NewPatientForm({
     },
   })
 
+  const describedBy = (field: keyof NewPatientFormValues, id: string) => (errors[field] ? id : undefined)
+
   return (
     <form
       noValidate
+      aria-labelledby="new-patient-title"
       onSubmit={handleSubmit(onSubmit)}
-      className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-background p-5"
+      className="flex max-w-2xl flex-col gap-6 rounded-xl border border-border bg-background p-5 sm:p-6"
     >
-      <h3 className="font-medium text-foreground">Nuevo paciente</h3>
-      {organizations.length > 1 && (
-        <div className="flex flex-col gap-1.5 sm:max-w-sm">
-          <Label htmlFor="new-patient-organizacion">Organización</Label>
+      <div className="flex flex-col gap-1">
+        <h2 id="new-patient-title" className="font-display text-lg font-bold tracking-[-0.01em] text-foreground">
+          Nuevo paciente
+        </h2>
+        <p className="text-sm text-muted-foreground">Después podrás preparar su cartilla y sumar a su equipo y su familia.</p>
+      </div>
+
+      {organizations.length > 1 ? (
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="new-patient-organizacion">Espacio</Label>
           <select
             id="new-patient-organizacion"
             disabled={isPending}
             aria-invalid={errors.organizacionId ? true : undefined}
-            aria-describedby={errors.organizacionId ? 'new-patient-organizacion-error' : undefined}
-            className={cn(
-              'h-10 w-full rounded-lg border border-input bg-transparent px-2.5 text-base outline-none md:text-sm',
-              'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50',
-              'aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20',
-            )}
+            aria-describedby={describedBy('organizacionId', 'new-patient-organizacion-error')}
+            className={NATIVE_SELECT_CLASS}
             {...register('organizacionId')}
           >
-            <option value="">Selecciona una organización</option>
+            <option value="">Seleccioná un espacio</option>
             {organizations.map((organization) => (
               <option key={organization.id} value={organization.id}>
                 {organization.nombre}
               </option>
             ))}
           </select>
-          {errors.organizacionId && (
-            <p id="new-patient-organizacion-error" className="text-xs text-destructive">
-              {errors.organizacionId.message}
-            </p>
-          )}
+          <FieldError id="new-patient-organizacion-error" message={errors.organizacionId?.message} />
         </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Se registrará en <span className="font-semibold text-foreground">{organizations[0].nombre}</span>.
+        </p>
       )}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="new-patient-nombre">Nombre</Label>
-          <Input
-            id="new-patient-nombre"
-            autoFocus
-            disabled={isPending}
-            aria-invalid={errors.nombre ? true : undefined}
-            aria-describedby={errors.nombre ? 'new-patient-nombre-error' : undefined}
-            className="h-10"
-            {...register('nombre')}
-          />
-          {errors.nombre && (
-            <p id="new-patient-nombre-error" className="text-xs text-destructive">
-              {errors.nombre.message}
-            </p>
-          )}
+
+      <fieldset className="flex flex-col gap-4" disabled={isPending}>
+        <legend className={`${LEGEND_CLASS} mb-3`}>Datos del paciente</legend>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="new-patient-nombre">Nombre</Label>
+            <Input
+              id="new-patient-nombre"
+              autoFocus
+              autoComplete="off"
+              aria-invalid={errors.nombre ? true : undefined}
+              aria-describedby={describedBy('nombre', 'new-patient-nombre-error')}
+              className="h-11"
+              {...register('nombre')}
+            />
+            <FieldError id="new-patient-nombre-error" message={errors.nombre?.message} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="new-patient-apellido">Apellido</Label>
+            <Input
+              id="new-patient-apellido"
+              autoComplete="off"
+              aria-invalid={errors.apellido ? true : undefined}
+              aria-describedby={describedBy('apellido', 'new-patient-apellido-error')}
+              className="h-11"
+              {...register('apellido')}
+            />
+            <FieldError id="new-patient-apellido-error" message={errors.apellido?.message} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="new-patient-fecha">Fecha de nacimiento</Label>
+            <Input
+              id="new-patient-fecha"
+              type="date"
+              max={todayIso()}
+              aria-invalid={errors.fechaNacimiento ? true : undefined}
+              aria-describedby={describedBy('fechaNacimiento', 'new-patient-fecha-error')}
+              className="h-11"
+              {...register('fechaNacimiento')}
+            />
+            <FieldError id="new-patient-fecha-error" message={errors.fechaNacimiento?.message} />
+          </div>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="new-patient-apellido">Apellido</Label>
-          <Input
-            id="new-patient-apellido"
-            disabled={isPending}
-            aria-invalid={errors.apellido ? true : undefined}
-            aria-describedby={errors.apellido ? 'new-patient-apellido-error' : undefined}
-            className="h-10"
-            {...register('apellido')}
-          />
-          {errors.apellido && (
-            <p id="new-patient-apellido-error" className="text-xs text-destructive">
-              {errors.apellido.message}
-            </p>
-          )}
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="new-patient-fecha">Fecha de nacimiento</Label>
-          <Input
-            id="new-patient-fecha"
-            type="date"
-            max={todayIso()}
-            disabled={isPending}
-            aria-invalid={errors.fechaNacimiento ? true : undefined}
-            aria-describedby={errors.fechaNacimiento ? 'new-patient-fecha-error' : undefined}
-            className="h-10"
-            {...register('fechaNacimiento')}
-          />
-          {errors.fechaNacimiento && (
-            <p id="new-patient-fecha-error" className="text-xs text-destructive">
-              {errors.fechaNacimiento.message}
-            </p>
-          )}
-        </div>
-      </div>
+      </fieldset>
 
       {error && (
-        <p role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
+        <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
         </p>
       )}
 
-      <div className="flex gap-2">
-        <Button type="submit" disabled={isPending} aria-busy={isPending || undefined}>
-          {isPending ? 'Creando…' : 'Crear paciente'}
-        </Button>
-        <Button type="button" variant="outline" disabled={isPending} onClick={onCancel}>
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button type="button" variant="outline" size="lg" className="h-11" disabled={isPending} onMouseDown={keepFieldFocus} onClick={onCancel}>
           Cancelar
+        </Button>
+        <Button type="submit" size="lg" className="h-11" disabled={isPending} aria-busy={isPending || undefined}>
+          {isPending ? 'Creando…' : 'Crear paciente'}
         </Button>
       </div>
     </form>

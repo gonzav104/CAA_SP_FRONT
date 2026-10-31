@@ -95,7 +95,7 @@ describe('PatientTherapistsPage', () => {
 
   it.each([
     [409, 'Esa persona ya no tiene el rol de terapeuta en el espacio.'],
-    [404, 'No tienes permiso para cambiar el equipo de este paciente, o esa persona ya no es miembro del espacio.'],
+    [404, 'No tenés permiso para cambiar el equipo de este paciente, o esa persona ya no es miembro del espacio.'],
   ])('shows the backend refusal %i when assigning', async (status, message) => {
     vi.mocked(assignTherapist).mockRejectedValue(httpError(status))
     renderApp(url)
@@ -156,5 +156,22 @@ describe('PatientTherapistsPage', () => {
     await userEvent.selectOptions(screen.getByLabelText('Asignar terapeuta'), 'u-carla')
     await userEvent.click(screen.getByRole('button', { name: 'Asignar' }))
     await vi.waitFor(() => expect(screen.queryByLabelText('Asignar terapeuta')).not.toBeInTheDocument())
+  })
+
+  it('tells assigned therapists apart from the members of the space', async () => {
+    vi.mocked(fetchPatient).mockResolvedValue(asAdmin)
+    renderApp(url)
+    const assigned = await screen.findByRole('list', { name: 'Terapeutas asignados' })
+    expect(within(assigned).getByText('Bruno')).toBeInTheDocument()
+    expect(within(assigned).queryByText('Carla')).not.toBeInTheDocument()
+    const candidates = await screen.findByRole('region', { name: 'Terapeutas del espacio' })
+    expect(within(candidates).getByRole('option', { name: /Carla/ })).toBeInTheDocument()
+    expect(within(candidates).queryByRole('option', { name: /Bruno/ })).not.toBeInTheDocument()
+  })
+
+  it('announces the loading state', async () => {
+    vi.mocked(fetchAssignedTherapists).mockReturnValue(new Promise(() => {}))
+    renderApp(url)
+    expect(await screen.findByText('Cargando equipo…')).toHaveAttribute('role', 'status')
   })
 })

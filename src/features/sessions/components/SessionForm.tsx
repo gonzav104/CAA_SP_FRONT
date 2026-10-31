@@ -1,9 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
+import { FieldError } from '@/components/FieldError'
+import { FormAlert } from '@/components/FormAlert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { BRAND_FORM_ACTION_CLASS, BRAND_FORM_ACTIONS_CLASS, BRAND_PANEL_CLASS, BRAND_SECTION_TITLE_CLASS } from '@/layouts/brand'
+import { cn, keepFieldFocus } from '@/lib/utils'
 import { sessionSchema } from '../sessionForm'
 import type { SessionFormValues } from '../sessionForm'
 
@@ -35,6 +39,8 @@ export function SessionForm({
     formState: { errors },
   } = useForm<SessionFormValues>({
     resolver: zodResolver(sessionSchema),
+    // Errors appear when leaving a field, never while writing it for the first time.
+    mode: 'onTouched',
     defaultValues,
   })
 
@@ -42,9 +48,15 @@ export function SessionForm({
     <form
       noValidate
       onSubmit={handleSubmit(onSubmit)}
-      className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-background p-5"
+      aria-labelledby="session-form-title"
+      className={cn(BRAND_PANEL_CLASS, 'flex max-w-3xl flex-col gap-5 p-5 sm:p-6')}
     >
-      <h3 className="font-medium text-foreground">{title}</h3>
+      <div className="flex flex-col gap-1">
+        <h2 id="session-form-title" className={BRAND_SECTION_TITLE_CLASS}>
+          {title}
+        </h2>
+        <p className="text-sm text-muted-foreground">Solo la fecha y los objetivos son obligatorios.</p>
+      </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="session-fecha-hora">Fecha y hora</Label>
@@ -55,18 +67,14 @@ export function SessionForm({
             disabled={isPending}
             aria-invalid={errors.fechaHora ? true : undefined}
             aria-describedby={errors.fechaHora ? 'session-fecha-hora-error' : undefined}
-            className="h-10"
+            className="h-11"
             {...register('fechaHora')}
           />
-          {errors.fechaHora && (
-            <p id="session-fecha-hora-error" className="text-xs text-destructive">
-              {errors.fechaHora.message}
-            </p>
-          )}
+          <FieldError id="session-fecha-hora-error" message={errors.fechaHora?.message} />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="session-disposicion">Disposición del paciente</Label>
-          <Input id="session-disposicion" disabled={isPending} className="h-10" {...register('disposicion')} />
+          <Input id="session-disposicion" autoComplete="off" disabled={isPending} className="h-11" {...register('disposicion')} />
         </div>
       </div>
 
@@ -80,11 +88,7 @@ export function SessionForm({
           aria-describedby={errors.objetivosTrabajados ? 'session-objetivos-error' : undefined}
           {...register('objetivosTrabajados')}
         />
-        {errors.objetivosTrabajados && (
-          <p id="session-objetivos-error" className="text-xs text-destructive">
-            {errors.objetivosTrabajados.message}
-          </p>
-        )}
+        <FieldError id="session-objetivos-error" message={errors.objetivosTrabajados?.message} />
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -97,18 +101,14 @@ export function SessionForm({
         <Textarea id="session-estrategias" rows={3} disabled={isPending} {...register('estrategiasYProximosPasos')} />
       </div>
 
-      {error && (
-        <p role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
-          {error}
-        </p>
-      )}
+      <FormAlert message={error} />
 
-      <div className="flex gap-2">
-        <Button type="submit" disabled={isPending} aria-busy={isPending || undefined}>
-          {isPending ? pendingLabel : submitLabel}
-        </Button>
-        <Button type="button" variant="outline" disabled={isPending} onClick={onCancel}>
+      <div className={BRAND_FORM_ACTIONS_CLASS}>
+        <Button type="button" variant="outline" size="lg" className={BRAND_FORM_ACTION_CLASS} disabled={isPending} onMouseDown={keepFieldFocus} onClick={onCancel}>
           Cancelar
+        </Button>
+        <Button type="submit" size="lg" className={BRAND_FORM_ACTION_CLASS} disabled={isPending} aria-busy={isPending || undefined}>
+          {isPending ? pendingLabel : submitLabel}
         </Button>
       </div>
     </form>

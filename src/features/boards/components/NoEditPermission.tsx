@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { paths } from '@/app/paths'
 import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 interface NoEditPermissionProps {
   patientId: string
@@ -17,7 +18,7 @@ export function NoEditPermission({ patientId, boardId }: NoEditPermissionProps) 
         <Link to={paths.boardUse(patientId, boardId)} className={buttonVariants({ size: 'lg' })}>
           Abrir en Modo Uso
         </Link>
-        <Link to={paths.boards(patientId)} className={buttonVariants({ variant: 'outline', size: 'lg' })}>
+        <Link to={paths.boards(patientId)} className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}>
           Volver a las cartillas
         </Link>
       </div>

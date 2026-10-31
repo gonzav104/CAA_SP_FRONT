@@ -23,7 +23,7 @@ function httpError(status: number, message?: string): AxiosError {
 const location = () => screen.getByTestId('location')
 
 async function fillRegistration(password = STRONG) {
-  await userEvent.type(await screen.findByLabelText('Nombre'), 'Nueva')
+  await userEvent.type(await screen.findByLabelText('Nombre completo'), 'Nueva')
   await userEvent.type(screen.getByLabelText('Email'), 'nueva@example.com')
   await userEvent.type(screen.getByLabelText('Contraseña'), password)
   await userEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }))
@@ -50,7 +50,7 @@ describe('RegisterPage', () => {
     await fillRegistration()
 
     expect(register).toHaveBeenCalledExactlyOnceWith({ nombre: 'Nueva', email: 'nueva@example.com', password: STRONG })
-    expect(await screen.findByRole('status')).toHaveTextContent('Tu cuenta fue creada. Ya puedes iniciar sesión.')
+    expect(await screen.findByRole('status')).toHaveTextContent('Tu cuenta fue creada. Ya podés iniciar sesión.')
     expect(location()).toHaveTextContent('/login')
     expect(login).not.toHaveBeenCalled()
   })
@@ -58,9 +58,9 @@ describe('RegisterPage', () => {
   it('validates name, email and password strength like the backend', async () => {
     renderAuthRoutes('/registro')
     await userEvent.click(await screen.findByRole('button', { name: 'Crear cuenta' }))
-    expect(await screen.findByText('Ingresa tu nombre.')).toBeInTheDocument()
-    expect(screen.getByText('Ingresa un email válido.')).toBeInTheDocument()
-    expect(screen.getByText('Ingresa una contraseña.')).toBeInTheDocument()
+    expect(await screen.findByText('Ingresá tu nombre.')).toBeInTheDocument()
+    expect(screen.getByText('Ingresá un email válido.')).toBeInTheDocument()
+    expect(screen.getByText('Ingresá una contraseña.')).toBeInTheDocument()
 
     await userEvent.type(screen.getByLabelText('Contraseña'), 'sinsimbolo1A')
     await userEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }))
@@ -73,9 +73,9 @@ describe('RegisterPage', () => {
   })
 
   it.each([
-    ['an existing email (409)', httpError(409), 'Ya existe una cuenta con ese email. Inicia sesión o recupera tu contraseña.'],
+    ['an existing email (409)', httpError(409), 'Ya existe una cuenta con ese email. Iniciá sesión o recuperá tu contraseña.'],
     ['a backend validation (400)', httpError(400, 'El email no es válido'), 'El email no es válido'],
-    ['a server error', httpError(500), 'Ocurrió un error inesperado. Intenta nuevamente.'],
+    ['a server error', httpError(500), 'Ocurrió un error inesperado. Intentá nuevamente.'],
     ['a network failure', new AxiosError('Network Error', 'ERR_NETWORK'), 'No se pudo conectar con el servidor.'],
   ])('stays on the form on %s', async (_label, failure, message) => {
     vi.mocked(register).mockRejectedValue(failure)
@@ -97,7 +97,7 @@ describe('RegisterPage', () => {
     expect(location()).toHaveTextContent('/registro')
     expect(router.state.location.search).toBe('')
     await fillRegistration()
-    await screen.findByText('Tu cuenta fue creada. Ya puedes iniciar sesión.')
+    await screen.findByText('Tu cuenta fue creada. Ya podés iniciar sesión.')
     await logIn()
 
     const accept = await screen.findByRole('button', { name: 'Aceptar invitación' })
@@ -105,7 +105,7 @@ describe('RegisterPage', () => {
     expect(acceptInvitation).not.toHaveBeenCalled()
     await userEvent.click(accept)
 
-    expect(await screen.findByText('Ya tienes acceso al paciente.')).toBeInTheDocument()
+    expect(await screen.findByText('Ya tenés acceso al paciente.')).toBeInTheDocument()
     expect(acceptInvitation).toHaveBeenCalledExactlyOnceWith(token)
     expect(JSON.stringify({ ...localStorage, ...sessionStorage })).not.toContain(token)
     await userEvent.click(screen.getByRole('link', { name: 'Ir al paciente' }))

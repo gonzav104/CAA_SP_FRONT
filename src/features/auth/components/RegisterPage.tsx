@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { z } from 'zod'
 import { routes } from '@/app/paths'
@@ -11,11 +11,12 @@ import { useRegister } from '../hooks'
 import { strongPassword } from '../password'
 import { pendingFrom } from '../returnTo'
 import { AuthLayout, authLinkClassName } from './AuthLayout'
+import { NewPasswordField } from './NewPasswordField'
 
 // Mirrors UsuarioRegistroDTO: nombre @NotBlank, email @NotBlank @Email, password with the strength @Pattern.
 const registerSchema = z.object({
-  nombre: z.string().trim().min(1, 'Ingresa tu nombre.'),
-  email: z.email('Ingresa un email válido.'),
+  nombre: z.string().trim().min(1, 'Ingresá tu nombre.'),
+  email: z.email('Ingresá un email válido.'),
   password: strongPassword,
 })
 
@@ -33,11 +34,14 @@ export function RegisterPage() {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: { nombre: '', email: '', password: '' },
   })
+
+  const password = useWatch({ control, name: 'password' })
 
   const onSubmit = (values: RegisterFormValues) => {
     registerUser.mutate(
@@ -50,11 +54,11 @@ export function RegisterPage() {
     <AuthLayout title="Crear cuenta" description="Con tu cuenta podrás aceptar las invitaciones que recibas.">
       <form noValidate onSubmit={handleSubmit(onSubmit)} className="mt-6 flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="register-nombre">Nombre</Label>
+          <Label htmlFor="register-nombre">Nombre completo</Label>
           <Input
             id="register-nombre"
             autoComplete="name"
-            className="h-10"
+            className="h-11"
             aria-invalid={errors.nombre ? true : undefined}
             aria-describedby={errors.nombre ? 'register-nombre-error' : undefined}
             {...register('nombre')}
@@ -72,7 +76,7 @@ export function RegisterPage() {
             id="register-email"
             type="email"
             autoComplete="email"
-            className="h-10"
+            className="h-11"
             aria-invalid={errors.email ? true : undefined}
             aria-describedby={errors.email ? 'register-email-error' : undefined}
             {...register('email')}
@@ -84,22 +88,13 @@ export function RegisterPage() {
           )}
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="register-password">Contraseña</Label>
-          <Input
-            id="register-password"
-            type="password"
-            autoComplete="new-password"
-            className="h-10"
-            aria-invalid={errors.password ? true : undefined}
-            aria-describedby="register-password-hint"
-            {...register('password')}
-          />
-          <p id="register-password-hint" className={errors.password ? 'text-sm text-destructive' : 'text-xs text-muted-foreground'}>
-            {errors.password?.message ??
-              'Al menos 8 caracteres, con una mayúscula, una minúscula, un número y un símbolo.'}
-          </p>
-        </div>
+        <NewPasswordField
+          id="register-password"
+          label="Contraseña"
+          value={password}
+          error={errors.password?.message}
+          registration={register('password')}
+        />
 
         {registerUser.isError && (
           <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -107,13 +102,13 @@ export function RegisterPage() {
           </p>
         )}
 
-        <Button type="submit" size="lg" className="h-10" disabled={registerUser.isPending}>
+        <Button type="submit" size="lg" className="h-11" disabled={registerUser.isPending}>
           {registerUser.isPending ? 'Creando cuenta…' : 'Crear cuenta'}
         </Button>
       </form>
 
       <p className="mt-6 text-sm text-muted-foreground">
-        ¿Ya tienes cuenta?{' '}
+        ¿Ya tenés cuenta?{' '}
         <Link to={routes.login} state={{ from }} className={authLinkClassName}>
           Iniciar sesión
         </Link>

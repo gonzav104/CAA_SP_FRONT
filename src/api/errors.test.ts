@@ -58,15 +58,15 @@ describe('getReadErrorMessage', () => {
 
   it('explains connection problems for network errors', () => {
     expect(getReadErrorMessage(new AxiosError('Network Error', 'ERR_NETWORK'), 'x')).toBe(
-      'No se pudo conectar con el servidor. Verifica tu conexión e intenta nuevamente.',
+      'No se pudo conectar con el servidor. Verificá tu conexión e intentá nuevamente.',
     )
   })
 
   it('falls back to a generic message and never echoes the backend message', () => {
     const message = getReadErrorMessage(httpError(500), 'x')
-    expect(message).toBe('Ocurrió un error inesperado. Intenta nuevamente.')
+    expect(message).toBe('Ocurrió un error inesperado. Intentá nuevamente.')
     expect(message).not.toContain('backend detail')
-    expect(getReadErrorMessage(new Error('boom'), 'x')).toBe('Ocurrió un error inesperado. Intenta nuevamente.')
+    expect(getReadErrorMessage(new Error('boom'), 'x')).toBe('Ocurrió un error inesperado. Intentá nuevamente.')
   })
 })
 
@@ -212,21 +212,21 @@ describe('getCartillaErrorMessage', () => {
     )
     for (const operation of ['create', 'rename', 'delete'] as const) {
       expect(getCartillaErrorMessage(httpError(403), 'request', operation)).toBe(
-        'No tienes permiso para hacer este cambio.',
+        'No tenés permiso para hacer este cambio.',
       )
     }
   })
 
   it('maps 404 by operation', () => {
     expect(getCartillaErrorMessage(httpError(404), 'request', 'create')).toBe(
-      'No tienes permiso para crear cartillas para este paciente.',
+      'No tenés permiso para crear cartillas para este paciente.',
     )
     expect(getCartillaErrorMessage(httpError(404), 'request', 'primary')).toBe(
-      'La cartilla ya no existe o no tienes acceso.',
+      'La cartilla ya no existe o no tenés acceso.',
     )
     for (const operation of ['rename', 'delete'] as const) {
       expect(getCartillaErrorMessage(httpError(404), 'request', operation)).toBe(
-        'La cartilla ya no existe o no tienes permiso para modificarla.',
+        'La cartilla ya no existe o no tenés permiso para modificarla.',
       )
     }
   })
