@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchCurrentUser } from '@/features/auth/authApi'
@@ -63,6 +63,13 @@ describe('registering a patient', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Cancelar' }))
     expect(screen.getByTestId('location')).toHaveTextContent(/^\/pacientes$/)
     expect(await screen.findByRole('region', { name: 'Listado de pacientes' })).toBeInTheDocument()
+  })
+
+  it('Cancelar does not blur the field, so no error can move it away from the pointer', async () => {
+    setup([ownerOrganization])
+    renderApp('/pacientes?crear=1')
+    await screen.findByRole('form', { name: 'Nuevo paciente' })
+    expect(fireEvent.mouseDown(screen.getByRole('button', { name: 'Cancelar' }))).toBe(false)
   })
 
   it('validates a field when leaving it, not while typing, and links the error to it', async () => {

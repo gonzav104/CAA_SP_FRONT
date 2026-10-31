@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NATIVE_SELECT_CLASS } from '@/components/ui/nativeSelect'
 import type { OrganizacionResponse } from '@/features/organizations/apiTypes'
+import { keepFieldFocus } from '@/lib/utils'
 
 /** The user's local date: `toISOString()` alone is UTC, which is already tomorrow in the evening here. */
 function todayIso(): string {
@@ -164,7 +165,7 @@ export function NewPatientForm({
       )}
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button type="button" variant="outline" size="lg" className="h-11" disabled={isPending} onClick={onCancel}>
+        <Button type="button" variant="outline" size="lg" className="h-11" disabled={isPending} onMouseDown={keepFieldFocus} onClick={onCancel}>
           Cancelar
         </Button>
         <Button type="submit" size="lg" className="h-11" disabled={isPending} aria-busy={isPending || undefined}>

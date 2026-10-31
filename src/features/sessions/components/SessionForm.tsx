@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { BRAND_FORM_ACTION_CLASS, BRAND_FORM_ACTIONS_CLASS, BRAND_PANEL_CLASS, BRAND_SECTION_TITLE_CLASS } from '@/layouts/brand'
-import { cn } from '@/lib/utils'
+import { cn, keepFieldFocus } from '@/lib/utils'
 import { sessionSchema } from '../sessionForm'
 import type { SessionFormValues } from '../sessionForm'
 
@@ -104,7 +104,7 @@ export function SessionForm({
       <FormAlert message={error} />
 
       <div className={BRAND_FORM_ACTIONS_CLASS}>
-        <Button type="button" variant="outline" size="lg" className={BRAND_FORM_ACTION_CLASS} disabled={isPending} onClick={onCancel}>
+        <Button type="button" variant="outline" size="lg" className={BRAND_FORM_ACTION_CLASS} disabled={isPending} onMouseDown={keepFieldFocus} onClick={onCancel}>
           Cancelar
         </Button>
         <Button type="submit" size="lg" className={BRAND_FORM_ACTION_CLASS} disabled={isPending} aria-busy={isPending || undefined}>
