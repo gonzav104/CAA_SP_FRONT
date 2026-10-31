@@ -377,17 +377,54 @@ describe('OrganizationMembersPage', () => {
     expect(within(await rowOf('Bruno')).queryByText(/Como propietario/)).not.toBeInTheDocument()
   })
 
-  it('speaks to the person who is leaving, and about the person being removed', async () => {
+  it('talks about the person being removed', async () => {
     setup(ownerOrganization)
     renderApp(url)
     await userEvent.click(within(await rowOf('Carla')).getByRole('button', { name: 'Quitar del espacio' }))
     expect(await screen.findByText(/^Perderá el acceso/)).toBeInTheDocument()
   })
 
-  it('says there are no pending invitations only to whoever manages them', async () => {
-    setup(ownerOrganization)
+  it('talks to the person who is leaving', async () => {
+    const self = { ...ana, rolGestion: 'MIEMBRO' as const }
+    setup({ ...ownerOrganization, miRolGestion: 'MIEMBRO' }, [self])
     renderApp(url)
-    expect(await screen.findByText('No hay invitaciones pendientes.')).toBeInTheDocument()
+    await userEvent.click(within(await rowOf('Ana')).getByRole('button', { name: 'Salir del espacio' }))
+    expect(await screen.findByText(/^Vas a perder el acceso/)).toBeInTheDocument()
+    expect(screen.queryByText(/^Perderá el acceso/)).not.toBeInTheDocument()
+  })
+
+  describe('"No hay invitaciones pendientes"', () => {
+    const message = 'No hay invitaciones pendientes.'
+
+    it('is told to whoever manages them, once loaded and empty', async () => {
+      setup(ownerOrganization)
+      renderApp(url)
+      expect(await screen.findByText(message)).toBeInTheDocument()
+    })
+
+    it('is not told to a member who cannot see them, who never requests them', async () => {
+      setup({ ...ownerOrganization, miRolGestion: 'MIEMBRO', miEsTerapeuta: false })
+      renderApp(url)
+      await rowOf('Ana')
+      expect(screen.queryByText(message)).not.toBeInTheDocument()
+      expect(fetchOrganizationInvitations).not.toHaveBeenCalled()
+    })
+
+    it('is not claimed while they load', async () => {
+      setup(ownerOrganization)
+      vi.mocked(fetchOrganizationInvitations).mockReturnValue(new Promise(() => {}))
+      renderApp(url)
+      await rowOf('Ana')
+      expect(screen.queryByText(message)).not.toBeInTheDocument()
+    })
+
+    it('is not claimed when they could not be loaded', async () => {
+      setup(ownerOrganization)
+      vi.mocked(fetchOrganizationInvitations).mockRejectedValue(httpError(500))
+      renderApp(url)
+      expect(await screen.findByText('No se pudieron cargar las invitaciones pendientes.')).toBeInTheDocument()
+      expect(screen.queryByText(message)).not.toBeInTheDocument()
+    })
   })
 
   it('validates the invitation email when leaving the field, linked to it', async () => {
